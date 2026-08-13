@@ -1,5 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
+import { DataService } from '@/lib/data-service'
+import { Model } from '@/lib/types'
+import { useAuth } from '@/lib/auth-context'
+import { AuthModal } from '@/components/AuthModal'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -13,40 +19,48 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-/* ─── Seed data — matches the 20 influencers from telescope.me ─── */
-const INFLUENCERS = [
-  { name: 'Brandi Andrews', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/1ee6e615-cd85-4c86-2a35-cb9943d60900/public' },
-  { name: 'Chimocurves', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/9884e5c0-b48f-497f-99e4-8b035fd99300/public' },
-  { name: 'Ava Louise', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/4783fcc1-86b6-45b9-7da9-79bf793edc00/public' },
-  { name: 'Alex Mucci', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/437fa29e-489c-4a08-3439-38ea8137d700/public' },
-  { name: 'Helena Priebe', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/32c9232c-8185-4030-cdb5-1aec628a2300/public' },
-  { name: 'Savannah Bond', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/aec21118-9d2e-41dc-0922-d0c4a1d7c700/public' },
-  { name: 'Morgan Lane', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/3f1ad90e-4945-4508-6fa8-a1a4cbc19600/public' },
-  { name: 'Francety', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/3a8b6205-b1ae-415f-cf15-56206c824600/public' },
-  { name: 'Frances Bentley', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/404e7eec-1ce5-4d73-6c21-fddbf856c900/public' },
-  { name: 'Sophie Dee', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/4b39f77a-da47-4978-3326-7c358dcd7000/public' },
-  { name: 'Bonnie Locket', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/5e266abb-d436-4e80-a69d-0485af2ba100/public' },
-  { name: 'Bunni Emmie', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/03249cd9-4dc0-4310-b431-40c43cf85a00/public' },
-  { name: 'Yvonne Bar', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/fa7baef1-fd87-4232-9e32-9d576e892700/public' },
-  { name: 'Pamela Alexandra', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/ce5ee9ad-f84c-48b5-51a5-de57281fc000/public' },
-  { name: 'Chloe May', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/3a8ba509-009d-41d7-9759-00e120d5ce00/public' },
-  { name: 'Nikki Benz', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/6bb5620f-442d-4f1e-8525-0163cd80c500/public' },
-  { name: 'Alva Jay', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/0ad8b436-e032-4e5f-6f8d-f079e4e3ee00/public' },
-  { name: 'Forrest Smith', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/2d3f6a4f-06c5-4c82-0f4e-dfde0c558a00/public' },
-  { name: 'Claudia Tihan', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/d322dc17-8f9a-4204-a786-25685314e000/public' },
-  { name: 'Rachel Mary', img: 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/29d6f384-6c23-4ecc-2ce8-5b5d27b5a300/public' },
-]
-
 const TABS = ['🔥 Trending', '💎 Most Popular', '💫 New']
-const NAV_ITEMS = [
-  { id: 'explore', label: 'Explore', active: true },
-  { id: 'reels', label: 'Reels', active: false },
-  { id: 'profile', label: 'Profile', active: false },
-]
 
 function Home() {
   const [activeTab, setActiveTab] = useState(0)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [models, setModels] = useState<Model[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeNav, setActiveNav] = useState(0)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const { user, isAuthenticated } = useAuth()
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      setLoading(true)
+      try {
+        const data = await DataService.getModels()
+        setModels(data)
+      } catch (error) {
+        console.error('Failed to fetch models:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchModels()
+  }, [])
+
+  const handleNavChange = (index: number) => {
+    if (index === 2 && !isAuthenticated) {
+      setIsAuthModalOpen(true)
+      return
+    }
+    setActiveNav(index)
+  }
+
+  const filteredModels = models.filter((model) => {
+    const categoryMap: Record<number, string> = {
+      0: 'trending',
+      1: 'popular',
+      2: 'new',
+    }
+    return model.category === categoryMap[activeTab]
+  })
 
   return (
     <div className="relative overflow-x-clip bg-[#1c1d1f]" style={{ minHeight: '100dvh' }}>
@@ -60,91 +74,151 @@ function Home() {
 
           {/* Scrollable content */}
           <div className="hide-scrollbar min-h-0 w-full flex-1 overflow-x-hidden overflow-y-scroll pb-32">
-            {/* Explore heading + grid toggle */}
-            <div className="pl-[18px] pr-[8px] min-[761px]:px-6">
-              <div className="flex h-[44px] items-center justify-between">
-                <h2 className="text-[22px] font-semibold leading-[normal] text-white">Explore</h2>
-                <button
-                  type="button"
-                  aria-label="Switch to list view"
-                  className="flex h-[44px] w-[44px] items-center justify-center rounded-full transition hover:bg-white/[0.06]"
-                >
-                  <GridIcon />
-                </button>
-              </div>
-            </div>
-
-            {/* Filter bar */}
-            <div className="px-[18px] min-[761px]:px-6">
-              <div className="hide-scrollbar -mx-[18px] flex items-center gap-1 overflow-auto px-[18px] min-[761px]:-mx-6 min-[761px]:px-6">
-                {/* Search */}
-                <div
-                  className={`relative flex h-9 items-center overflow-hidden rounded-full bg-[#313134] px-2 shrink-0 cursor-pointer transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                    searchFocused ? 'w-[160px] min-w-[160px]' : 'w-9 min-w-9'
-                  }`}
-                >
-                  <SearchIcon />
-                  <input
-                    placeholder="name or username"
-                    className="native-font-size relative z-[2] w-full border-none bg-transparent pl-[30px] text-[14px] font-normal leading-[18px] tracking-[-0.07px] text-white outline-none placeholder:text-white"
-                    type="text"
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                  />
+            {activeNav === 2 && isAuthenticated ? (
+              <UserProfile user={user} />
+            ) : activeNav === 1 ? (
+              <div className="flex h-full items-center justify-center text-white/40 py-20">Reels Content Coming Soon</div>
+            ) : (
+              <div className="animate-fade-in">
+                {/* Explore heading + grid toggle */}
+                <div className="pl-[18px] pr-[8px] min-[761px]:px-6">
+                  <div className="flex h-[44px] items-center justify-between">
+                    <h2 className="text-[22px] font-semibold leading-[normal] text-white">Explore</h2>
+                    <button
+                      type="button"
+                      aria-label="Switch to list view"
+                      className="flex h-[44px] w-[44px] items-center justify-center rounded-full transition hover:bg-white/[0.06]"
+                    >
+                      <GridIcon />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Tab pills */}
-                {TABS.map((tab, i) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(i)}
-                    className={`flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-[14px] font-semibold leading-5 outline-none transition-colors ${
-                      activeTab === i
-                        ? 'border-white bg-white text-[#313134]'
-                        : 'border-[#313134] bg-[#313134] text-white'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {/* Influencer grid */}
-              <div className="grid gap-1 py-3 min-[761px]:gap-2 min-[761px]:py-4 grid-cols-2 min-[761px]:grid-cols-4">
-                {INFLUENCERS.map((inf, i) => (
-                  <button
-                    key={inf.name}
-                    type="button"
-                    className="relative h-[276px] cursor-pointer overflow-hidden rounded-[12px] text-left animate-fade-in min-[761px]:h-[240px] transition-transform duration-200 active:scale-[0.98] hover:scale-[1.02]"
-                    style={{ animationDelay: `${Math.min(i * 40, 280)}ms` }}
-                  >
-                    <img
-                      alt={inf.name}
-                      loading="eager"
-                      className="h-full w-full object-cover"
-                      src={inf.img}
-                    />
+                {/* Filter bar */}
+                <div className="px-[18px] min-[761px]:px-6">
+                  <div className="hide-scrollbar -mx-[18px] flex items-center gap-1 overflow-auto px-[18px] min-[761px]:-mx-6 min-[761px]:px-6">
+                    {/* Search */}
                     <div
-                      className="pointer-events-none absolute inset-0"
-                      aria-hidden="true"
-                      style={{ background: 'linear-gradient(181deg, rgba(0, 0, 0, 0) 57.84%, rgba(0, 0, 0, 0.4) 99.4%)' }}
-                    />
-                    <div className="absolute bottom-[6px] left-[6px] flex h-[38px] items-center justify-center rounded-[32px] bg-black/20 px-3 backdrop-blur-[3px]">
-                      <span className="whitespace-nowrap text-[14px] font-medium text-white">
-                        {inf.name}
-                      </span>
+                      className={`relative flex h-9 items-center overflow-hidden rounded-full bg-[#313134] px-2 shrink-0 cursor-pointer transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                        searchFocused ? 'w-[160px] min-w-[160px]' : 'w-9 min-w-9'
+                      }`}
+                    >
+                      <SearchIcon />
+                      <input
+                        placeholder="name or username"
+                        className="native-font-size relative z-[2] w-full border-none bg-transparent pl-[30px] text-[14px] font-normal leading-[18px] tracking-[-0.07px] text-white outline-none placeholder:text-white"
+                        type="text"
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={() => setSearchFocused(false)}
+                      />
                     </div>
-                  </button>
-                ))}
+
+                    {/* Tab pills */}
+                    {TABS.map((tab, i) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveTab(i)}
+                        className={`flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-[14px] font-semibold leading-5 outline-none transition-colors ${
+                          activeTab === i
+                            ? 'border-white bg-white text-[#313134]'
+                            : 'border-[#313134] bg-[#313134] text-white'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Influencer grid */}
+                  <div className="grid gap-1 py-3 min-[761px]:gap-2 min-[761px]:py-4 grid-cols-2 min-[761px]:grid-cols-4">
+                    {loading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-[276px] animate-pulse rounded-[12px] bg-white/5 min-[761px]:h-[240px]" />
+                      ))
+                    ) : filteredModels.length > 0 ? (
+                      filteredModels.map((model, i) => (
+                        <Link
+                          key={model.id}
+                          to="/model/$username"
+                          params={{ username: model.username }}
+                          className="relative h-[276px] cursor-pointer overflow-hidden rounded-[12px] text-left animate-fade-in min-[761px]:h-[240px] transition-transform duration-200 active:scale-[0.98] hover:scale-[1.02]"
+                          style={{ animationDelay: `${Math.min(i * 40, 280)}ms` }}
+                        >
+                          <img
+                            alt={model.displayName}
+                            loading="eager"
+                            className="h-full w-full object-cover"
+                            src={model.profileImage}
+                          />
+                          <div
+                            className="pointer-events-none absolute inset-0"
+                            aria-hidden="true"
+                            style={{ background: 'linear-gradient(181deg, rgba(0, 0, 0, 0) 57.84%, rgba(0, 0, 0, 0.4) 99.4%)' }}
+                          />
+                          <div className="absolute bottom-[6px] left-[6px] flex h-[38px] items-center justify-center rounded-[32px] bg-black/20 px-3 backdrop-blur-[3px]">
+                            <span className="whitespace-nowrap text-[14px] font-medium text-white">
+                              {model.displayName}
+                            </span>
+                          </div>
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="col-span-full py-20 text-center text-white/40">
+                        Nenhuma modelo encontrada nesta categoria.
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
 
       {/* ─── Bottom Navigation — glass-morphism pill ─── */}
-      <BottomNav />
+      <BottomNav activeNav={activeNav} setActiveNav={handleNavChange} />
+      
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
+    </div>
+  )
+}
+
+function UserProfile({ user }: { user: any }) {
+  return (
+    <div className="px-[18px] py-6 animate-fade-in">
+      <div className="flex flex-col items-center gap-4">
+        <Avatar className="w-24 h-24 border-2 border-white/10">
+          <AvatarImage src={user?.photoUrl} />
+          <AvatarFallback className="bg-[#313134] text-white text-2xl font-bold">
+            {user?.firstName?.[0]}{user?.lastName?.[0]}
+          </AvatarFallback>
+        </Avatar>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white">{user?.firstName} {user?.lastName}</h2>
+          <p className="text-white/40 font-medium">@{user?.username || 'user'}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4 w-full mt-6">
+          {[
+            { label: 'Assinaturas', value: '0' },
+            { label: 'Favoritos', value: '0' },
+            { label: 'Mensagens', value: '0' }
+          ].map(stat => (
+            <div key={stat.label} className="bg-[#313134] p-4 rounded-2xl text-center border border-white/5">
+              <p className="text-xl font-bold text-white">{stat.value}</p>
+              <p className="text-[10px] uppercase tracking-wider font-bold text-white/40">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="w-full space-y-2 mt-8">
+          <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#313134] text-white hover:bg-white/10">Configurações</Button>
+          <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#313134] text-white hover:bg-white/10">Pagamento</Button>
+          <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#313134] text-red-400 hover:bg-red-400/10 hover:border-red-400/20">Sair</Button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -208,9 +282,7 @@ function SearchIcon() {
 }
 
 /* ─── Bottom Navigation — glass-morphism pill with sliding indicator ─── */
-function BottomNav() {
-  const [activeNav, setActiveNav] = useState(0)
-
+function BottomNav({ activeNav, setActiveNav }: { activeNav: number, setActiveNav: (v: number) => void }) {
   return (
     <div
       className="isolate fixed left-1/2 z-30 flex h-[62px] w-[min(260px,calc(100%-24px))] overflow-hidden rounded-full p-1"
