@@ -41,6 +41,7 @@ export function TelegramAuthBootstrap() {
         return
       }
       webApp.ready?.()
+      webApp.disableVerticalSwipes?.()
       webApp.setHeaderColor?.('#101010')
       webApp.setBackgroundColor?.('#101010')
       webApp.expand?.()
@@ -54,6 +55,7 @@ export function TelegramAuthBootstrap() {
     enforceExpandedMiniApp()
     return () => {
       cancelled = true
+      window.Telegram?.WebApp?.enableVerticalSwipes?.()
       if (timer) window.clearTimeout(timer)
     }
   }, [])
