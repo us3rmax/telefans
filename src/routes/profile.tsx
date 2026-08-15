@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, ChevronRight, Coins, Ellipsis, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
+import { listFollowedCreators } from '@/lib/admin-repository'
 import '../telescope.css'
 
 const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
@@ -41,6 +42,7 @@ export function ProfilePage() {
   const [overrides, setOverrides] = useState<ProfileOverrides>({})
   const [draftName, setDraftName] = useState('')
   const [draftUsername, setDraftUsername] = useState('')
+  const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
 
   useEffect(() => {
     try {
@@ -58,6 +60,7 @@ export function ProfilePage() {
         if (!active) return
         setTelegramUser(user)
         setTelegramAuthState(user ? 'connected' : 'unavailable')
+        if (user) void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
       })
       .catch(() => active && setTelegramAuthState('error'))
     return () => { active = false }
@@ -120,7 +123,7 @@ export function ProfilePage() {
         <section className="user-metrics" aria-label="Estatísticas da conta">
           <div><Sparkles aria-hidden="true" /><strong>0</strong><span>UNLOCKS</span></div>
           <div><Star aria-hidden="true" /><strong>0</strong><span>STARS SPENT</span></div>
-          <div><Heart aria-hidden="true" /><strong>2</strong><span>FOLLOWING</span></div>
+          <div><Heart aria-hidden="true" /><strong>{following.length}</strong><span>FOLLOWING</span></div>
         </section>
 
         <button type="button" className="user-edit-button" onClick={openEditor}><Pencil aria-hidden="true" /> Edit profile</button>
@@ -154,11 +157,8 @@ export function ProfilePage() {
         </section>
 
         <section className="following-section">
-          <div className="user-section-heading"><div><small>FOLLOWING</small><h2>Following</h2></div><b>2</b></div>
-          <div className="following-grid">
-            <Link to="/creator/$slug" params={{ slug: 'jasmine-jae' }} className="following-card"><img src={miaImage} alt="Mia" /><span className="following-shade" /><div><strong>Mia 🍒</strong><span>@mialov</span></div><em>20<br />LIKES</em></Link>
-            <Link to="/creator/$slug" params={{ slug: 'alex-mucci' }} className="following-card"><img src={bellaImage} alt="Bella" /><span className="following-shade" /><div><strong>Bella 🌸</strong><span>@bella</span></div><em>3<br />LIKES</em></Link>
-          </div>
+          <div className="user-section-heading"><div><small>FOLLOWING</small><h2>Following</h2></div><b>{following.length}</b></div>
+          <div className="following-grid">{following.map((item) => { const creator = item.creators; return <Link key={item.creator_id} to="/creator/$slug" params={{ slug: creator?.slug ?? '' }} className="following-card"><img src={creator?.avatar_image ?? miaImage} alt={creator?.name ?? ''} /><span className="following-shade" /><div><strong>{creator?.name ?? 'Creator'}</strong><span>{creator?.handle ?? ''}</span></div><em>0<br />LIKES</em></Link> })}{following.length === 0 && <p className="user-empty-following">Ainda não segue nenhum creator.</p>}</div>
         </section>
         <div className="user-profile-bottom-space" />
       </div>
