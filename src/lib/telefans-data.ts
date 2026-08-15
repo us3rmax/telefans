@@ -51,7 +51,7 @@ export async function togglePostLike(postId: string, liked: boolean) {
     if (error) throw error
     return
   }
-  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey })
+  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: visitorKey } as any)
   if (error && error.code !== '23505') throw error
 }
 

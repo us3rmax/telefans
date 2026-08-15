@@ -18,6 +18,7 @@ import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
 import { Route as AppReelsRouteImport } from './routes/app/reels'
 import { Route as AppModelsRouteImport } from './routes/app/models'
 import { Route as AppContentRouteImport } from './routes/app/content'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AppModelsNewRouteImport } from './routes/app/models.new'
 
 const ReelsRoute = ReelsRouteImport.update({
@@ -65,6 +66,11 @@ const AppContentRoute = AppContentRouteImport.update({
   path: '/content',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppModelsNewRoute = AppModelsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/profile'
     | '/reels'
+    | '/admin/login'
     | '/app/content'
     | '/app/models'
     | '/app/reels'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/reels'
+    | '/admin/login'
     | '/app/content'
     | '/app/models'
     | '/app/reels'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/profile'
     | '/reels'
+    | '/admin/login'
     | '/app/content'
     | '/app/models'
     | '/app/reels'
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   CreatorSlugRoute: typeof CreatorSlugRoute
 }
 
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContentRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/models/new': {
       id: '/app/models/new'
       path: '/new'
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
+  AdminLoginRoute: AdminLoginRoute,
   CreatorSlugRoute: CreatorSlugRoute,
 }
 export const routeTree = rootRouteImport
