@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Check, Feather, Heart, Image, Radio, Video } from 'lucide-react'
-import { useState } from 'react'
-import { getCreatorProfile, type CreatorBadge } from '@/data/creators'
+import { useEffect, useState } from 'react'
+import { getCreatorProfile, type CreatorBadge, type CreatorProfile } from '@/data/creators'
+import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
 import '../telescope.css'
 
 function CreatorBadgeIcon({ badge }: { badge: CreatorBadge }) {
@@ -19,13 +20,44 @@ function Verified() { return <span className="verified-mark" aria-label="Verifie
 function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) { return <span className="cover-stat"><span>{icon}</span>{value}<span className="sr-only"> {label}</span></span> }
 function CreatorBadges({ badges }: { badges: CreatorBadge[] }) { return <span className="creator-badges">{badges.map((badge) => <CreatorBadgeIcon key={badge} badge={badge} />)}</span> }
 
+type PublicCreatorPost = { id: string; type: string; mediaUrl: string; thumbnailUrl?: string | null; title: string; caption: string }
+
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
-  const creator = getCreatorProfile(slug)
+  const [creator, setCreator] = useState<CreatorProfile>(() => getCreatorProfile(slug))
+  const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [liked, setLiked] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
   const [offerOpened, setOfferOpened] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const loadPublicCreator = async () => {
+      try {
+        const remote = await getPublishedCreator(slug)
+        if (!remote || !active) return
+        const fallback = getCreatorProfile(slug)
+        setCreator({
+          ...fallback,
+          slug: remote.slug,
+          name: remote.name,
+          handle: remote.handle,
+          coverImage: remote.cover_image || fallback.coverImage,
+          avatarImage: remote.avatar_image || fallback.avatarImage,
+          bio: remote.bio || fallback.bio,
+          expandedBio: remote.expanded_bio || fallback.expandedBio,
+          status: remote.status || fallback.status,
+        })
+        const posts = await listCreatorPosts(remote.id)
+        if (active) setPublicPosts(posts.map(post => ({ id: post.id, type: post.type, mediaUrl: post.media_url, thumbnailUrl: post.thumbnail_url, title: post.title, caption: post.caption })))
+      } catch {
+        if (active) setPublicPosts([])
+      }
+    }
+    void loadPublicCreator()
+    return () => { active = false }
+  }, [slug])
 
   const openOffer = () => {
     setOfferOpened(true)
@@ -66,7 +98,7 @@ export function CreatorProfilePage() {
           </button>
         </section>
 
-        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>{creator.tabs.mediaLabel}</button></div><div className="creator-grid-preview">{[0, 1, 2, 3, 4, 5].map((index) => <div className="locked-preview" key={`${activeTab}-${index}`}><img src={creator.coverImage} alt={`${creator.name} ${activeTab} preview ${index + 1}`} /><div className="locked-overlay"><Heart /><span>Subscribe to unlock</span></div></div>)}</div></section>
+        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>{creator.tabs.mediaLabel}</button></div><div className="creator-grid-preview creator-unlocked-grid">{publicPosts.length ? publicPosts.map((post) => <article className="unlocked-media-card" key={post.id}>{post.type === 'video' ? <video src={post.mediaUrl} poster={post.thumbnailUrl || undefined} controls playsInline preload="metadata" /> : <img src={post.mediaUrl} alt={post.title || `${creator.name} media`} />}</article>) : <div className="creator-media-empty">Ainda não há mídias publicadas para esta modelo.</div>}</div></section>
       </div>
       {offerOpened && <div className="creator-offer-toast" role="status">Subscription offer selected</div>}
     </div>

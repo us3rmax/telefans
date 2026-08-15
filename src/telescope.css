@@ -345,3 +345,11 @@ button { cursor: pointer; }
 .reel-actions button:disabled { opacity: .55; }
 .comments-backdrop { z-index: 30; }
 .comments-sheet { max-height: min(72dvh, 620px); padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+
+/* Public creator media: uploaded assets are visible without the old locked overlay. */
+.creator-unlocked-grid { align-items: stretch; }
+.unlocked-media-card { position: relative; min-width: 0; overflow: hidden; border-radius: 14px; background: #17171a; aspect-ratio: 1 / 1.18; }
+.unlocked-media-card img, .unlocked-media-card video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.unlocked-media-card video { background: #000; }
+.creator-media-empty { grid-column: 1 / -1; padding: 36px 18px; color: rgba(255,255,255,.58); text-align: center; font-size: 14px; }
+@media (max-width: 640px) { .creator-unlocked-grid { gap: 8px; } .unlocked-media-card { border-radius: 10px; } }
