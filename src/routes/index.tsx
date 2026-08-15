@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Grid2X2, House, PlaySquare, Search, UserRound } from 'lucide-react'
+import { House, PlaySquare, Search, UserRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { exploreCreators, rankExploreCreators, type ExploreCategory } from '@/data/explore'
 import '../telescope.css'
@@ -30,7 +30,7 @@ export function ExplorePage() {
     <div className="content-column explore-content-column">
       <header className="brand-header"><img src="/assets/telefans-logo.png" alt="TeleFans" /></header>
       <div className="scroll-content">
-        <section className="explore-heading"><h1>Explore</h1><button type="button" aria-label="Switch to list view" className="view-toggle"><Grid2X2 /></button></section>
+        <section className="explore-heading"><h1>Explore</h1></section>
         <FilterBar query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />
         <div className="creator-grid">
           {visibleCreators.map(({ name, image, slug }, index) => <Link to="/creator/$slug" params={{ slug }} className="creator-card" key={name} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }} aria-label={`Open ${name}`}>
