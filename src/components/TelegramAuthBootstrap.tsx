@@ -45,7 +45,20 @@ export function TelegramAuthBootstrap() {
       webApp.disableVerticalSwipes?.()
       webApp.setHeaderColor?.('#101010')
       webApp.setBackgroundColor?.('#101010')
-      webApp.expand?.()
+
+      // Fullscreen is an official Bot API 8.0+ capability. Older Telegram
+      // clients keep the existing expand() behavior as a safe fallback.
+      const supportsFullscreen = webApp.isVersionAtLeast?.('8.0') === true
+      if (supportsFullscreen && webApp.requestFullscreen) {
+        try {
+          webApp.requestFullscreen()
+        } catch {
+          webApp.expand?.()
+        }
+      } else {
+        webApp.expand?.()
+      }
+
       syncTelegramViewport(webApp)
       if (!cancelled && attempts < 6) {
         attempts += 1

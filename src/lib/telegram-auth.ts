@@ -11,10 +11,16 @@ type TelegramWebApp = {
   initData?: string
   ready?: () => void
   expand?: () => void
+  requestFullscreen?: () => void
+  exitFullscreen?: () => void
+  isFullscreen?: boolean
+  isVersionAtLeast?: (version: string) => boolean
   close?: () => void
   disableVerticalSwipes?: () => void
   enableVerticalSwipes?: () => void
   disableClosingConfirmation?: () => void
+  setHeaderColor?: (color: string) => void
+  setBackgroundColor?: (color: string) => void
   BackButton?: TelegramBackButton
   safeAreaInset?: { top?: number; bottom?: number; left?: number; right?: number }
   contentSafeAreaInset?: { top?: number; bottom?: number; left?: number; right?: number }
