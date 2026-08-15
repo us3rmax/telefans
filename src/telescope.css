@@ -423,7 +423,32 @@ button { cursor: pointer; }
 .reel-card { height: calc(100dvh - max(env(safe-area-inset-top), var(--tg-native-top))); }
 .reel-tabs { top: 22px; }
 @media (max-width: 420px) {
-  .user-profile-scroll { padding-top: max(10px, env(safe-area-inset-top), var(--tg-native-top)); }
+  .user-profile-scroll { padding-top: max(env(safe-area-inset-top), var(--tg-native-top), var(--tg-chrome-top)); }
   .user-profile-title { font-size: 21px; }
   .user-identity { padding-top: 18px; }
 }
+
+/* User Profile proportions tuned to the 591px Telegram Mini App reference. */
+.user-profile-scroll { max-height: 100dvh; padding-top: max(env(safe-area-inset-top), var(--tg-native-top), var(--tg-chrome-top)); }
+.user-profile-titlebar { min-height: 44px; margin-inline: 18px; }
+.user-profile-title { font-size: 22px; }
+.user-identity { padding: 22px 18px 0; }
+.user-avatar { width: 154px; height: 154px; margin-bottom: 19px; font-size: 62px; }
+.user-identity h2 { font-size: 35px; line-height: 1; }
+.user-identity > p { margin-top: 9px; font-size: 18px; }
+.user-metrics { margin: 43px 24px 0; }
+.user-metrics div { display: grid; grid-template-columns: auto auto; justify-content: center; column-gap: 6px; row-gap: 7px; }
+.user-metrics svg { width: 22px; height: 22px; align-self: center; }
+.user-metrics strong { font-size: 21px; align-self: center; }
+.user-metrics span { grid-column: 1 / -1; font-size: 11px; letter-spacing: .12em; }
+.user-edit-button { margin-top: 43px; font-size: 18px; }
+.user-edit-button svg { width: 22px; height: 22px; }
+.coins-card { min-height: 154px; margin: 51px 24px 0; padding: 29px 28px 22px; border-radius: 28px; }
+.coins-card > strong { margin-top: 18px; font-size: 52px; }
+.user-action-row { width: calc(100% - 48px); min-height: 78px; margin-inline: 24px; padding-inline: 0; gap: 15px; }
+.user-action-row strong { font-size: 17px; }
+.user-action-row small { font-size: 13px; }
+.user-action-row b { min-width: 76px; height: 40px; font-size: 14px; }
+.user-home-row { min-height: 78px; }
+.unlock-section, .following-section { margin-inline: 24px; }
+.user-profile-bottom-space { height: max(78px, env(safe-area-inset-bottom)); }
