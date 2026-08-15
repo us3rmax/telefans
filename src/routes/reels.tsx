@@ -3,6 +3,7 @@ import { House, MessageCircle, PlaySquare, Send, UserRound, Heart, X, Play, Paus
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readAdminPosts } from '@/data/content'
 import { addPostComment, hasPostLike, listPostComments, listPublishedCreators, listPublishedReels, togglePostLike } from '@/lib/telefans-data'
+import { useTelegramBackButton } from '@/lib/telegram-auth'
 import '../telescope.css'
 
 type ReelItem = { id: string; creator: string; slug: string; avatar?: string; thumbnail: string; video?: string; likes: string; comments: string; shares: string; persisted?: boolean }
@@ -110,6 +111,8 @@ export function ReelsPage() {
   const [likedByPost, setLikedByPost] = useState<Record<string, boolean>>({})
   const [activeReelId, setActiveReelId] = useState<string | null>(null)
   const handleVisible = useCallback((id: string) => setActiveReelId(id), [])
+
+  useEffect(() => useTelegramBackButton(() => window.history.back()), [])
 
   useEffect(() => {
     let active = true

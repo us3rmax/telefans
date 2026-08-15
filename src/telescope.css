@@ -3,7 +3,11 @@
 @font-face { font-family: 'Roboto'; src: url('/fonts/roboto-bold.woff2') format('woff2'); font-style: normal; font-weight: 700; font-display: swap; }
 
 * { box-sizing: border-box; }
+:root { --tg-native-top: 0px; --tg-native-bottom: 0px; --tg-native-left: 0px; --tg-native-right: 0px; }
 html, body { background: #101010; color: #fff; }
+body { padding: 0; }
+.tg-safe-top { padding-top: max(env(safe-area-inset-top), var(--tg-native-top)); }
+
 button, input { font: inherit; }
 button { cursor: pointer; }
 .telescope-shell { min-height: 100dvh; background: #101010; overflow-x: clip; }
@@ -325,10 +329,6 @@ button { cursor: pointer; }
 .user-edit-panel input:focus, .user-edit-panel textarea:focus, .user-edit-panel select:focus { border-color: #2ea8ff; }
 
 /* Reels mobile interaction layer */
-.reels-shell { padding-top: env(safe-area-inset-top); }
-.reels-feed { height: calc(100dvh - env(safe-area-inset-top)); }
-.reel-card { height: calc(100dvh - env(safe-area-inset-top)); }
-.reel-tabs { top: max(68px, calc(env(safe-area-inset-top) + 36px)); z-index: 5; gap: 24px; }
 .reel-tab { padding: 8px 2px; font-size: 16px; }
 .reel-tab.active::after { bottom: -3px; height: 3px; }
 .reel-play-toggle, .reel-sound-toggle { position: absolute; z-index: 4; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: rgba(0,0,0,.38); color: #fff; opacity: .85; }
@@ -392,13 +392,23 @@ button { cursor: pointer; }
   .paid-media-card { border-radius: 9px; }
 }
 
-/* Telegram owns the Mini App chrome; keep only one in-app title and never overlay native controls. */
+/* Telegram owns the Mini App chrome; keep one in-app title inside the safe area. */
 .user-profile-topbar { display: none; }
-.user-profile-scroll { max-height: 100dvh; padding-top: max(12px, env(safe-area-inset-top)); }
-.user-profile-title { margin: 10px 0 0; color: #f7f7f8; font-size: 22px; font-weight: 700; line-height: 1.15; text-align: center; letter-spacing: -.03em; }
+.user-profile-scroll { max-height: 100dvh; padding-top: max(12px, env(safe-area-inset-top), var(--tg-native-top)); }
+.user-profile-titlebar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; min-height: 42px; margin: 0 14px; }
+.user-profile-title { margin: 0; color: #f7f7f8; font-size: 22px; font-weight: 700; line-height: 1.15; text-align: center; letter-spacing: -.03em; }
+.user-profile-back { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: #f7f7f8; text-decoration: none; }
+.user-profile-back:active { background: rgba(255,255,255,.12); }
+.user-profile-back svg { width: 22px; height: 22px; }
 .user-identity { padding-top: 20px; }
+.creator-profile-page { padding-top: max(env(safe-area-inset-top), var(--tg-native-top)); }
+.creator-profile-frame { min-height: calc(100dvh - max(env(safe-area-inset-top), var(--tg-native-top))); }
+.reels-shell { padding-top: max(env(safe-area-inset-top), var(--tg-native-top)); }
+.reels-feed { height: calc(100dvh - max(env(safe-area-inset-top), var(--tg-native-top))); }
+.reel-card { height: calc(100dvh - max(env(safe-area-inset-top), var(--tg-native-top))); }
+.reel-tabs { top: 22px; }
 @media (max-width: 420px) {
-  .user-profile-scroll { padding-top: max(10px, env(safe-area-inset-top)); }
-  .user-profile-title { margin-top: 8px; font-size: 21px; }
+  .user-profile-scroll { padding-top: max(10px, env(safe-area-inset-top), var(--tg-native-top)); }
+  .user-profile-title { font-size: 21px; }
   .user-identity { padding-top: 18px; }
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ChevronRight, Coins, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Coins, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
+import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import { listFollowedCreators } from '@/lib/admin-repository'
 import { supabase } from '@/lib/supabase'
 import '../telescope.css'
@@ -48,6 +48,7 @@ export function ProfilePage() {
 
     let active = true
     const webApp = telegramWebApp()
+    const cleanupBackButton = useTelegramBackButton(() => window.history.back())
     webApp?.ready?.()
     webApp?.expand?.()
     setTelegramAuthState('connecting')
@@ -62,7 +63,7 @@ export function ProfilePage() {
         }
       })
       .catch(() => active && setTelegramAuthState('error'))
-    return () => { active = false }
+    return () => { active = false; cleanupBackButton() }
   }, [])
 
   const displayName = overrides.name || telegramUser?.first_name || 'W'
@@ -120,7 +121,7 @@ export function ProfilePage() {
     </span>
     <div className="user-profile-frame">
       <div className="user-profile-scroll">
-        <h1 className="user-profile-title">Profile</h1>
+        <div className="user-profile-titlebar"><Link to="/" className="user-profile-back" aria-label="Voltar para Explore"><ArrowLeft /></Link><h1 className="user-profile-title">Profile</h1><span aria-hidden="true" /></div>
         <section className="user-identity">
           <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{profilePhoto ? <img src={profilePhoto} alt="" /> : initials}</div>
           <h2>{displayName}</h2>

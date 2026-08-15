@@ -3,6 +3,7 @@ import { ArrowLeft, Check, Feather, Heart, Image, LockKeyhole, Radio, Video } fr
 import { useEffect, useState } from 'react'
 import { getCreatorProfile, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
+import { useTelegramBackButton } from '@/lib/telegram-auth'
 import '../telescope.css'
 
 function CreatorBadgeIcon({ badge }: { badge: CreatorBadge }) {
@@ -33,6 +34,7 @@ export function CreatorProfilePage() {
 
   useEffect(() => {
     let active = true
+    const cleanupBackButton = useTelegramBackButton(() => window.history.back())
     const loadPublicCreator = async () => {
       try {
         const remote = await getPublishedCreator(slug)
@@ -56,7 +58,7 @@ export function CreatorProfilePage() {
       }
     }
     void loadPublicCreator()
-    return () => { active = false }
+    return () => { active = false; cleanupBackButton() }
   }, [slug])
 
   const openOffer = () => {
