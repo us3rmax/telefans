@@ -138,10 +138,11 @@ button { cursor: pointer; }
 .creator-top-name i, .creator-handle i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #27c97b; }
 .creator-profile-scroll { max-height: calc(100dvh - 57px); overflow-y: auto; scrollbar-width: none; }
 .creator-profile-scroll::-webkit-scrollbar { display: none; }
-.creator-hero { position: relative; height: 348px; overflow: hidden; background: #ddd; }
-.creator-hero > img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.87); }
+.creator-hero { position: relative; height: 300px; overflow: visible; background: #ddd; }
+.creator-hero-media { position: absolute; inset: 0; overflow: hidden; background: #ddd; }
+.creator-hero-media img { display: block; width: 100%; height: 100%; object-fit: cover; filter: saturate(.87); }
 .creator-hero-gradient { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.12), transparent 42%, rgba(0,0,0,.44)); }
-.creator-avatar { position: absolute; bottom: -43px; left: 21px; width: 95px; height: 95px; padding: 3px; border: 2px solid #fff; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.18); }
+.creator-avatar { position: absolute; bottom: -43px; left: 21px; z-index: 4; width: 95px; height: 95px; padding: 3px; border: 2px solid #fff; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.18); }
 .creator-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .creator-avatar span { position: absolute; right: 0; bottom: 1px; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 50%; background: #27c97b; }
 .creator-heart { position: absolute; right: 20px; bottom: 19px; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); color: #555; box-shadow: 0 4px 15px rgba(0,0,0,.14); transition: transform .18s, color .18s; }
@@ -202,104 +203,34 @@ button { cursor: pointer; }
 .profile-home-glyph::before { position: absolute; top: -8px; left: 1px; width: 12px; height: 12px; border-top: 2px solid #7d7d7d; border-left: 2px solid #7d7d7d; transform: rotate(45deg); content: ''; }
 .profile-home-glyph::after { position: absolute; bottom: 0; left: 6px; width: 4px; height: 8px; background: #7d7d7d; content: ''; }
 .profile-more-glyph { font: 700 21px/1 'DM Sans', sans-serif; letter-spacing: 2px; }
-@media (max-width: 620px) { .creator-profile-frame { box-shadow: none; } .creator-hero { height: 310px; } .creator-cover-name strong { font-size: 20px; } .creator-cover-name > div { gap: 5px; font-size: 13px; } .creator-cover-header { padding-inline: 12px; } .creator-subscription h2 { font-size: 21px; } }
 
-/* Creator profile layout fixes: the route has no separate topbar. */
-.creator-profile-scroll {
-  height: 100dvh;
-  max-height: none;
-}
 
-.creator-profile-frame {
-  min-height: 100dvh;
-}
 
-.creator-hero {
-  height: 320px;
-}
 
-.creator-about {
-  position: relative;
-  padding: 64px 24px 24px;
-}
-
-.creator-share {
-  top: 20px;
-  right: 24px;
-}
-
-.creator-subscription {
-  padding: 30px 24px 24px;
-}
-
-.creator-content {
-  padding-top: 0;
-}
-
-.creator-profile-nav {
-  min-height: 64px;
-  padding-bottom: env(safe-area-inset-bottom);
-}
+/* Creator profile: the media is clipped, but the avatar crosses the cover boundary. */
+.creator-profile-scroll { height: 100dvh; max-height: none; }
+.creator-profile-frame { min-height: 100dvh; }
+.creator-hero { height: 300px; }
+.creator-about { position: relative; padding: 64px 24px 24px; }
+.creator-share { top: 20px; right: 24px; }
+.creator-subscription { padding: 30px 24px 24px; }
+.creator-content { padding-top: 0; }
+.creator-profile-nav { min-height: 64px; padding-bottom: env(safe-area-inset-bottom); }
 
 @media (min-width: 621px) {
-  .creator-profile-frame {
-    min-height: 100dvh;
-  }
-
-  .creator-hero {
-    height: 360px;
-  }
+  .creator-hero { height: 320px; }
 }
 
 @media (max-width: 620px) {
-  .creator-hero {
-    height: 310px;
-  }
-
-  .creator-cover-header {
-    padding: 14px 16px 12px;
-  }
-
-  .creator-cover-name strong {
-    font-size: 19px;
-  }
-
-  .creator-cover-name > div {
-    gap: 4px;
-    margin-top: 7px;
-    font-size: 12px;
-  }
-
-  .creator-cover-name .cover-stat {
-    gap: 3px;
-  }
-
-  .creator-cover-name .cover-stat svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  .creator-avatar {
-    left: 24px;
-    width: 96px;
-    height: 96px;
-  }
-
-  .creator-about {
-    padding: 64px 24px 24px;
-  }
-
-  .creator-about h1 {
-    font-size: 23px;
-  }
-
-  .creator-subscription {
-    padding: 30px 24px 24px;
-  }
-
-  .creator-subscription h2 {
-    margin-top: 26px;
-    font-size: 21px;
-    line-height: 1.25;
-  }
+  .creator-hero { height: 300px; }
+  .creator-cover-header { padding: 14px 16px 12px; }
+  .creator-cover-name strong { font-size: 19px; }
+  .creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
+  .creator-cover-name .cover-stat { gap: 3px; }
+  .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
+  .creator-avatar { left: 24px; width: 96px; height: 96px; }
+  .creator-about { padding: 64px 24px 24px; }
+  .creator-about h1 { font-size: 23px; }
+  .creator-subscription { padding: 30px 24px 24px; }
+  .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
 }

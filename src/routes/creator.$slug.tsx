@@ -40,9 +40,11 @@ export function CreatorProfilePage() {
   return <main className="creator-profile-page">
     <div className="creator-profile-frame">
       <div className="creator-profile-scroll">
-        <section className="creator-hero">
-          <img src={creator.image} alt={creator.name} />
-          <div className="creator-hero-gradient" />
+<section className="creator-hero">
+          <div className="creator-hero-media">
+            <img src={creator.image} alt={creator.name} />
+            <div className="creator-hero-gradient" />
+          </div>
           <div className="creator-cover-header">
             <Link to="/" className="creator-cover-back" aria-label="Back to explore"><ArrowLeft /></Link>
             <div className="creator-cover-name"><strong>{creator.name} <Verified /></strong><div><Stat icon={<Image />} value={creator.posts} label="posts" /><b>·</b><Stat icon={<Video />} value={creator.media} label="media" /><b>·</b><Stat icon={<Radio />} value="24" label="live" /><b>·</b><Stat icon={<Heart fill="currentColor" />} value={creator.likes} label="likes" /></div></div>
