@@ -27,7 +27,7 @@ export function ExplorePage() {
   const [filter, setFilter] = useState<ExploreCategory>('Trending')
   const visibleCreators = useMemo(() => rankExploreCreators(filter).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [filter, query])
   return <main className="telescope-shell">
-    <div className="content-column">
+    <div className="content-column explore-content-column">
       <header className="brand-header"><img src="/assets/telefans-logo.png" alt="TeleFans" /></header>
       <div className="scroll-content">
         <section className="explore-heading"><h1>Explore</h1><button type="button" aria-label="Switch to list view" className="view-toggle"><Grid2X2 /></button></section>
