@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Check, Feather, Heart, Image, Radio, Video } from 'lucide-react'
+import { ArrowLeft, Check, Feather, Heart, Image, LockKeyhole, Radio, Video } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCreatorProfile, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
@@ -20,7 +20,7 @@ function Verified() { return <span className="verified-mark" aria-label="Verifie
 function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) { return <span className="cover-stat"><span>{icon}</span>{value}<span className="sr-only"> {label}</span></span> }
 function CreatorBadges({ badges }: { badges: CreatorBadge[] }) { return <span className="creator-badges">{badges.map((badge) => <CreatorBadgeIcon key={badge} badge={badge} />)}</span> }
 
-type PublicCreatorPost = { id: string; type: string; mediaUrl: string; thumbnailUrl?: string | null; title: string; caption: string }
+type PublicCreatorPost = { id: string; type: string; mediaUrl: string; thumbnailUrl?: string | null; title: string; caption: string; isPaid: boolean; unlockPrice: number }
 
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
@@ -50,7 +50,7 @@ export function CreatorProfilePage() {
           status: remote.status || fallback.status,
         })
         const posts = await listCreatorPosts(remote.id)
-        if (active) setPublicPosts(posts.map(post => ({ id: post.id, type: post.type, mediaUrl: post.media_url, thumbnailUrl: post.thumbnail_url, title: post.title, caption: post.caption })))
+        if (active) setPublicPosts(posts.map(post => ({ id: post.id, type: post.type, mediaUrl: post.media_url, thumbnailUrl: post.thumbnail_url, title: post.title, caption: post.caption, isPaid: post.is_paid, unlockPrice: post.unlock_price })))
       } catch {
         if (active) setPublicPosts([])
       }
@@ -98,7 +98,7 @@ export function CreatorProfilePage() {
           </button>
         </section>
 
-        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>{creator.tabs.mediaLabel}</button></div><div className="creator-grid-preview creator-unlocked-grid">{publicPosts.length ? publicPosts.map((post) => <article className="unlocked-media-card" key={post.id}>{post.type === 'video' ? <video src={post.mediaUrl} poster={post.thumbnailUrl || undefined} controls playsInline preload="metadata" /> : <img src={post.mediaUrl} alt={post.title || `${creator.name} media`} />}</article>) : <div className="creator-media-empty">Ainda não há mídias publicadas para esta modelo.</div>}</div></section>
+        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>Paid Media</button></div><div className="creator-grid-preview creator-paid-grid">{activeTab === 'media' ? (publicPosts.filter(post => post.type === 'image' && post.isPaid).length ? publicPosts.filter(post => post.type === 'image' && post.isPaid).map((post) => <article className="paid-media-card" key={post.id}><img src={post.mediaUrl} alt="Paid media" /><div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div></article>) : <div className="creator-media-empty">Ainda não há Paid Media para esta modelo.</div>) : <div className="creator-media-empty">As publicações gratuitas aparecerão aqui.</div>}</div></section>
       </div>
       {offerOpened && <div className="creator-offer-toast" role="status">Subscription offer selected</div>}
     </div>

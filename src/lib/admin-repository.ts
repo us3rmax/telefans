@@ -126,7 +126,7 @@ async function writeAudit(action: string, entityType: string, entityId: string, 
   assertNoError(error)
 }
 
-export async function uploadCreatorMediaBatch(files: File[], creatorId: string) {
+export async function uploadCreatorMediaBatch(files: File[], creatorId: string, unlockPrice = 10) {
   const results: Array<{ asset: MediaAsset; post: CreatorPost }> = []
   for (const file of files) {
     const asset = await uploadMediaAsset(file, creatorId)
@@ -141,6 +141,8 @@ export async function uploadCreatorMediaBatch(files: File[], creatorId: string) 
       status: 'published',
       published: true,
       reels_enabled: isVideo,
+      is_paid: !isVideo,
+      unlock_price: isVideo ? 0 : Math.max(0, unlockPrice),
       comments_enabled: true,
       sort_order: 0,
     })
