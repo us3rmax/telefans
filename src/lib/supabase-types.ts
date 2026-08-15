@@ -96,6 +96,7 @@ export type Database = {
           caption: string
           comments_enabled: boolean
           created_at: string
+          is_paid: boolean
           created_by: string | null
           creator_id: string
           id: string
@@ -107,6 +108,7 @@ export type Database = {
           sort_order: number
           status: string
           thumbnail_url: string | null
+          unlock_price: number
           title: string
           type: string
           updated_at: string
@@ -115,6 +117,7 @@ export type Database = {
           caption?: string
           comments_enabled?: boolean
           created_at?: string
+          is_paid?: boolean
           created_by?: string | null
           creator_id: string
           id?: string
@@ -126,6 +129,7 @@ export type Database = {
           sort_order?: number
           status?: string
           thumbnail_url?: string | null
+          unlock_price?: number
           title: string
           type: string
           updated_at?: string
@@ -134,6 +138,7 @@ export type Database = {
           caption?: string
           comments_enabled?: boolean
           created_at?: string
+          is_paid?: boolean
           created_by?: string | null
           creator_id?: string
           id?: string
@@ -145,6 +150,7 @@ export type Database = {
           sort_order?: number
           status?: string
           thumbnail_url?: string | null
+          unlock_price?: number
           title?: string
           type?: string
           updated_at?: string
