@@ -51,7 +51,7 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover' },
       { title: 'Telescope' },
       { name: 'description', content: 'Explore creators and watch trending reels on Telescope.' },
       { name: 'theme-color', content: '#101010' },

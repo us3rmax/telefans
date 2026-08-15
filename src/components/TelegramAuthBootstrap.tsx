@@ -7,6 +7,26 @@ export function TelegramAuthBootstrap() {
   const [ageVerified, setAgeVerified] = useState<boolean | null>(null)
 
   useEffect(() => {
+    const webApp = window.Telegram?.WebApp
+    if (webApp) {
+      const preventGesture = (event: Event) => event.preventDefault()
+      const preventCtrlWheel = (event: WheelEvent) => { if (event.ctrlKey) event.preventDefault() }
+      document.documentElement.classList.add('telegram-no-zoom')
+      document.addEventListener('gesturestart', preventGesture, { passive: false })
+      document.addEventListener('gesturechange', preventGesture, { passive: false })
+      document.addEventListener('gestureend', preventGesture, { passive: false })
+      document.addEventListener('wheel', preventCtrlWheel, { passive: false })
+      return () => {
+        document.documentElement.classList.remove('telegram-no-zoom')
+        document.removeEventListener('gesturestart', preventGesture)
+        document.removeEventListener('gesturechange', preventGesture)
+        document.removeEventListener('gestureend', preventGesture)
+        document.removeEventListener('wheel', preventCtrlWheel)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     try { setAgeVerified(window.localStorage.getItem('telefans.age_verified') === 'true') } catch { setAgeVerified(false) }
     let active = true
     void authenticateTelegramMiniApp().then((telegramUser) => { if (active && telegramUser) { setUser(telegramUser); setConnected(true) } }).catch(() => { if (active) setConnected(false) })
