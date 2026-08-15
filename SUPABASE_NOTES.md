@@ -13,3 +13,5 @@ Created public tables with RLS enabled: `admin_roles`, `creators`, `creator_post
 Do not use or modify the unrelated project `telegram-groups-db` (`lymjjozpdsdoloahsyey`).
 
 Seed migration applied successfully: `telefans_seed_public_creators`. Imported the existing public creator profiles and the initial Alex Mucci video with `published=true` and `reels_enabled=true`.
+
+Telegram authentication: table `telegram_users` and active Edge Function `telegram-auth` were added to validate Telegram Mini App `initData`. The function requires the Supabase secret `TELEGRAM_BOT_TOKEN`; it is intentionally deployed with custom validation and `verify_jwt=false`. Admin authentication remains separate through Supabase Auth and `admin_roles`.
