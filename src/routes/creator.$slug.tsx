@@ -3,6 +3,7 @@ import { ArrowLeft, Check, Feather, Heart, LockKeyhole } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
+import { useTelegramBackButton } from '@/lib/telegram-auth'
 import '../telescope.css'
 
 function CreatorBadgeIcon({ badge }: { badge: CreatorBadge }) {
@@ -42,11 +43,10 @@ export function CreatorProfilePage() {
   const [offerOpened, setOfferOpened] = useState(false)
   const availability = getCreatorAvailability(slug)
 
-  useEffect(() => {
-    const nativeBackButton = window.Telegram?.WebApp?.BackButton
-    nativeBackButton?.hide?.()
-    return () => nativeBackButton?.hide?.()
-  }, [])
+  useEffect(() => useTelegramBackButton(() => {
+    if (window.history.length > 1) window.history.back()
+    else window.location.assign('/')
+  }), [])
 
   useEffect(() => {
     let active = true
