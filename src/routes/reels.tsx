@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { House, MessageCircle, PlaySquare, Send, UserRound, Heart, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { readAdminPosts } from '@/data/content'
 import '../telescope.css'
 
 type ReelItem = { id: string; creator: string; slug: string; thumbnail: string; video?: string; likes: string; comments: string; shares: string }
 
-const reels: ReelItem[] = [
+const baseReels: ReelItem[] = [
   { id: 'sari-1', creator: 'Sari xo', slug: 'sari-xo', thumbnail: 'https://media.telescope.me/influencers/sarixo/assets/feed/videos/thumbnails/e99ca692-f712-4819-8314-cb178ddc63ce.png', video: 'https://media.telescope.me/posts/sariixo_/3954409237119153417_1010720925.mp4', likes: '1.5K', comments: '45', shares: '87' },
   { id: 'sari-2', creator: 'Sari xo', slug: 'sari-xo', thumbnail: 'https://media.telescope.me/influencers/sarixo/assets/feed/videos/thumbnails/887110cd-40d6-4e9b-a962-a410312b7485.png', video: 'https://media.telescope.me/posts/sariixo_/3955718865442540209_1010720925.mp4', likes: '672', comments: '46', shares: '41' },
   { id: 'sari-3', creator: 'Sari xo', slug: 'sari-xo', thumbnail: 'https://media.telescope.me/influencers/sarixo/assets/feed/videos/thumbnails/110a1d61-01c1-4867-9270-047d421bbc66.png', video: 'https://media.telescope.me/posts/sariixo_/3955913934745296735_1010720925.mp4', likes: '384', comments: '21', shares: '19' },
@@ -47,7 +48,15 @@ function Reel({ reel, onComment, onShare }: { reel: ReelItem; onComment: () => v
 
 export function ReelsPage() {
   const [notice, setNotice] = useState('')
+  const [feed, setFeed] = useState<ReelItem[]>(baseReels)
   const [commentReel, setCommentReel] = useState<ReelItem | null>(null)
+  const [commentDraft, setCommentDraft] = useState('')
+  const [comments, setComments] = useState<Record<string, string[]>>({})
+
+  useEffect(() => {
+    const publishedVideos = readAdminPosts().filter((post) => post.type === 'video' && post.published && post.mediaUrl).map((post) => ({ id: post.id, creator: post.creatorName, slug: post.creatorSlug, thumbnail: '', video: post.mediaUrl, likes: '0', comments: String(comments[post.id]?.length ?? 0), shares: '0' }))
+    setFeed([...publishedVideos, ...baseReels.filter((reel) => !publishedVideos.some((post) => post.id === reel.id))])
+  }, [comments])
 
   const showNotice = (message: string) => {
     setNotice(message)
@@ -64,14 +73,14 @@ export function ReelsPage() {
 
   return <main className="reels-shell">
     <div className="reels-feed">
-      {reels.map((reel) => <Reel key={reel.id} reel={reel} onComment={() => setCommentReel(reel)} onShare={() => void shareReel(reel)} />)}
+      {feed.map((reel) => <Reel key={reel.id} reel={reel} onComment={() => { setCommentDraft(''); setCommentReel(reel) }} onShare={() => void shareReel(reel)} />)}
     </div>
     <Nav />
     {notice && <div className="reels-notice">{notice}</div>}
     {commentReel && <div className="comments-backdrop" role="presentation" onClick={() => setCommentReel(null)}>
       <section className="comments-sheet" role="dialog" aria-modal="true" aria-label={`Comentários de ${commentReel.creator}`} onClick={(event) => event.stopPropagation()}>
         <div className="comments-heading"><strong>Comentários</strong><button type="button" onClick={() => setCommentReel(null)} aria-label="Fechar comentários"><X /></button></div>
-        <p className="comments-empty">Ainda não há comentários neste reel.</p>
+        <div className="comments-list">{(comments[commentReel.id] ?? []).map((comment, index) => <p key={`${comment}-${index}`} className="comment-item">{comment}</p>)}{!(comments[commentReel.id]?.length) && <p className="comments-empty">Ainda não há comentários neste reel.</p>}</div><form className="comment-form" onSubmit={(event) => { event.preventDefault(); const value = commentDraft.trim(); if (!value) return; setComments((current) => ({ ...current, [commentReel.id]: [...(current[commentReel.id] ?? []), value] })); setCommentDraft('') }}><input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Escreva um comentário" aria-label="Escreva um comentário" /><button type="submit">Enviar</button></form>
       </section>
     </div>}
   </main>
