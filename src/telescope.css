@@ -222,14 +222,16 @@ button { cursor: pointer; }
 }
 
 @media (max-width: 620px) {
-  .creator-hero { height: 300px; }
+  /* Reference mobile proportion: a short horizontal cover, not a tall portrait hero. */
+  .creator-hero { height: 270px; }
   .creator-cover-header { padding: 14px 16px 12px; }
   .creator-cover-name strong { font-size: 19px; }
   .creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
   .creator-cover-name .cover-stat { gap: 3px; }
   .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
-  .creator-avatar { left: 24px; width: 96px; height: 96px; }
-  .creator-about { padding: 64px 24px 24px; }
+  .creator-avatar { left: 24px; bottom: -71px; width: 142px; height: 142px; }
+  .creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
+  .creator-about { padding: 122px 24px 24px; }
   .creator-about h1 { font-size: 23px; }
   .creator-subscription { padding: 30px 24px 24px; }
   .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
