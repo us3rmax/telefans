@@ -148,3 +148,34 @@ export async function uploadCreatorMediaBatch(files: File[], creatorId: string) 
   }
   return results
 }
+
+export type AdminClient = Tables<'telegram_users'> & { following_count: number }
+
+export async function listAdminClients(limit = 100) {
+  const { data, error } = await supabase.from('telegram_users').select('*').order('created_at', { ascending: false }).limit(limit)
+  assertNoError(error)
+  const users = data ?? []
+  const clients = await Promise.all(users.map(async user => {
+    const { count, error: followingError } = await supabase.from('creator_following').select('creator_id', { count: 'exact', head: true }).eq('telegram_user_id', String(user.telegram_id))
+    assertNoError(followingError)
+    return { ...user, following_count: count ?? 0 }
+  }))
+  return clients as AdminClient[]
+}
+
+export async function getAdminClientMetrics() {
+  const { data, error } = await supabase.from('telegram_users').select('telegram_id, first_name, last_name, username, photo_url, profile_photo_url, created_at, updated_at').order('created_at', { ascending: false }).limit(100)
+  assertNoError(error)
+  const users = data ?? []
+  const clients = await Promise.all(users.map(async user => {
+    const { count, error: followingError } = await supabase.from('creator_following').select('creator_id', { count: 'exact', head: true }).eq('telegram_user_id', String(user.telegram_id))
+    assertNoError(followingError)
+    return { ...user, following_count: count ?? 0 }
+  }))
+  return {
+    total: clients.length,
+    recent: clients.slice(0, 8),
+    active: [...clients].sort((a, b) => b.following_count - a.following_count || b.updated_at.localeCompare(a.updated_at)).slice(0, 8),
+    all: clients,
+  }
+}
