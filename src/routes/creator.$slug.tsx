@@ -48,8 +48,10 @@ export function CreatorProfilePage() {
         </section>
 
         <section className="creator-about">
-<h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
-          <p className="creator-handle">{creator.handle} <b>·</b> <span>{creator.status}</span></p>
+          <div className="creator-identity">
+            <h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
+            <p className="creator-handle">{creator.handle} <b>·</b> <span>{creator.status}</span></p>
+          </div>
           <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{expanded ? (creator.expandedBio ?? creator.bio) : creator.bio}</p>
           <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>
         </section>
