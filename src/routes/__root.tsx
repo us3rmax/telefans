@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import type { ReactNode } from 'react'
+import { TelegramAuthBootstrap } from '@/components/TelegramAuthBootstrap'
 import indexCss from '../index.css?url'
 
 /**
@@ -78,6 +79,7 @@ function RootDocument({ children }: { children: ReactNode }) {
             flash-of-wrong-theme. Do not move below <HeadContent />. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <HeadContent />
+        <script src="https://telegram.org/js/telegram-web-app.js" defer />
         {/*
           WebSite + Organization entity (rendered on every page, once at the root).
           Gives Google's Knowledge Graph + AI answer engines explicit, machine-
@@ -101,6 +103,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider delayDuration={0}>
             <Toaster />
+            <TelegramAuthBootstrap />
             {/*
               Full-bleed by default — NO app chrome. Child routes render directly.
               SaaS / dashboard app? The sidebar shell already exists at
