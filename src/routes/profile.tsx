@@ -1,29 +1,30 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Check, Ellipsis, Heart, Share2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ArrowLeft, Check, ChevronRight, Coins, Ellipsis, Heart, House, Pencil, Send, Share2, Sparkles, Star } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
 import '../telescope.css'
 
-const kaylaHero = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
-const kaylaAvatar = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/437fa29e-489c-4a08-3439-38ea8137d700/public'
+const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
+const bellaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/437fa29e-489c-4a08-3439-38ea8137d700/public'
 
 function Verified() {
-  return <span className="verified-mark" aria-label="Verificada"><Check /></span>
+  return <span className="user-verified" aria-label="Verificada"><Check /></span>
 }
 
-function ProfileNav() {
-  return <nav className="profile-bottom-nav" aria-label="Navegação do perfil">
-    <Link to="/" className="profile-nav-icon" aria-label="Voltar para explorar"><span className="home-glyph" /></Link>
-    <button type="button" className="profile-nav-icon" aria-label="Mais opções"><Ellipsis /></button>
-  </nav>
+function TelegramClose() {
+  const close = () => {
+    const webApp = (window as Window & { Telegram?: { WebApp?: { close?: () => void } } }).Telegram?.WebApp
+    if (webApp?.close) webApp.close()
+    else window.history.back()
+  }
+  return <button type="button" className="user-close" onClick={close}><ArrowLeft /> <span>Fechar</span></button>
 }
 
 export function ProfilePage() {
-  const [expanded, setExpanded] = useState(false)
-  const [subscribed, setSubscribed] = useState(false)
-    const [shared, setShared] = useState(false)
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [telegramAuthState, setTelegramAuthState] = useState<'idle' | 'connecting' | 'connected' | 'unavailable' | 'error'>('idle')
+  const [shared, setShared] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -34,72 +35,86 @@ export function ProfilePage() {
         setTelegramUser(user)
         setTelegramAuthState(user ? 'connected' : 'unavailable')
       })
-      .catch(() => {
-        if (active) setTelegramAuthState('error')
-      })
-    return () => {
-      active = false
-    }
+      .catch(() => active && setTelegramAuthState('error'))
+    return () => { active = false }
   }, [])
 
+  const displayName = telegramUser?.first_name || 'W'
+  const displayHandle = telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
+  const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
+
   const shareProfile = async () => {
-    try {
-      await navigator.clipboard?.writeText(window.location.href)
-      setShared(true)
-      window.setTimeout(() => setShared(false), 1800)
-    } catch {
+    try { await navigator.clipboard?.writeText(window.location.href) } finally {
       setShared(true)
       window.setTimeout(() => setShared(false), 1800)
     }
   }
 
-  return <main className="profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
+  return <main className="user-profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
     <span className="sr-only" role="status" aria-live="polite">
-      {telegramAuthState === 'connected' && `Ligado como ${telegramUser?.first_name ?? 'utilizador do Telegram'}.`}
+      {telegramAuthState === 'connected' && `Ligado como ${displayName}.`}
       {telegramAuthState === 'connecting' && 'A ligar à conta Telegram...'}
       {telegramAuthState === 'error' && 'Não foi possível ligar à conta Telegram.'}
     </span>
-    <div className="profile-frame">
-      <header className="profile-topbar">
-        <Link to="/" className="profile-back" aria-label="Voltar"><ArrowLeft /></Link>
-        <div className="profile-top-title"><strong>Kayla <Verified /></strong><span><i />Disponível agora</span></div>
-        <button type="button" className="profile-share-top" onClick={shareProfile} aria-label="Compartilhar perfil"><Share2 /></button>
+    <div className="user-profile-frame">
+      <header className="user-profile-topbar">
+        <TelegramClose />
+        <h1>Profile</h1>
+        <button type="button" className="user-menu" aria-label="Mais opções"><Ellipsis /></button>
       </header>
 
-      <div className="profile-scroll">
-        <section className="profile-cover-wrap">
-          <img className="profile-cover" src={kaylaHero} alt="Kayla" />
-          <div className="profile-avatar-wrap"><img src={kaylaAvatar} alt="Foto de Kayla" className="profile-avatar" /><span className="online-dot" /></div>
-          <button type="button" onClick={shareProfile} className="profile-share-fab" aria-label="Compartilhar perfil"><Share2 /></button>
+      <div className="user-profile-scroll">
+        <section className="user-identity">
+          <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{telegramUser?.photo_url ? <img src={telegramUser.photo_url} alt="" /> : initials}</div>
+          <h2>{displayName}</h2>
+          <p>{displayHandle}</p>
         </section>
 
-        <section className="profile-intro">
-          <h1>Kayla <Verified /></h1>
-          <p className="profile-handle">@kaylabumsss <b>•</b> <span><i />Disponível agora</span></p>
-          <p className={`profile-bio ${expanded ? 'is-expanded' : ''}`}>Hello! My name is kayla. I just turned 18 so im finally old enough for this site! I'm excited to explore myself with you :)</p>
-          {!expanded && <span className="bio-more">...</span>}
-          <button className="more-info" type="button" onClick={() => setExpanded(!expanded)}>{expanded ? 'Mostrar menos' : 'Mais informações'}</button>
+        <section className="user-metrics" aria-label="Estatísticas da conta">
+          <div><Sparkles /><strong>0</strong><span>UNLOCKS</span></div>
+          <div><Star /><strong>0</strong><span>STARS SPENT</span></div>
+          <div><Heart /><strong>3</strong><span>FOLLOWING</span></div>
         </section>
 
-        <section className="subscription-card">
-          <span className="section-kicker">ASSINATURA</span>
-          <h2>Oferta limitada: 75% de desconto nos primeiros 31 dias!</h2>
-          <div className="subscriber-note"><img src={kaylaAvatar} alt="" /> <span>75% for the first 10 people that sub! ♡ Come see all my new content!</span></div>
-          <button type="button" className={`subscribe-button ${subscribed ? 'is-subscribed' : ''}`} onClick={() => setSubscribed(!subscribed)}><strong>{subscribed ? 'ASSINADO' : 'ASSINAR'}</strong><span>{subscribed ? 'Acesso liberado' : '$3 por 31 dias'}</span></button>
-          <p className="normal-price">Preço Normal <strong>$12</strong> /mês</p>
+        <button type="button" className="user-edit-button" onClick={() => setEditing(value => !value)}><Pencil /> {editing ? 'Done' : 'Edit profile'}</button>
+        {editing && <div className="user-edit-note" role="status">O editor de perfil será ligado ao cadastro Telegram na próxima etapa.</div>}
+
+        <section className="coins-card">
+          <div className="coins-card-title"><Coins /> <span>FANS COINS BALANCE</span><button type="button" aria-label="Sobre Fans Coins">?</button></div>
+          <strong>0</strong>
         </section>
 
-        <section className="profile-stats" aria-label="Estatísticas do perfil"><div><strong>216</strong><span>Postagens</span></div><div><strong>217</strong><span>Mídia</span></div></section>
-        <section className="profile-preview-grid" aria-label="Prévia de conteúdo"><img src={kaylaHero} alt="Prévia de conteúdo de Kayla" /><img src={kaylaAvatar} alt="Prévia de conteúdo de Kayla" /><img src={kaylaHero} alt="Prévia de conteúdo de Kayla" /></section>
-        <div className="profile-bottom-space" />
+        <section className="user-action-row">
+          <Send />
+          <div><strong>Invite a friend</strong><span>10 Coins when they open TeleFans for the first time</span></div>
+          <button type="button" onClick={shareProfile}>Share</button>
+        </section>
+        <section className="user-action-row user-home-row">
+          <House />
+          <div><strong>Add to home screen</strong><span>Open TeleFans faster</span></div>
+          <ChevronRight />
+        </section>
+
+        <section className="unlock-section">
+          <div className="user-section-heading"><div><small>PURCHASE HISTORY</small><h2>Recent unlocks</h2></div><b>0</b></div>
+          <div className="unlock-empty"><span><Sparkles /></span><strong>No unlocks yet</strong><p>Once you unlock premium media with Telegram Stars, your latest purchases appear here.</p></div>
+        </section>
+
+        <section className="following-section">
+          <div className="user-section-heading"><div><small>FOLLOWING</small><h2>Following</h2></div><b>2</b></div>
+          <div className="following-grid">
+            <Link to="/creator/$slug" params={{ slug: 'jasmine-jae' }} className="following-card"><img src={miaImage} alt="Mia" /><span className="following-shade" /><div><strong>Mia 🍒</strong><span>@mialov</span></div><em>20<br />LIKES</em></Link>
+            <Link to="/creator/$slug" params={{ slug: 'alex-mucci' }} className="following-card"><img src={bellaImage} alt="Bella" /><span className="following-shade" /><div><strong>Bella 🌸</strong><span>@bella</span></div><em>3<br />LIKES</em></Link>
+          </div>
+        </section>
+        <div className="user-profile-bottom-space" />
       </div>
-      <ProfileNav />
-      {shared && <div className="share-toast"><Heart /> Link copiado</div>}
+      {shared && <div className="user-share-toast"><Share2 /> Link copied</div>}
     </div>
   </main>
 }
 
 export const Route = createFileRoute('/profile')({
-  head: () => ({ meta: [{ title: 'Kayla · Telescope' }, { name: 'description', content: 'Veja o perfil de Kayla no Telescope.' }] }),
+  head: () => ({ meta: [{ title: 'Profile · TeleFans' }, { name: 'description', content: 'Perfil do utilizador TeleFans.' }] }),
   component: ProfilePage,
 })
