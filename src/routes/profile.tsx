@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Check, Ellipsis, Heart, Share2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
 import '../telescope.css'
 
 const kaylaHero = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
@@ -20,7 +21,26 @@ function ProfileNav() {
 export function ProfilePage() {
   const [expanded, setExpanded] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
-  const [shared, setShared] = useState(false)
+    const [shared, setShared] = useState(false)
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
+  const [telegramAuthState, setTelegramAuthState] = useState<'idle' | 'connecting' | 'connected' | 'unavailable' | 'error'>('idle')
+
+  useEffect(() => {
+    let active = true
+    setTelegramAuthState('connecting')
+    void authenticateTelegramMiniApp()
+      .then(user => {
+        if (!active) return
+        setTelegramUser(user)
+        setTelegramAuthState(user ? 'connected' : 'unavailable')
+      })
+      .catch(() => {
+        if (active) setTelegramAuthState('error')
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const shareProfile = async () => {
     try {
@@ -33,7 +53,12 @@ export function ProfilePage() {
     }
   }
 
-  return <main className="profile-page">
+  return <main className="profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
+    <span className="sr-only" role="status" aria-live="polite">
+      {telegramAuthState === 'connected' && `Ligado como ${telegramUser?.first_name ?? 'utilizador do Telegram'}.`}
+      {telegramAuthState === 'connecting' && 'A ligar à conta Telegram...'}
+      {telegramAuthState === 'error' && 'Não foi possível ligar à conta Telegram.'}
+    </span>
     <div className="profile-frame">
       <header className="profile-topbar">
         <Link to="/" className="profile-back" aria-label="Voltar"><ArrowLeft /></Link>
