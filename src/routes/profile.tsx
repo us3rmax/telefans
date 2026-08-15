@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ChevronRight, Coins, Ellipsis, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
+import { ChevronRight, Coins, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
 import { listFollowedCreators } from '@/lib/admin-repository'
@@ -20,15 +20,6 @@ function telegramWebApp() {
       openTelegramLink?: (url: string) => void
     } }
   }).Telegram?.WebApp
-}
-
-function TelegramClose() {
-  const close = () => {
-    const webApp = telegramWebApp()
-    if (webApp?.close) webApp.close()
-    else window.history.back()
-  }
-  return <button type="button" className="user-close" onClick={close}><ArrowLeft aria-hidden="true" /><span>Fechar</span></button>
 }
 
 type ProfileOverrides = { name?: string; username?: string; bio?: string; gender?: string; dateOfBirth?: string; profilePhotoUrl?: string }
@@ -128,13 +119,8 @@ export function ProfilePage() {
       {telegramAuthState === 'error' && 'Não foi possível ligar à conta Telegram.'}
     </span>
     <div className="user-profile-frame">
-      <header className="user-profile-topbar">
-        <TelegramClose />
-        <h1>Profile</h1>
-        <button type="button" className="user-menu" aria-label="Mais opções" onClick={shareProfile}><Ellipsis aria-hidden="true" /></button>
-      </header>
-
       <div className="user-profile-scroll">
+        <h1 className="user-profile-title">Profile</h1>
         <section className="user-identity">
           <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{profilePhoto ? <img src={profilePhoto} alt="" /> : initials}</div>
           <h2>{displayName}</h2>

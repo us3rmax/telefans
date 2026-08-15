@@ -391,3 +391,14 @@ button { cursor: pointer; }
   .creator-paid-grid { gap: 6px; padding-inline: 10px; }
   .paid-media-card { border-radius: 9px; }
 }
+
+/* Telegram owns the Mini App chrome; keep only one in-app title and never overlay native controls. */
+.user-profile-topbar { display: none; }
+.user-profile-scroll { max-height: 100dvh; padding-top: max(12px, env(safe-area-inset-top)); }
+.user-profile-title { margin: 10px 0 0; color: #f7f7f8; font-size: 22px; font-weight: 700; line-height: 1.15; text-align: center; letter-spacing: -.03em; }
+.user-identity { padding-top: 20px; }
+@media (max-width: 420px) {
+  .user-profile-scroll { padding-top: max(10px, env(safe-area-inset-top)); }
+  .user-profile-title { margin-top: 8px; font-size: 21px; }
+  .user-identity { padding-top: 18px; }
+}
