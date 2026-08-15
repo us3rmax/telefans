@@ -51,7 +51,7 @@ export const creatorProfiles: Record<string, CreatorProfile> = {
   'alex-mucci': {
     slug: 'alex-mucci', name: 'Alex Mucci', handle: '@alexmucci',
     coverImage: image('437fa29e-489c-4a08-3439-38ea8137d700'), avatarImage: image('437fa29e-489c-4a08-3439-38ea8137d700'),
-    badges: ['verified'], status: 'Available now', bio: 'Your favorite Italian creator. New photos, videos and behind-the-scenes content every week.',
+    badges: ['verified'], status: 'Available now', bio: 'Your favorite Italian creator. New photos, videos and behind-the-scenes content every week. Follow my latest looks, personal updates, daily life, and exclusive moments shared here with my subscribers.', expandedBio: 'Your favorite Italian creator. New photos, videos and behind-the-scenes content every week. Follow my latest looks, personal updates, daily life, and exclusive moments shared here with my subscribers. I also share regular behind-the-scenes stories, fresh photo sets, private messages, and special drops that are not available anywhere else.',
     stats: { posts: '214', media: '175', live: '24', likes: '8.7K' },
     subscription: { title: 'Limited offer: 80% off for the first 31 days!', message: 'New content every week — don’t miss this 💋' },
     tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
