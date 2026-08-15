@@ -20,9 +20,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-  LayoutDashboard,
+    LayoutDashboard,
   LogOut,
   PanelLeft,
+  UsersRound,
+
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -40,7 +42,8 @@ interface NavItemDef {
 // 404. Only the shipped dashboard route is listed; add yours as you create them,
 // e.g. `src/routes/app/items.tsx` → { href: '/app/items', label: 'Items' }.
 const NAV_ITEMS: NavItemDef[] = [
-  { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard', active: true },
+  { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard' },
+  { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Modelos' },
 ]
 
 function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) {

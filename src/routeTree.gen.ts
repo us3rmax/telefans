@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
+import { Route as AppModelsRouteImport } from './routes/app/models'
 
 const ReelsRoute = ReelsRouteImport.update({
   id: '/reels',
@@ -46,12 +47,18 @@ const CreatorSlugRoute = CreatorSlugRouteImport.update({
   path: '/creator/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppModelsRoute = AppModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/models': typeof AppModelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
 }
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/models': typeof AppModelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app': typeof AppIndexRoute
 }
@@ -68,20 +76,29 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/models': typeof AppModelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/profile' | '/reels' | '/creator/$slug' | '/app/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/profile'
+    | '/reels'
+    | '/app/models'
+    | '/creator/$slug'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profile' | '/reels' | '/creator/$slug' | '/app'
+  to: '/' | '/profile' | '/reels' | '/app/models' | '/creator/$slug' | '/app'
   id:
     | '__root__'
     | '/'
     | '/app'
     | '/profile'
     | '/reels'
+    | '/app/models'
     | '/creator/$slug'
     | '/app/'
   fileRoutesById: FileRoutesById
@@ -138,14 +155,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreatorSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/models': {
+      id: '/app/models'
+      path: '/models'
+      fullPath: '/app/models'
+      preLoaderRoute: typeof AppModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppModelsRoute: typeof AppModelsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppModelsRoute: AppModelsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
