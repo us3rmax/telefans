@@ -214,34 +214,37 @@ button { cursor: pointer; }
 
 
 
-/* Creator profile: the media is clipped, but the avatar crosses the cover boundary. */
+/* Creator profile: mobile is the primary layout; desktop overrides begin above 700px. */
 .creator-profile-scroll { height: calc(100dvh - 57px); max-height: calc(100dvh - 57px); }
 .creator-profile-frame { min-height: 100dvh; }
-.creator-hero { height: 300px; }
-.creator-about { position: relative; padding: 64px 24px 24px; }
+.creator-hero { height: 200px; }
+.creator-about { position: relative; padding: 88px 24px 24px; }
 .creator-share { top: 20px; right: 24px; }
 .creator-subscription { padding: 30px 24px 24px; }
 .creator-content { padding-top: 0; }
 .creator-profile-nav { min-height: 64px; padding-bottom: env(safe-area-inset-bottom); }
+.creator-cover-header { padding: 14px 16px 12px; }
+.creator-cover-name strong { font-size: 19px; }
+.creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
+.creator-cover-name .cover-stat { gap: 3px; }
+.creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
+.creator-avatar { left: 24px; bottom: -69.5px; width: 139px; height: 139px; }
+.creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
+.creator-about h1 { font-size: 22px; }
+.creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
+.creator-handle { font-size: 14px; }
+.creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
 
-@media (min-width: 621px) {
+@media (min-width: 701px) {
   .creator-hero { height: 320px; }
-}
-
-@media (max-width: 620px) {
-  /* Reference mobile proportion: a short horizontal cover, not a tall portrait hero. */
-  .creator-hero { height: 200px; }
-  .creator-cover-header { padding: 14px 16px 12px; }
-  .creator-cover-name strong { font-size: 19px; }
-  .creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
-  .creator-cover-name .cover-stat { gap: 3px; }
-  .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
-  .creator-avatar { left: 24px; bottom: -69.5px; width: 139px; height: 139px; }
-  .creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
-  .creator-about { padding: 88px 24px 24px; }
-  .creator-about h1 { font-size: 22px; }
-  .creator-subscription { padding: 30px 24px 24px; }
-  .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
-  .creator-handle { font-size: 14px; }
-  .creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
+  .creator-about { padding: 64px 24px 24px; }
+  .creator-avatar { left: 21px; bottom: -43px; width: 95px; height: 95px; }
+  .creator-avatar span { right: 0; bottom: 1px; width: 18px; height: 18px; }
+  .creator-cover-header { padding: 15px 18px 12px; }
+  .creator-cover-name strong { font-size: 22px; }
+  .creator-cover-name > div { gap: 8px; margin-top: 8px; font-size: 15px; }
+  .creator-cover-name .cover-stat svg { width: 18px; height: 18px; }
+  .creator-about h1 { font-size: 23px; }
+  .creator-handle { font-size: 11px; }
+  .creator-more-info { margin-top: 21px; font-size: 14px; }
 }
