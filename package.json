@@ -13,8 +13,10 @@
     "lint": "bun run lint:types && bun run lint:js && bun run lint:css"
   },
   "devDependencies": {
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
     "typescript": "~6.0.2",
-    "vite": "8.0.14"
+    "vite": "7.3.6"
   },
   "dependencies": {
     "@blinkdotnew/sdk": "2.7.4",
@@ -43,6 +45,8 @@
     "glob": "^13.0.6",
     "globals": "^17.9.0",
     "lucide-react": "^1.28.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-hook-form": "^7.84.0",
     "react-hot-toast": "^2.6.0",
     "react-responsive": "^10.0.1",
