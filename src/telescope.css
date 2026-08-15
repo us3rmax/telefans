@@ -248,8 +248,8 @@ button { cursor: pointer; }
 .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
 .creator-handle { font-size: 14px; }
 .creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
-.creator-availability { display: inline-flex; align-items: center; gap: 4px; }
-.creator-availability i { position: relative; top: 2px; font-style: normal; font-size: 10px; line-height: 1; }
+.creator-availability { display: inline-flex; align-items: center; gap: 4px; line-height: 16px; }
+.creator-availability i { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; margin: 0; position: static; transform: translateY(1px); font-style: normal; font-size: 11px; line-height: 13px; }
 
 /* The profile is rendered inside a fixed mobile-width frame even on desktop preview. */
 

@@ -43,6 +43,12 @@ export function CreatorProfilePage() {
   const availability = getCreatorAvailability(slug)
 
   useEffect(() => {
+    const nativeBackButton = window.Telegram?.WebApp?.BackButton
+    nativeBackButton?.hide?.()
+    return () => nativeBackButton?.hide?.()
+  }, [])
+
+  useEffect(() => {
     let active = true
     const loadPublicCreator = async () => {
       try {
