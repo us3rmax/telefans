@@ -1,0 +1,1 @@
+{"project_id":"gtvzvvtnhmjtcgvjnfrr","name":"telefans_security_hardening","query":"drop policy if exists admin_roles_self_read on public.admin_roles;\ncreate policy admin_roles_self_read on public.admin_roles for select using (user_id = auth.uid());\n\nalter function public.set_updated_at() set search_path = public;\nalter function public.is_admin() set search_path = public;"}
