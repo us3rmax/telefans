@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useSearch } from '@tanstack/react-router'
-import { House, MessageCircle, PlaySquare, Send, UserRound, Heart, X, Volume2, VolumeX, Play, Pause } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { House, MessageCircle, PlaySquare, Send, UserRound, Heart, X, Play, Pause } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { readAdminPosts } from '@/data/content'
 import { addPostComment, hasPostLike, listPostComments, listPublishedCreators, listPublishedReels, togglePostLike } from '@/lib/telefans-data'
 import '../telescope.css'
@@ -21,20 +21,47 @@ function Nav() {
   </nav>
 }
 
-function Reel({ reel, activeTab, onComment, onShare, onLike, initialLiked }: { reel: ReelItem; activeTab: 'trending' | 'new'; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<void>; initialLiked: boolean }) {
+function Reel({ reel, activeTab, active, onVisible, onComment, onShare, onLike, initialLiked }: { reel: ReelItem; activeTab: 'trending' | 'new'; active: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<void>; initialLiked: boolean }) {
+  const cardRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [liked, setLiked] = useState(initialLiked)
-  const [paused, setPaused] = useState(false)
-  const [muted, setMuted] = useState(true)
+  const [paused, setPaused] = useState(true)
   const [likeBusy, setLikeBusy] = useState(false)
   const slug = reel.slug
 
   useEffect(() => setLiked(initialLiked), [initialLiked])
 
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card || !reel.video) return
+    const video = videoRef.current
+    if (!video) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
+        onVisible(reel.id)
+        video.muted = false
+        void video.play().then(() => setPaused(false)).catch(() => setPaused(true))
+      } else {
+        video.pause()
+        setPaused(true)
+      }
+    }, { threshold: [0.65] })
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [onVisible, reel.id, reel.video])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !reel.video) return
+    if (!active) { video.pause(); setPaused(true); return }
+    video.muted = false
+    void video.play().then(() => setPaused(false)).catch(() => setPaused(true))
+  }, [active, reel.video])
+
   const togglePlayback = () => {
     const video = videoRef.current
     if (!video) return
-    if (muted) { video.muted = false; setMuted(false) }
+    video.muted = false
     if (video.paused) { void video.play().then(() => setPaused(false)).catch(() => setPaused(true)) }
     else { video.pause(); setPaused(true) }
   }
@@ -48,11 +75,10 @@ function Reel({ reel, activeTab, onComment, onShare, onLike, initialLiked }: { r
     finally { setLikeBusy(false) }
   }
 
-  return <article className="reel-card">
+  return <article ref={cardRef} className="reel-card">
     {reel.video ? <>
-      <video ref={videoRef} className="reel-image" src={reel.video} poster={reel.thumbnail || undefined} autoPlay loop playsInline muted={muted} onClick={togglePlayback} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} aria-label={`Reel de ${reel.creator}`} />
+      <video ref={videoRef} className="reel-image" src={reel.video} poster={reel.thumbnail || undefined} preload="metadata" loop playsInline muted={false} onClick={togglePlayback} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} aria-label={`Reel de ${reel.creator}`} />
       <button type="button" className="reel-play-toggle" onClick={togglePlayback} aria-label={paused ? 'Reproduzir reel' : 'Pausar reel'}>{paused ? <Play /> : <Pause />}</button>
-      <button type="button" className="reel-sound-toggle" onClick={() => { const next = !muted; videoRef.current && (videoRef.current.muted = next); setMuted(next); void videoRef.current?.play() }} aria-label={muted ? 'Ativar áudio' : 'Desativar áudio'}>{muted ? <VolumeX /> : <Volume2 />}</button>
     </> : <img className="reel-image" src={reel.thumbnail} alt={`Reel de ${reel.creator}`} />}
     <div className="reel-top-gradient" />
     <div className="reel-bottom-gradient" />
@@ -82,6 +108,8 @@ export function ReelsPage() {
   const [commentDraft, setCommentDraft] = useState('')
   const [comments, setComments] = useState<Record<string, string[]>>({})
   const [likedByPost, setLikedByPost] = useState<Record<string, boolean>>({})
+  const [activeReelId, setActiveReelId] = useState<string | null>(null)
+  const handleVisible = useCallback((id: string) => setActiveReelId(id), [])
 
   useEffect(() => {
     let active = true
@@ -115,7 +143,7 @@ export function ReelsPage() {
 
   return <main className="reels-shell">
     <div className="reels-feed">
-      {feed.map((reel) => <Reel key={reel.id} reel={reel} activeTab={tab} initialLiked={likedByPost[reel.id] ?? false} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async liked => { await togglePostLike(reel.id, liked); setLikedByPost(current => ({ ...current, [reel.id]: liked })) } : undefined} />)}
+      {feed.map((reel, index) => <Reel key={reel.id} reel={reel} activeTab={tab} active={activeReelId === reel.id || (!activeReelId && index === 0)} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async liked => { await togglePostLike(reel.id, liked); setLikedByPost(current => ({ ...current, [reel.id]: liked })) } : undefined} />)}
     </div>
     <Nav />
     {notice && <div className="reels-notice">{notice}</div>}

@@ -37,8 +37,8 @@ export async function listCreatorPosts(creatorId: string): Promise<PostRow[]> {
   return data ?? []
 }
 
-export async function listPublishedReels(): Promise<PostRow[]> {
-  const { data, error } = await supabase.from('creator_posts').select('*').eq('published', true).eq('reels_enabled', true).eq('type', 'video').order('created_at', { ascending: false })
+export async function listPublishedReels(limit = 40): Promise<PostRow[]> {
+  const { data, error } = await supabase.from('creator_posts').select('*').eq('published', true).eq('reels_enabled', true).eq('type', 'video').order('created_at', { ascending: false }).limit(limit)
   if (error) throw error
   return data ?? []
 }
