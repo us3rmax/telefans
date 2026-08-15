@@ -157,7 +157,7 @@ button { cursor: pointer; }
 .creator-heart svg { width: 22px; }
 .creator-heart.is-liked { color: #ff426c; }
 .creator-about { padding: 59px 21px 22px; border-bottom: 1px solid #e3e3e3; }
-.creator-about h1 { display: flex; align-items: center; gap: 6px; margin: 0 0 7px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 23px; font-weight: 700; line-height: 1.15; }
+.creator-about h1 { display: flex; align-items: center; gap: 6px; margin: 0 0 7px; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 23px; font-weight: 700; line-height: 1.15; }
 .creator-handle { margin: 0 0 14px; }
 .creator-handle b { margin-inline: 4px; color: #aaa; }
 .creator-handle span { display: inline-flex; align-items: center; }
@@ -215,7 +215,7 @@ button { cursor: pointer; }
 
 
 /* Creator profile: the media is clipped, but the avatar crosses the cover boundary. */
-.creator-profile-scroll { height: 100dvh; max-height: none; }
+.creator-profile-scroll { height: calc(100dvh - 57px); max-height: calc(100dvh - 57px); }
 .creator-profile-frame { min-height: 100dvh; }
 .creator-hero { height: 300px; }
 .creator-about { position: relative; padding: 64px 24px 24px; }
@@ -238,7 +238,7 @@ button { cursor: pointer; }
   .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
   .creator-avatar { left: 24px; bottom: -69.5px; width: 139px; height: 139px; }
   .creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
-  .creator-about { padding: 96px 24px 24px; }
+  .creator-about { padding: 88px 24px 24px; }
   .creator-about h1 { font-size: 22px; }
   .creator-subscription { padding: 30px 24px 24px; }
   .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }

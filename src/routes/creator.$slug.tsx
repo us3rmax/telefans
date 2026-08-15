@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Check, Feather, Heart, Image, Radio, Share2, Video } from 'lucide-react'
+import { ArrowLeft, Check, Feather, Heart, Image, Menu, Radio, Share2, Video } from 'lucide-react'
 import { useState } from 'react'
 import { getCreatorProfile, type CreatorBadge } from '@/data/creators'
 import '../telescope.css'
@@ -48,6 +48,11 @@ export function CreatorProfilePage() {
 
   return <main className="creator-profile-page">
     <div className="creator-profile-frame">
+      <header className="creator-profile-topbar">
+        <Link to="/" className="creator-back" aria-label="Back to explore"><ArrowLeft /></Link>
+        <div className="creator-top-name"><strong>{creator.name} <CreatorBadges badges={creator.badges} /></strong><span>{creator.status}</span></div>
+        <button type="button" className="creator-more" aria-label="Open menu"><Menu /></button>
+      </header>
       <div className="creator-profile-scroll">
 <section className="creator-hero">
           <div className="creator-hero-media">
