@@ -1,5 +1,9 @@
 export type CreatorBadge = 'verified' | 'heart' | 'feather' | 'diamond' | 'rabbit'
 
+export function normalizeCreatorHandle(handle: string): string {
+  return handle.replace(/-/g, '')
+}
+
 export type CreatorStat = {
   posts: string
   media: string
@@ -81,7 +85,7 @@ export const creatorProfiles: Record<string, CreatorProfile> = {
     tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
   },
   'jasmine-jae': {
-    slug: 'jasmine-jae', name: 'Jasmine Jae', handle: '@jasmine-jae',
+    slug: 'jasmine-jae', name: 'Jasmine Jae', handle: '@jasminejae',
     coverImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'), avatarImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'),
     badges: ['verified'],     status: 'Available now', bio: 'Welcome to my exclusive profile. Discover my latest posts and updates.', expandedBio: 'Welcome to my exclusive profile. Discover my latest posts and updates. More behind-the-scenes content, messages, and new drops are available for subscribers.',
     stats: { posts: '120', media: '80', live: '24', likes: '429.2K' },
@@ -94,7 +98,7 @@ export function getCreatorProfile(slug: string): CreatorProfile {
   return creatorProfiles[slug] ?? {
     slug,
     name: slug.replace(/-/g, ' '),
-    handle: `@${slug}`,
+    handle: `@${slug.replace(/-/g, '')}`,
     coverImage: creatorProfiles['abigaiil-morris'].coverImage,
     avatarImage: creatorProfiles['abigaiil-morris'].avatarImage,
     badges: ['verified'],

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Check, Feather, Heart, LockKeyhole } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { getCreatorProfile, type CreatorBadge, type CreatorProfile } from '@/data/creators'
+import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
 import { useTelegramBackButton } from '@/lib/telegram-auth'
 import '../telescope.css'
@@ -55,7 +55,7 @@ export function CreatorProfilePage() {
           ...fallback,
           slug: remote.slug,
           name: remote.name,
-          handle: remote.handle,
+          handle: normalizeCreatorHandle(remote.handle),
           coverImage: remote.cover_image || fallback.coverImage,
           avatarImage: remote.avatar_image || fallback.avatarImage,
           bio: remote.bio || fallback.bio,

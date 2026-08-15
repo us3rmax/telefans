@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, ChevronRight, Coins, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { normalizeCreatorHandle } from '@/data/creators'
 import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import { listFollowedCreators } from '@/lib/admin-repository'
 import { supabase } from '@/lib/supabase'
@@ -180,7 +181,7 @@ export function ProfilePage() {
 
         <section className="following-section">
           <div className="user-section-heading"><div><small>FOLLOWING</small><h2>Following</h2></div><b>{following.length}</b></div>
-          <div className="following-grid">{following.map((item) => { const creator = item.creators; return <Link key={item.creator_id} to="/creator/$slug" params={{ slug: creator?.slug ?? '' }} className="following-card"><img src={creator?.avatar_image ?? miaImage} alt={creator?.name ?? ''} /><span className="following-shade" /><div><strong>{creator?.name ?? 'Creator'}</strong><span>{creator?.handle ?? ''}</span></div><em>0<br />LIKES</em></Link> })}{following.length === 0 && <p className="user-empty-following">Ainda não segue nenhum creator.</p>}</div>
+          <div className="following-grid">{following.map((item) => { const creator = item.creators; return <Link key={item.creator_id} to="/creator/$slug" params={{ slug: creator?.slug ?? '' }} className="following-card"><img src={creator?.avatar_image ?? miaImage} alt={creator?.name ?? ''} /><span className="following-shade" /><div><strong>{creator?.name ?? 'Creator'}</strong><span>{creator?.handle ? normalizeCreatorHandle(creator.handle) : ''}</span></div><em>0<br />LIKES</em></Link> })}{following.length === 0 && <p className="user-empty-following">Ainda não segue nenhum creator.</p>}</div>
         </section>
         <div className="user-profile-bottom-space" />
       </div>
