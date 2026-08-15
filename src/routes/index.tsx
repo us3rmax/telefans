@@ -30,7 +30,7 @@ export function ExplorePage() {
     <div className="content-column explore-content-column">
       <header className="brand-header"><img src="/assets/telefans-logo.png" alt="TeleFans" /></header>
       <div className="scroll-content">
-        <section className="explore-heading"><h1>Explore</h1></section>
+        <section className="explore-heading" aria-hidden="true" />
         <FilterBar query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />
         <div className="creator-grid">
           {visibleCreators.map(({ name, image, slug }, index) => <Link to="/creator/$slug" params={{ slug }} className="creator-card" key={name} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }} aria-label={`Open ${name}`}>
