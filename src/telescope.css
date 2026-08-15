@@ -210,7 +210,7 @@ button { cursor: pointer; }
 .creator-profile-frame { min-height: 100dvh; }
 .creator-hero { height: 200px; }
 .creator-about { position: relative; padding: 12px 24px 24px; }
-.creator-identity { min-height: 86px; margin-left: 151px; display: flex; flex-direction: column; justify-content: flex-start; }
+.creator-identity { min-height: 86px; margin-left: 129px; display: flex; flex-direction: column; justify-content: flex-start; }
 .creator-identity h1 { margin: 0 0 6px; }
 .creator-identity .creator-handle { margin-bottom: 0; white-space: nowrap; }
 .creator-about .creator-bio { margin-top: 112px; }
@@ -221,7 +221,7 @@ button { cursor: pointer; }
 .creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
 .creator-cover-name .cover-stat { gap: 3px; }
 .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
-.creator-avatar { left: 24px; bottom: -69.5px; width: 139px; height: 139px; }
+.creator-avatar { left: 12px; bottom: -96.75px; width: 129px; height: 129px; }
 .creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
 .creator-about h1 { font-size: 22px; }
 .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
