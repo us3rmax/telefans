@@ -57,8 +57,8 @@ export function CreatorProfilePage() {
         <section className="creator-about">
           <button type="button" className="creator-share" onClick={shareProfile} aria-label="Share profile"><Share2 /></button>
 <h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
-          <p className="creator-handle">{creator.handle} <b>·</b> <span><i />{creator.status}</span></p>
-          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`}>{creator.bio}</p>
+          <p className="creator-handle">{creator.handle} <b>·</b> <span>{creator.status}</span></p>
+          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{creator.bio}</p>
           <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>
         </section>
 

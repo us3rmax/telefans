@@ -129,7 +129,7 @@ button { cursor: pointer; }
 @media (max-width: 620px) { .profile-frame { box-shadow: none; } .profile-cover-wrap { height: 270px; } }
 
 /* Creator profile template */
-.creator-profile-page { min-height: 100dvh; background: #f4f5f6; color: #292929; font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+.creator-profile-page { min-height: 100dvh; background: #f4f5f6; color: #292929; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
 .creator-profile-frame { position: relative; width: min(100%, 620px); min-height: 100dvh; margin: 0 auto; overflow: hidden; background: #fff; box-shadow: 0 0 34px rgba(0,0,0,.08); }
 .creator-profile-topbar { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; height: 57px; padding: 0 8px; border-bottom: 1px solid #e8e8e8; background: rgba(255,255,255,.95); backdrop-filter: blur(14px); }
 .creator-back, .creator-more { display: grid; place-items: center; width: 40px; height: 40px; border: 0; background: transparent; color: #343434; text-decoration: none; }
@@ -153,11 +153,11 @@ button { cursor: pointer; }
 .creator-heart svg { width: 22px; }
 .creator-heart.is-liked { color: #ff426c; }
 .creator-about { padding: 59px 21px 22px; border-bottom: 1px solid #e3e3e3; }
-.creator-about h1 { display: flex; align-items: center; gap: 6px; margin: 0 0 7px; font-family: 'DM Sans', sans-serif; font-size: 24px; line-height: 1; }
-.creator-handle { margin: 0 0 19px; }
+.creator-about h1 { display: flex; align-items: center; gap: 6px; margin: 0 0 7px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 23px; font-weight: 700; line-height: 1.15; }
+.creator-handle { margin: 0 0 14px; }
 .creator-handle b { margin-inline: 4px; color: #aaa; }
-.creator-handle span { display: inline-flex; align-items: center; gap: 5px; }
-.creator-bio { margin: 0; font-size: 14px; line-height: 1.55; letter-spacing: -.035em; }
+.creator-handle span { display: inline-flex; align-items: center; }
+.creator-bio { display: -webkit-box; margin: 0; overflow: hidden; font-size: 16px; line-height: 1.45; letter-spacing: -.01em; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .creator-subscribe { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 57px; margin-top: 18px; padding-inline: 25px; border: 0; border-radius: 999px; background: #10abe3; color: #fff; font-family: inherit; font-size: 14px; box-shadow: 0 10px 20px rgba(16,171,227,.22); transition: transform .2s, background .2s; }
 .creator-subscribe:hover { transform: translateY(-2px); }
 .creator-subscribe.is-subscribed { background: #26bd79; }
@@ -193,7 +193,7 @@ button { cursor: pointer; }
 .creator-share:hover { transform: scale(1.05); }
 .creator-share svg { width: 25px; height: 25px; }
 .creator-more-info { margin-top: 21px; padding: 0; border: 0; background: transparent; color: #0ca9dc; font: 600 14px 'DM Sans', sans-serif; cursor: pointer; }
-.creator-bio.is-expanded { display: block; }
+.creator-bio.is-expanded { display: block; overflow: visible; }
 .creator-subscription { padding: 31px 21px 23px; border-top: 1px solid #e4e4e4; border-bottom: 1px solid #e4e4e4; }
 .creator-section-label { display: block; color: #858585; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: .01em; }
 .creator-subscription h2 { max-width: 560px; margin: 28px 0 20px; font-size: 23px; line-height: 1.23; letter-spacing: -.05em; }
@@ -234,8 +234,10 @@ button { cursor: pointer; }
   .creator-cover-name .cover-stat svg { width: 15px; height: 15px; }
   .creator-avatar { left: 24px; bottom: -69.5px; width: 139px; height: 139px; }
   .creator-avatar span { right: 1px; bottom: 4px; width: 22px; height: 22px; border-width: 3px; }
-  .creator-about { padding: 120px 24px 24px; }
-  .creator-about h1 { font-size: 23px; }
+  .creator-about { padding: 96px 24px 24px; }
+  .creator-about h1 { font-size: 22px; }
   .creator-subscription { padding: 30px 24px 24px; }
   .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
+  .creator-handle { font-size: 14px; }
+  .creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
 }
