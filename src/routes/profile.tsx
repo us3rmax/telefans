@@ -18,6 +18,8 @@ function telegramWebApp() {
       expand?: () => void
       addToHomeScreen?: () => void
       openTelegramLink?: (url: string) => void
+      shareMessage?: (preparedMessageId: string) => void
+      initData?: string
     } }
   }).Telegram?.WebApp
 }
@@ -91,17 +93,25 @@ export function ProfilePage() {
     setEditing(false)
   }
 
-  const shareProfile = () => {
+  const shareProfile = async () => {
     const inviteUrl = `https://t.me/telefans_offbot?startapp=ref_${telegramUser?.id ?? 'guest'}`
     const message = 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:'
     const webApp = telegramWebApp()
-    // /share/url is handled by Telegram itself and opens its native chat picker.
-    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`
-    if (webApp?.openTelegramLink) {
-      webApp.openTelegramLink(telegramShareUrl)
-    } else {
-      void navigator.clipboard?.writeText(`${message}\n${inviteUrl}`)
+
+    if (webApp?.shareMessage && webApp.initData) {
+      const { data, error } = await supabase.functions.invoke<{ ok: boolean; id?: string }>('telegram-share', { body: { initData: webApp.initData, inviteUrl } })
+      if (!error && data?.id) {
+        webApp.shareMessage(data.id)
+        setShared(true)
+        window.setTimeout(() => setShared(false), 1800)
+        return
+      }
     }
+
+    // Older Telegram clients and ordinary browsers keep a safe fallback.
+    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`
+    if (webApp?.openTelegramLink) webApp.openTelegramLink(telegramShareUrl)
+    else void navigator.clipboard?.writeText(`${message}\n${inviteUrl}`)
     setShared(true)
     window.setTimeout(() => setShared(false), 1800)
   }
