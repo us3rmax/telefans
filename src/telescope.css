@@ -80,6 +80,9 @@ button { cursor: pointer; }
 .profile-top-title i, .profile-handle i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #28c76f; }
 .verified-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #16aee1; color: #fff; vertical-align: middle; }
 .verified-mark svg { width: 11px; height: 11px; stroke-width: 3; }
+.creator-badges { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
+.creator-badge-icon { width: 17px; height: 17px; }
+.creator-badge-symbol { display: inline-grid; place-items: center; width: 17px; height: 17px; color: currentColor; font-size: 17px; line-height: 1; }
 .profile-scroll { max-height: calc(100dvh - 56px); overflow-y: auto; scrollbar-width: none; }
 .profile-scroll::-webkit-scrollbar { display: none; }
 .profile-cover-wrap { position: relative; height: 270px; background: #ddd; }

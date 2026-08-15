@@ -16,7 +16,7 @@ const reels: ReelItem[] = [
 function Nav() {
   return <nav className="bottom-nav" aria-label="Primary navigation">
     <Link to="/" className="nav-link"><House /><span>Explore</span></Link>
-    <Link to="/reels" className="nav-link nav-active"><PlaySquare /><span>Reels</span></Link>
+    <Link to="/reels" search={{ tab: 'trending' }} className="nav-link nav-active"><PlaySquare /><span>Reels</span></Link>
     <Link to="/profile" className="nav-link"><UserRound /><span>Profile</span></Link>
   </nav>
 }

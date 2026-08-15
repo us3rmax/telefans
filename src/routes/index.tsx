@@ -31,7 +31,7 @@ const creators = [
 function BottomNav() {
   return <nav className="bottom-nav" aria-label="Primary navigation">
     <Link to="/" activeOptions={{ exact: true }} activeProps={{ className: 'nav-link nav-active' }} className="nav-link"><House /><span>Explore</span></Link>
-    <Link to="/reels" activeProps={{ className: 'nav-link nav-active' }} className="nav-link"><PlaySquare /><span>Reels</span></Link>
+    <Link to="/reels" search={{ tab: 'trending' }} activeProps={{ className: 'nav-link nav-active' }} className="nav-link"><PlaySquare /><span>Reels</span></Link>
     <Link to="/profile" className="nav-link"><UserRound /><span>Profile</span></Link>
   </nav>
 }
