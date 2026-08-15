@@ -40,7 +40,7 @@ export function ExplorePage() {
           </Link>)}
         </div>
         {visibleCreators.length === 0 && <p className="empty-copy">No creators found. Try another name.</p>}
-        <footer className="site-footer"><a href="https://www.telescope.me/terms">TeleFans Terms &amp; Conditions</a><a href="https://www.telescope.me/privacy">TeleFans Privacy Policy</a></footer>
+        <footer className="site-footer"><Link to="/terms">TeleFans Terms &amp; Conditions</Link><Link to="/privacy">TeleFans Privacy Policy</Link></footer>
       </div>
     </div>
     <BottomNav />
