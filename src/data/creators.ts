@@ -23,6 +23,7 @@ export type CreatorProfile = {
   badges: CreatorBadge[]
   status: string
   bio: string
+  expandedBio?: string
   stats: CreatorStat
   subscription: CreatorSubscription
   tabs: {
@@ -82,7 +83,7 @@ export const creatorProfiles: Record<string, CreatorProfile> = {
   'jasmine-jae': {
     slug: 'jasmine-jae', name: 'Jasmine Jae', handle: '@jasmine-jae',
     coverImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'), avatarImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'),
-    badges: ['verified'], status: 'Available now', bio: 'Welcome to my exclusive profile. Discover my latest posts and updates.',
+    badges: ['verified'],     status: 'Available now', bio: 'Welcome to my exclusive profile. Discover my latest posts and updates.', expandedBio: 'Welcome to my exclusive profile. Discover my latest posts and updates. More behind-the-scenes content, messages, and new drops are available for subscribers.',
     stats: { posts: '120', media: '80', live: '24', likes: '429.2K' },
     subscription: { title: 'Limited offer: 80% off for the first 31 days!', message: 'Come see my latest exclusive content 🔥' },
     tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
@@ -99,6 +100,7 @@ export function getCreatorProfile(slug: string): CreatorProfile {
     badges: ['verified'],
     status: 'Available now',
     bio: 'Welcome to my exclusive profile on Telescope.',
+    expandedBio: 'Welcome to my exclusive profile on Telescope. Discover new posts, updates, and behind-the-scenes content shared regularly.',
     stats: { posts: '120', media: '80', live: '24', likes: '1.5K' },
     subscription: { title: 'Limited offer: 80% off for the first 31 days!', message: 'Come see my latest exclusive content 🔥' },
     tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },

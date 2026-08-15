@@ -33,6 +33,13 @@ export function CreatorProfilePage() {
   const [liked, setLiked] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [shared, setShared] = useState(false)
+  const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
+  const [offerOpened, setOfferOpened] = useState(false)
+
+  const openOffer = () => {
+    setOfferOpened(true)
+    window.setTimeout(() => setOfferOpened(false), 1800)
+  }
 
   const shareProfile = async () => {
     const url = window.location.href
@@ -58,25 +65,26 @@ export function CreatorProfilePage() {
           <button type="button" className="creator-share" onClick={shareProfile} aria-label="Share profile"><Share2 /></button>
 <h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
           <p className="creator-handle">{creator.handle} <b>·</b> <span>{creator.status}</span></p>
-          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{creator.bio}</p>
+          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{expanded ? (creator.expandedBio ?? creator.bio) : creator.bio}</p>
           <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>
         </section>
 
         <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
 <h2>{creator.subscription.title}</h2>
-          <button type="button" className="creator-offer-row" onClick={shareProfile} aria-label="View subscription offer">
+          <button type="button" className="creator-offer-row" onClick={openOffer} aria-label="View subscription offer">
             <img src={creator.avatarImage} alt="" />
             <span>{creator.subscription.message}</span>
             <span className="offer-arrow">›</span>
           </button>
         </section>
 
-        <section className="creator-content"><div className="creator-tabs"><button type="button" className="active">{creator.tabs.postsLabel}</button><button type="button">{creator.tabs.mediaLabel}</button></div><div className="creator-grid-preview">{[0, 1, 2, 3, 4, 5].map((index) => <div className="locked-preview" key={index}><img src={creator.coverImage} alt={`${creator.name} preview ${index + 1}`} /><div className="locked-overlay"><Heart /><span>Subscribe to unlock</span></div></div>)}</div></section>
+        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>{creator.tabs.mediaLabel}</button></div><div className="creator-grid-preview">{[0, 1, 2, 3, 4, 5].map((index) => <div className="locked-preview" key={`${activeTab}-${index}`}><img src={creator.coverImage} alt={`${creator.name} ${activeTab} preview ${index + 1}`} /><div className="locked-overlay"><Heart /><span>Subscribe to unlock</span></div></div>)}</div></section>
         <div className="creator-bottom-space" />
       </div>
       <CreatorProfileNav />
       {shared && <div className="creator-share-toast">Link copied</div>}
+      {offerOpened && <div className="creator-offer-toast" role="status">Subscription offer selected</div>}
     </div>
   </main>
 }
