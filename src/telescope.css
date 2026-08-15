@@ -305,3 +305,16 @@ button { cursor: pointer; }
 .user-share-toast svg { width: 16px; }
 @media (min-width: 621px) { .user-profile-frame { box-shadow: 0 0 34px rgba(0,0,0,.2); } }
 @media (prefers-reduced-motion: reduce) { .user-profile-page *, .user-profile-page *::before, .user-profile-page *::after { animation: none !important; transition: none !important; } }
+
+.age-gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(12,13,16,.54); backdrop-filter: blur(18px) saturate(.7); }
+.age-gate-card { width: min(100%, 664px); padding: 34px 34px 28px; border: 1px solid rgba(255,255,255,.16); border-radius: 34px; background: rgba(52,53,58,.62); box-shadow: 0 24px 80px rgba(0,0,0,.34); text-align: center; }
+.age-gate-connected { display: flex; align-items: center; justify-content: flex-start; gap: 18px; margin: 0 auto 34px; max-width: 560px; color: rgba(255,255,255,.72); text-align: left; font-size: 20px; }
+.age-gate-connected img, .age-gate-connected > span { display: grid; place-items: center; width: 82px; height: 82px; flex: 0 0 82px; border-radius: 50%; background: #7b8a73; color: #fff; font-size: 30px; object-fit: cover; }
+.age-gate-connected p { margin: 0; line-height: 1.25; }
+.age-gate-connected strong { display: block; color: #fff; font-size: 27px; }
+.age-gate-card h2 { margin: 0 0 28px; color: #fff; font-size: clamp(34px, 7vw, 56px); line-height: 1; }
+.age-gate-copy { max-width: 570px; margin: 0 auto; color: rgba(255,255,255,.92); font-size: clamp(17px, 3vw, 24px); line-height: 1.45; }
+.age-gate-actions { display: flex; align-items: center; justify-content: flex-end; gap: 28px; margin-top: 32px; }
+.age-gate-actions button { min-height: 58px; padding: 0 28px; border: 0; border-radius: 999px; background: transparent; color: #fff; font-size: 18px; font-weight: 700; }
+.age-gate-actions button:last-child { min-width: 270px; background: #fff; color: #17181b; }
+@media (max-width: 520px) { .age-gate { padding: 18px; } .age-gate-card { padding: 28px 22px 22px; border-radius: 28px; } .age-gate-connected { margin-bottom: 28px; font-size: 16px; } .age-gate-connected img, .age-gate-connected > span { width: 64px; height: 64px; flex-basis: 64px; } .age-gate-connected strong { font-size: 22px; } .age-gate-actions { justify-content: space-between; gap: 8px; } .age-gate-actions button { padding: 0 16px; font-size: 16px; } .age-gate-actions button:last-child { min-width: 0; flex: 1; } }
