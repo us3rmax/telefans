@@ -14,7 +14,7 @@ button { cursor: pointer; }
 .telescope-shell { min-height: 100dvh; background: #101010; overflow-x: clip; }
 .content-column { width: min(100%, 1152px); height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; padding-top: max(env(safe-area-inset-top), var(--tg-chrome-top)); }
 .explore-content-column { padding-top: max(30px, calc(max(env(safe-area-inset-top), var(--tg-chrome-top)) - 15px)); }
-.brand-header { height: 34px !important; flex: 0 0 34px !important; display: flex; justify-content: center; align-items: center; }
+.brand-header { position: relative; z-index: 20; height: 34px !important; flex: 0 0 34px !important; display: flex; justify-content: center; align-items: center; background: #101010; isolation: isolate; } .brand-header::before { position: absolute; top: 0; right: 0; left: 0; z-index: -1; height: 72px; background: #101010; content: ''; pointer-events: none; }
 .brand-header img { display: block; width: min(120px, 36vw); height: 28px; max-height: 28px; margin: 0; object-fit: contain; transform: translateY(34px); }
 .scroll-content { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 112px; scrollbar-width: none; }
 .scroll-content::-webkit-scrollbar { display: none; }
