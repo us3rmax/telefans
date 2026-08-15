@@ -125,3 +125,26 @@ async function writeAudit(action: string, entityType: string, entityId: string, 
   const { error } = await supabase.from('admin_audit_log').insert({ admin_user_id: session.session?.user.id ?? null, action, entity_type: entityType, entity_id: entityId, metadata: metadata as any })
   assertNoError(error)
 }
+
+export async function uploadCreatorMediaBatch(files: File[], creatorId: string) {
+  const results: Array<{ asset: MediaAsset; post: CreatorPost }> = []
+  for (const file of files) {
+    const asset = await uploadMediaAsset(file, creatorId)
+    const isVideo = asset.kind === 'video'
+    const post = await createAdminPost({
+      creator_id: creatorId,
+      title: file.name.replace(/\.[^.]+$/, '') || (isVideo ? 'Novo Reel' : 'Novo post'),
+      caption: '',
+      media_url: asset.public_url ?? '',
+      thumbnail_url: asset.thumbnail_url,
+      type: isVideo ? 'video' : 'image',
+      status: 'published',
+      published: true,
+      reels_enabled: isVideo,
+      comments_enabled: true,
+      sort_order: 0,
+    })
+    results.push({ asset, post })
+  }
+  return results
+}
