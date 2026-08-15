@@ -20,6 +20,7 @@ import { Route as AppModelsRouteImport } from './routes/app/models'
 import { Route as AppContentRouteImport } from './routes/app/content'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AppModelsNewRouteImport } from './routes/app/models.new'
+import { Route as AppModelsIdRouteImport } from './routes/app/models.$id'
 
 const ReelsRoute = ReelsRouteImport.update({
   id: '/reels',
@@ -76,6 +77,11 @@ const AppModelsNewRoute = AppModelsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AppModelsRoute,
 } as any)
+const AppModelsIdRoute = AppModelsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppModelsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
+  '/app/models/$id': typeof AppModelsIdRoute
   '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRoutesByTo {
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app': typeof AppIndexRoute
+  '/app/models/$id': typeof AppModelsIdRoute
   '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRoutesById {
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
+  '/app/models/$id': typeof AppModelsIdRoute
   '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRouteTypes {
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/creator/$slug'
     | '/app/'
+    | '/app/models/$id'
     | '/app/models/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/creator/$slug'
     | '/app'
+    | '/app/models/$id'
     | '/app/models/new'
   id:
     | '__root__'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/creator/$slug'
     | '/app/'
+    | '/app/models/$id'
     | '/app/models/new'
   fileRoutesById: FileRoutesById
 }
@@ -245,14 +257,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppModelsNewRouteImport
       parentRoute: typeof AppModelsRoute
     }
+    '/app/models/$id': {
+      id: '/app/models/$id'
+      path: '/$id'
+      fullPath: '/app/models/$id'
+      preLoaderRoute: typeof AppModelsIdRouteImport
+      parentRoute: typeof AppModelsRoute
+    }
   }
 }
 
 interface AppModelsRouteChildren {
+  AppModelsIdRoute: typeof AppModelsIdRoute
   AppModelsNewRoute: typeof AppModelsNewRoute
 }
 
 const AppModelsRouteChildren: AppModelsRouteChildren = {
+  AppModelsIdRoute: AppModelsIdRoute,
   AppModelsNewRoute: AppModelsNewRoute,
 }
 
