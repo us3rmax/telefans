@@ -41,6 +41,8 @@ export function TelegramAuthBootstrap() {
         return
       }
       webApp.ready?.()
+      webApp.setHeaderColor?.('#101010')
+      webApp.setBackgroundColor?.('#101010')
       webApp.expand?.()
       syncTelegramViewport(webApp)
       if (!cancelled && attempts < 6) {
