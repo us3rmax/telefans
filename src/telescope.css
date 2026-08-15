@@ -210,8 +210,8 @@ button { cursor: pointer; }
 .creator-profile-frame { min-height: 100dvh; }
 .creator-hero { height: 200px; }
 .creator-about { position: relative; padding: 45px 24px 24px; }
-.creator-identity { min-height: 53px; margin-left: 104px; }
-.creator-identity h1 { margin-bottom: 6px; }
+.creator-identity { min-height: 86px; margin-left: 151px; display: flex; flex-direction: column; justify-content: center; }
+.creator-identity h1 { margin: 0 0 6px; }
 .creator-identity .creator-handle { margin-bottom: 0; white-space: nowrap; }
 .creator-about .creator-bio { margin-top: 24px; }
 .creator-subscription { padding: 30px 24px 24px; }
