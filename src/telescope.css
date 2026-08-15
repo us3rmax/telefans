@@ -452,3 +452,4 @@ button { cursor: pointer; }
 .user-home-row { min-height: 78px; }
 .unlock-section, .following-section { margin-inline: 24px; }
 .user-profile-bottom-space { height: max(78px, env(safe-area-inset-bottom)); }
+.user-profile-page svg { transform: scale(.55); transform-origin: center; }
