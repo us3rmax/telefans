@@ -1,0 +1,5 @@
+{
+  "project_id": "gtvzvvtnhmjtcgvjnfrr",
+  "name": "telefans_media_storage_v1",
+  "query": "begin;\ninsert into storage.buckets (id, name, public) values ('media', 'media', true) on conflict (id) do update set public = excluded.public;\ndrop policy if exists media_public_read on storage.objects;\ncreate policy media_public_read on storage.objects for select using (bucket_id = 'media');\ndrop policy if exists media_admin_insert on storage.objects;\ncreate policy media_admin_insert on storage.objects for insert with check (bucket_id = 'media' and public.is_admin());\ndrop policy if exists media_admin_update on storage.objects;\ncreate policy media_admin_update on storage.objects for update using (bucket_id = 'media' and public.is_admin()) with check (bucket_id = 'media' and public.is_admin());\ndrop policy if exists media_admin_delete on storage.objects;\ncreate policy media_admin_delete on storage.objects for delete using (bucket_id = 'media' and public.is_admin());\ncommit;"
+}

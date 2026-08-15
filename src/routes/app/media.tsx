@@ -1,0 +1,20 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { Upload, ImageIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { listAdminCreators, listMediaAssets, uploadMediaAsset, type Creator, type MediaAsset } from '@/lib/admin-repository'
+
+export const Route = createFileRoute('/app/media')({ component: AdminMediaPage })
+
+function AdminMediaPage() {
+  const [assets, setAssets] = useState<MediaAsset[]>([])
+  const [creators, setCreators] = useState<Creator[]>([])
+  const [creatorId, setCreatorId] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const load = async () => { setLoading(true); try { const [media, modelList] = await Promise.all([listMediaAssets(), listAdminCreators()]); setAssets(media); setCreators(modelList) } catch (err) { setError(err instanceof Error ? err.message : 'Não foi possível carregar a biblioteca.') } finally { setLoading(false) } }
+  useEffect(() => { void load() }, [])
+  const upload = async (file?: File) => { if (!file) return; setUploading(true); setError(''); setMessage(''); try { const asset = await uploadMediaAsset(file, creatorId || undefined); setAssets((current) => [asset, ...current]); setMessage('Mídia enviada com sucesso.') } catch (err) { setError(err instanceof Error ? err.message : 'Não foi possível enviar a mídia.') } finally { setUploading(false) } }
+  return <main className="min-h-full bg-muted/20 p-4 md:p-8"><div className="mx-auto max-w-6xl space-y-6"><header><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-2xl font-semibold tracking-tight">Biblioteca de mídia</h1><p className="mt-1 text-sm text-muted-foreground">Envie imagens e vídeos para reutilizar nos perfis, feed e Reels.</p></header>{error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}{message && <div className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}<section className="rounded-xl border bg-background p-4 shadow-sm"><div className="flex flex-col gap-3 md:flex-row md:items-center"><select value={creatorId} onChange={(event) => setCreatorId(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="">Sem creator associado</option>{creators.map((creator) => <option key={creator.id} value={creator.id}>{creator.name}</option>)}</select><label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"><Upload className="h-4 w-4" />{uploading ? 'A enviar…' : 'Enviar ficheiro'}<input type="file" accept="image/*,video/*,audio/*" className="sr-only" disabled={uploading} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div></section><section>{loading ? <p className="text-sm text-muted-foreground">A carregar biblioteca…</p> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{assets.map((asset) => <article key={asset.id} className="overflow-hidden rounded-xl border bg-background shadow-sm"><div className="aspect-square bg-muted">{asset.kind === 'video' ? <video src={asset.public_url ?? undefined} muted className="h-full w-full object-cover" /> : asset.public_url ? <img src={asset.public_url} alt={asset.original_name ?? ''} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center"><ImageIcon className="h-8 w-8 text-muted-foreground" /></div>}</div><div className="p-2"><p className="truncate text-xs font-medium">{asset.original_name ?? 'Ficheiro'}</p><p className="text-[11px] text-muted-foreground">{asset.kind} · {asset.status}</p></div></article>)}{assets.length === 0 && <p className="col-span-full rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">A biblioteca está vazia.</p>}</div>}</section></div></main>
+}
