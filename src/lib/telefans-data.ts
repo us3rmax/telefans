@@ -46,13 +46,27 @@ export async function listPublishedReels(): Promise<PostRow[]> {
 export async function togglePostLike(postId: string, liked: boolean) {
   const visitorKey = getVisitorKey()
   if (!visitorKey) return
-  if (liked) {
+  if (!liked) {
     const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('visitor_key', visitorKey)
     if (error) throw error
     return
   }
-  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: visitorKey } as any)
+  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: visitorKey })
   if (error && error.code !== '23505') throw error
+}
+
+export async function hasPostLike(postId: string) {
+  const visitorKey = getVisitorKey()
+  if (!visitorKey) return false
+  const { data, error } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('visitor_key', visitorKey).maybeSingle()
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function listPostComments(postId: string) {
+  const { data, error } = await supabase.from('post_comments').select('id, body, created_at').eq('post_id', postId).order('created_at', { ascending: true })
+  if (error) throw error
+  return data ?? []
 }
 
 export async function addPostComment(postId: string, body: string) {

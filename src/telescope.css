@@ -323,3 +323,25 @@ button { cursor: pointer; }
 .user-edit-panel textarea, .user-edit-panel select { width: 100%; min-height: 42px; padding: 11px 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; outline: 0; background: #18191d; color: #fff; font: inherit; resize: vertical; }
 .user-edit-panel textarea { min-height: 86px; }
 .user-edit-panel input:focus, .user-edit-panel textarea:focus, .user-edit-panel select:focus { border-color: #2ea8ff; }
+
+/* Reels mobile interaction layer */
+.reels-shell { padding-top: env(safe-area-inset-top); }
+.reels-feed { height: calc(100dvh - env(safe-area-inset-top)); }
+.reel-card { height: calc(100dvh - env(safe-area-inset-top)); }
+.reel-tabs { top: max(68px, calc(env(safe-area-inset-top) + 36px)); z-index: 5; gap: 24px; }
+.reel-tab { padding: 8px 2px; font-size: 16px; }
+.reel-tab.active::after { bottom: -3px; height: 3px; }
+.reel-play-toggle, .reel-sound-toggle { position: absolute; z-index: 4; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 50%; background: rgba(0,0,0,.38); color: #fff; opacity: .85; }
+.reel-play-toggle { top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; }
+.reel-card:focus-within .reel-play-toggle, .reel-card:hover .reel-play-toggle { opacity: .9; }
+.reel-play-toggle svg, .reel-sound-toggle svg { width: 22px; height: 22px; }
+.reel-sound-toggle { right: 18px; bottom: 146px; }
+.reel-caption { bottom: 112px; align-items: flex-end; }
+.reel-creator-link { display: inline-flex; align-items: center; gap: 9px; min-height: 38px; font-size: 17px; font-weight: 600; }
+.reel-creator-avatar { display: grid; place-items: center; width: 34px; height: 34px; overflow: hidden; border: 1px solid rgba(255,255,255,.7); border-radius: 50%; background: #333; color: #fff; font-size: 14px; }
+.reel-creator-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.reel-actions { gap: 17px; }
+.reel-actions button { cursor: pointer; }
+.reel-actions button:disabled { opacity: .55; }
+.comments-backdrop { z-index: 30; }
+.comments-sheet { max-height: min(72dvh, 620px); padding-bottom: max(18px, env(safe-area-inset-bottom)); }
