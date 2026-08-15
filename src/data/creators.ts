@@ -79,6 +79,14 @@ export const creatorProfiles: Record<string, CreatorProfile> = {
     subscription: { title: 'Limited offer: 80% off for the first 31 days!', message: 'Come say hello to my exclusive content 💕' },
     tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
   },
+  'jasmine-jae': {
+    slug: 'jasmine-jae', name: 'Jasmine Jae', handle: '@jasmine-jae',
+    coverImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'), avatarImage: image('9fb69de6-7225-428b-e1d6-4c19e2d71e00'),
+    badges: ['verified'], status: 'Available now', bio: 'Welcome to my exclusive profile. Discover my latest posts and updates.',
+    stats: { posts: '120', media: '80', live: '24', likes: '429.2K' },
+    subscription: { title: 'Limited offer: 80% off for the first 31 days!', message: 'Come see my latest exclusive content 🔥' },
+    tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
+  },
 }
 
 export function getCreatorProfile(slug: string): CreatorProfile {
