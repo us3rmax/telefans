@@ -235,16 +235,4 @@ button { cursor: pointer; }
 .creator-handle { font-size: 14px; }
 .creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
 
-@media (min-width: 701px) {
-  .creator-hero { height: 320px; }
-  .creator-about { padding: 64px 24px 24px; }
-  .creator-avatar { left: 21px; bottom: -43px; width: 95px; height: 95px; }
-  .creator-avatar span { right: 0; bottom: 1px; width: 18px; height: 18px; }
-  .creator-cover-header { padding: 15px 18px 12px; }
-  .creator-cover-name strong { font-size: 22px; }
-  .creator-cover-name > div { gap: 8px; margin-top: 8px; font-size: 15px; }
-  .creator-cover-name .cover-stat svg { width: 18px; height: 18px; }
-  .creator-about h1 { font-size: 23px; }
-  .creator-handle { font-size: 11px; }
-  .creator-more-info { margin-top: 21px; font-size: 14px; }
-}
+/* The profile is rendered inside a fixed mobile-width frame even on desktop preview. */
