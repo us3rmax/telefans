@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-type TelegramWebApp = { initData?: string; ready?: () => void; expand?: () => void }
+type TelegramWebApp = { initData?: string; ready?: () => void; expand?: () => void; close?: () => void }
 
 declare global { interface Window { Telegram?: { WebApp?: TelegramWebApp } } }
 

@@ -43,11 +43,9 @@ export function ProfilePage() {
   const [draftName, setDraftName] = useState('')
   const [draftUsername, setDraftUsername] = useState('')
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
-  const [ageVerified, setAgeVerified] = useState<boolean | null>(null)
 
   useEffect(() => {
     try {
-      setAgeVerified(window.sessionStorage.getItem('telefans.age_verified') === 'true')
       const stored = window.localStorage.getItem(PROFILE_OVERRIDES_KEY)
       if (stored) setOverrides(JSON.parse(stored) as ProfileOverrides)
     } catch { /* storage pode estar indisponível no Mini App */ }
@@ -84,10 +82,6 @@ export function ProfilePage() {
     window.localStorage.setItem(PROFILE_OVERRIDES_KEY, JSON.stringify(next))
     setEditing(false)
   }
-
-  const confirmAge = () => { try { window.sessionStorage.setItem('telefans.age_verified', 'true') } catch { /* storage opcional */ }; setAgeVerified(true) }
-
-  const leaveMiniApp = () => { const webApp = telegramWebApp(); if (webApp?.close) webApp.close(); else window.history.back() }
 
   const shareProfile = async () => {
     const shareData = { title: 'TeleFans Profile', text: `Veja o perfil de ${displayName} no TeleFans`, url: window.location.href }
@@ -169,7 +163,6 @@ export function ProfilePage() {
         <div className="user-profile-bottom-space" />
       </div>
       {shared && <div className="user-share-toast"><Share2 aria-hidden="true" /> Link copied/shared</div>}
-      {telegramAuthState === 'connected' && ageVerified === false && <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"><div className="age-gate-card"><div className="age-gate-connected">{telegramUser?.photo_url ? <img src={telegramUser.photo_url} alt="" /> : <span>{initials}</span>}<p>Connected as<strong>{displayName}</strong></p></div><h2 id="age-gate-title">Adults only</h2><p className="age-gate-copy">TeleFans contains 18+ premium content. Confirm once that you are 18 years old or above to continue.</p><div className="age-gate-actions"><button type="button" onClick={leaveMiniApp}>Leave</button><button type="button" onClick={confirmAge}>I confirm I am 18+</button></div></div></div>}
     </div>
   </main>
 }
