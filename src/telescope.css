@@ -213,7 +213,7 @@ button { cursor: pointer; }
 .creator-identity { min-height: 86px; margin-left: 129px; display: flex; flex-direction: column; justify-content: flex-start; }
 .creator-identity h1 { margin: 0 0 6px; }
 .creator-identity .creator-handle { margin-bottom: 0; white-space: nowrap; }
-.creator-about .creator-bio { margin-top: 30px; }
+.creator-about .creator-bio { margin-top: 25px; }
 .creator-subscription { padding: 30px 24px 24px; }
 .creator-content { padding-top: 0; }
 .creator-cover-header { padding: 14px 16px 12px; }
