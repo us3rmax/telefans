@@ -24,6 +24,8 @@ import {
   LogOut,
   PanelLeft,
   UsersRound,
+  Files,
+  Clapperboard,
 
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -44,6 +46,8 @@ interface NavItemDef {
 const NAV_ITEMS: NavItemDef[] = [
   { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard' },
   { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Modelos' },
+  { href: '/app/content', icon: <Files className="h-4 w-4" />, label: 'Conteúdo' },
+  { href: '/app/reels', icon: <Clapperboard className="h-4 w-4" />, label: 'Reels' },
 ]
 
 function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) {

@@ -15,7 +15,9 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
+import { Route as AppReelsRouteImport } from './routes/app/reels'
 import { Route as AppModelsRouteImport } from './routes/app/models'
+import { Route as AppContentRouteImport } from './routes/app/content'
 import { Route as AppModelsNewRouteImport } from './routes/app/models.new'
 
 const ReelsRoute = ReelsRouteImport.update({
@@ -48,9 +50,19 @@ const CreatorSlugRoute = CreatorSlugRouteImport.update({
   path: '/creator/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppReelsRoute = AppReelsRouteImport.update({
+  id: '/reels',
+  path: '/reels',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppModelsRoute = AppModelsRouteImport.update({
   id: '/models',
   path: '/models',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentRoute = AppContentRouteImport.update({
+  id: '/content',
+  path: '/content',
   getParentRoute: () => AppRoute,
 } as any)
 const AppModelsNewRoute = AppModelsNewRouteImport.update({
@@ -64,7 +76,9 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
+  '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
   '/app/models/new': typeof AppModelsNewRoute
@@ -73,7 +87,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
+  '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app': typeof AppIndexRoute
   '/app/models/new': typeof AppModelsNewRoute
@@ -84,7 +100,9 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
+  '/app/content': typeof AppContentRoute
   '/app/models': typeof AppModelsRouteWithChildren
+  '/app/reels': typeof AppReelsRoute
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
   '/app/models/new': typeof AppModelsNewRoute
@@ -96,7 +114,9 @@ export interface FileRouteTypes {
     | '/app'
     | '/profile'
     | '/reels'
+    | '/app/content'
     | '/app/models'
+    | '/app/reels'
     | '/creator/$slug'
     | '/app/'
     | '/app/models/new'
@@ -105,7 +125,9 @@ export interface FileRouteTypes {
     | '/'
     | '/profile'
     | '/reels'
+    | '/app/content'
     | '/app/models'
+    | '/app/reels'
     | '/creator/$slug'
     | '/app'
     | '/app/models/new'
@@ -115,7 +137,9 @@ export interface FileRouteTypes {
     | '/app'
     | '/profile'
     | '/reels'
+    | '/app/content'
     | '/app/models'
+    | '/app/reels'
     | '/creator/$slug'
     | '/app/'
     | '/app/models/new'
@@ -173,11 +197,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreatorSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/reels': {
+      id: '/app/reels'
+      path: '/reels'
+      fullPath: '/app/reels'
+      preLoaderRoute: typeof AppReelsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/models': {
       id: '/app/models'
       path: '/models'
       fullPath: '/app/models'
       preLoaderRoute: typeof AppModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/content': {
+      id: '/app/content'
+      path: '/content'
+      fullPath: '/app/content'
+      preLoaderRoute: typeof AppContentRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/models/new': {
@@ -203,12 +241,16 @@ const AppModelsRouteWithChildren = AppModelsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppContentRoute: typeof AppContentRoute
   AppModelsRoute: typeof AppModelsRouteWithChildren
+  AppReelsRoute: typeof AppReelsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppContentRoute: AppContentRoute,
   AppModelsRoute: AppModelsRouteWithChildren,
+  AppReelsRoute: AppReelsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
