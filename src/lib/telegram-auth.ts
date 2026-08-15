@@ -47,6 +47,8 @@ export function syncTelegramViewport(webApp: TelegramWebApp | null | undefined) 
   const content = webApp?.contentSafeAreaInset ?? {}
   const top = Math.max(Number(safe.top ?? 0), Number(content.top ?? 0))
   const bottom = Math.max(Number(safe.bottom ?? 0), Number(content.bottom ?? 0))
+  const chromeTop = webApp ? Math.max(top, 48) : top
+  root.style.setProperty('--tg-chrome-top', `${chromeTop}px`)
   root.style.setProperty('--tg-native-top', `${top}px`)
   root.style.setProperty('--tg-native-bottom', `${bottom}px`)
   root.style.setProperty('--tg-native-left', `${Math.max(Number(safe.left ?? 0), Number(content.left ?? 0))}px`)
