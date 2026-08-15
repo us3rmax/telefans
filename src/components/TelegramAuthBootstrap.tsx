@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
+import { authenticateTelegramMiniApp, syncTelegramViewport, type TelegramUser } from '@/lib/telegram-auth'
 
 export function TelegramAuthBootstrap() {
   const [user, setUser] = useState<TelegramUser | null>(null)
@@ -23,6 +23,36 @@ export function TelegramAuthBootstrap() {
         document.removeEventListener('gestureend', preventGesture)
         document.removeEventListener('wheel', preventCtrlWheel)
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    let attempts = 0
+    let timer: number | undefined
+
+    const enforceExpandedMiniApp = () => {
+      const webApp = window.Telegram?.WebApp
+      if (!webApp) {
+        if (!cancelled && attempts < 40) {
+          attempts += 1
+          timer = window.setTimeout(enforceExpandedMiniApp, 100)
+        }
+        return
+      }
+      webApp.ready?.()
+      webApp.expand?.()
+      syncTelegramViewport(webApp)
+      if (!cancelled && attempts < 6) {
+        attempts += 1
+        timer = window.setTimeout(enforceExpandedMiniApp, 150)
+      }
+    }
+
+    enforceExpandedMiniApp()
+    return () => {
+      cancelled = true
+      if (timer) window.clearTimeout(timer)
     }
   }, [])
 
