@@ -99,13 +99,17 @@ export function ProfilePage() {
     setEditing(false)
   }
 
-  const shareProfile = async () => {
+  const shareProfile = () => {
     const inviteUrl = `https://t.me/telefans_offbot?startapp=ref_${telegramUser?.id ?? 'guest'}`
-    const shareData = { title: 'TeleFans', text: 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:', url: inviteUrl }
-    try {
-      if (navigator.share) await navigator.share(shareData)
-      else await navigator.clipboard?.writeText(window.location.href)
-    } catch { /* o utilizador pode cancelar a partilha */ }
+    const message = 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:'
+    const webApp = telegramWebApp()
+    // /share/url is handled by Telegram itself and opens its native chat picker.
+    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`
+    if (webApp?.openTelegramLink) {
+      webApp.openTelegramLink(telegramShareUrl)
+    } else {
+      void navigator.clipboard?.writeText(`${message}\n${inviteUrl}`)
+    }
     setShared(true)
     window.setTimeout(() => setShared(false), 1800)
   }

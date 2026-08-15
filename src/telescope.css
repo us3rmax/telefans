@@ -353,3 +353,29 @@ button { cursor: pointer; }
 .unlocked-media-card video { background: #000; }
 .creator-media-empty { grid-column: 1 / -1; padding: 36px 18px; color: rgba(255,255,255,.58); text-align: center; font-size: 14px; }
 @media (max-width: 640px) { .creator-unlocked-grid { gap: 8px; } .unlocked-media-card { border-radius: 10px; } }
+
+/* Profile scale refinement: closer to the compact Telegram Mini App reference. */
+.user-profile-topbar { min-height: 62px; padding-inline: 22px; }
+.user-profile-scroll { max-height: calc(100dvh - 62px); }
+.user-identity { padding-top: 16px; }
+.user-avatar { width: clamp(100px, 27vw, 116px); height: clamp(100px, 27vw, 116px); margin-bottom: 14px; font-size: clamp(44px, 12vw, 54px); }
+.user-identity h2 { font-size: clamp(22px, 6vw, 25px); }
+.user-identity > p { margin-top: 5px; font-size: clamp(15px, 4.4vw, 17px); }
+.user-metrics { margin-top: 27px; }
+.user-metrics div { gap: 5px; }
+.user-metrics svg { width: 23px; height: 23px; }
+.user-metrics strong { font-size: 22px; }
+.user-metrics span { font-size: 10px; }
+.user-edit-button { margin-top: 24px; font-size: 17px; }
+.coins-card { min-height: 150px; margin-top: 34px; padding: 24px 26px 20px; border-radius: 24px; }
+.coins-card > strong { margin-top: 14px; font-size: 48px; }
+.user-action-row { min-height: 78px; margin-top: 10px; }
+.user-action-row strong { font-size: 17px; }
+.user-action-row small { font-size: 13px; }
+@media (max-width: 420px) {
+  .user-profile-topbar { padding-inline: 18px; }
+  .user-close, .user-menu { height: 38px; font-size: 15px; }
+  .user-identity { padding-inline: 18px; }
+  .coins-card { margin-inline: 18px; }
+  .user-action-row { width: calc(100% - 36px); margin-inline: 18px; }
+}
