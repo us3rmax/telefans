@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
 import { Route as AppModelsRouteImport } from './routes/app/models'
+import { Route as AppModelsNewRouteImport } from './routes/app/models.new'
 
 const ReelsRoute = ReelsRouteImport.update({
   id: '/reels',
@@ -52,23 +53,30 @@ const AppModelsRoute = AppModelsRouteImport.update({
   path: '/models',
   getParentRoute: () => AppRoute,
 } as any)
+const AppModelsNewRoute = AppModelsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppModelsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
-  '/app/models': typeof AppModelsRoute
+  '/app/models': typeof AppModelsRouteWithChildren
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
+  '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
-  '/app/models': typeof AppModelsRoute
+  '/app/models': typeof AppModelsRouteWithChildren
   '/creator/$slug': typeof CreatorSlugRoute
   '/app': typeof AppIndexRoute
+  '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,9 +84,10 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
-  '/app/models': typeof AppModelsRoute
+  '/app/models': typeof AppModelsRouteWithChildren
   '/creator/$slug': typeof CreatorSlugRoute
   '/app/': typeof AppIndexRoute
+  '/app/models/new': typeof AppModelsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,8 +99,16 @@ export interface FileRouteTypes {
     | '/app/models'
     | '/creator/$slug'
     | '/app/'
+    | '/app/models/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profile' | '/reels' | '/app/models' | '/creator/$slug' | '/app'
+  to:
+    | '/'
+    | '/profile'
+    | '/reels'
+    | '/app/models'
+    | '/creator/$slug'
+    | '/app'
+    | '/app/models/new'
   id:
     | '__root__'
     | '/'
@@ -101,6 +118,7 @@ export interface FileRouteTypes {
     | '/app/models'
     | '/creator/$slug'
     | '/app/'
+    | '/app/models/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,16 +180,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppModelsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/models/new': {
+      id: '/app/models/new'
+      path: '/new'
+      fullPath: '/app/models/new'
+      preLoaderRoute: typeof AppModelsNewRouteImport
+      parentRoute: typeof AppModelsRoute
+    }
   }
 }
 
+interface AppModelsRouteChildren {
+  AppModelsNewRoute: typeof AppModelsNewRoute
+}
+
+const AppModelsRouteChildren: AppModelsRouteChildren = {
+  AppModelsNewRoute: AppModelsNewRoute,
+}
+
+const AppModelsRouteWithChildren = AppModelsRoute._addFileChildren(
+  AppModelsRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppModelsRoute: typeof AppModelsRoute
+  AppModelsRoute: typeof AppModelsRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppModelsRoute: AppModelsRoute,
+  AppModelsRoute: AppModelsRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
 }
 
