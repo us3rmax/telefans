@@ -236,6 +236,7 @@ button { cursor: pointer; }
 .creator-subscription { padding: 30px 24px 24px; }
 .creator-content { padding-top: 0; }
 .creator-cover-header { padding: 14px 16px 12px; }
+.creator-cover-name { display: none; }
 .creator-cover-name strong { font-size: 19px; }
 .creator-cover-name > div { gap: 4px; margin-top: 7px; font-size: 12px; }
 .creator-cover-name .cover-stat { gap: 3px; }
@@ -246,6 +247,8 @@ button { cursor: pointer; }
 .creator-subscription h2 { margin-top: 26px; font-size: 21px; line-height: 1.25; }
 .creator-handle { font-size: 14px; }
 .creator-more-info { margin-top: 16px; font-size: 16px; font-weight: 500; }
+.creator-availability { display: inline-flex; align-items: center; gap: 4px; }
+.creator-availability i { font-style: normal; font-size: 10px; line-height: 1; }
 
 /* The profile is rendered inside a fixed mobile-width frame even on desktop preview. */
 

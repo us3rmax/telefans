@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Check, Feather, Heart, Image, LockKeyhole, Radio, Video } from 'lucide-react'
+import { ArrowLeft, Check, Feather, Heart, LockKeyhole } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCreatorProfile, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
@@ -18,8 +18,18 @@ function CreatorBadgeIcon({ badge }: { badge: CreatorBadge }) {
 
 function slugify(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') }
 function Verified() { return <span className="verified-mark" aria-label="Verified"><Check /></span> }
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) { return <span className="cover-stat"><span>{icon}</span>{value}<span className="sr-only"> {label}</span></span> }
 function CreatorBadges({ badges }: { badges: CreatorBadge[] }) { return <span className="creator-badges">{badges.map((badge) => <CreatorBadgeIcon key={badge} badge={badge} />)}</span> }
+
+function getCreatorAvailability(slug: string) {
+  const now = new Date()
+  const period = Math.floor(now.getHours() / 6)
+  const day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000)
+  const seed = [...`${slug}:${day}:${period}`].reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 7)
+  const state = seed % 3
+  if (state === 0) return 'Available now'
+  if (state === 1) return 'online'
+  return `online ${1 + (seed % 34)} minutes ago`
+}
 
 type PublicCreatorPost = { id: string; type: string; mediaUrl: string; thumbnailUrl?: string | null; title: string; caption: string; isPaid: boolean; unlockPrice: number }
 
@@ -31,6 +41,7 @@ export function CreatorProfilePage() {
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
   const [offerOpened, setOfferOpened] = useState(false)
+  const availability = getCreatorAvailability(slug)
 
   useEffect(() => {
     let active = true
@@ -74,9 +85,8 @@ export function CreatorProfilePage() {
             <img src={creator.coverImage} alt={creator.name} />
             <div className="creator-hero-gradient" />
           </div>
-          <div className="creator-cover-header">
+            <div className="creator-cover-header">
             <Link to="/" className="creator-cover-back" aria-label="Back to explore"><ArrowLeft /></Link>
-            <div className="creator-cover-name"><strong>{creator.name} <CreatorBadges badges={creator.badges} /></strong><div><Stat icon={<Image />} value={creator.stats.posts} label="posts" /><b>·</b><Stat icon={<Video />} value={creator.stats.media} label="media" /><b>·</b><Stat icon={<Radio />} value={creator.stats.live} label="live" /><b>·</b><Stat icon={<Heart fill="currentColor" />} value={creator.stats.likes} label="likes" /></div></div>
           </div>
           <div className="creator-avatar">            <img src={creator.avatarImage} alt={`${creator.name} avatar`} /></div>
         </section>
@@ -84,7 +94,7 @@ export function CreatorProfilePage() {
         <section className="creator-about">
           <div className="creator-identity">
             <h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
-            <p className="creator-handle">{creator.handle} <b>·</b> <span>{creator.status}</span></p>
+            <p className="creator-handle">{creator.handle} <b>·</b> <span className="creator-availability"><i aria-hidden="true">🟢</i>{availability}</span></p>
           </div>
           <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{expanded ? (creator.expandedBio ?? creator.bio) : creator.bio}</p>
           <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>
