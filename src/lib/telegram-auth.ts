@@ -14,6 +14,7 @@ type TelegramWebApp = {
   close?: () => void
   disableVerticalSwipes?: () => void
   enableVerticalSwipes?: () => void
+  disableClosingConfirmation?: () => void
   BackButton?: TelegramBackButton
   safeAreaInset?: { top?: number; bottom?: number; left?: number; right?: number }
   contentSafeAreaInset?: { top?: number; bottom?: number; left?: number; right?: number }

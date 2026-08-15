@@ -41,6 +41,7 @@ export function TelegramAuthBootstrap() {
         return
       }
       webApp.ready?.()
+      webApp.disableClosingConfirmation?.()
       webApp.disableVerticalSwipes?.()
       webApp.setHeaderColor?.('#101010')
       webApp.setBackgroundColor?.('#101010')
