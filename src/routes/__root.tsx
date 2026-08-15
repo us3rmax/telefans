@@ -79,7 +79,8 @@ function RootDocument({ children }: { children: ReactNode }) {
             flash-of-wrong-theme. Do not move below <HeadContent />. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <HeadContent />
-        <script src="https://telegram.org/js/telegram-web-app.js" defer />
+        {/* Load Telegram's official Mini App SDK before the React bootstrap. */}
+        <script src="https://telegram.org/js/telegram-web-app.js" />
         {/*
           WebSite + Organization entity (rendered on every page, once at the root).
           Gives Google's Knowledge Graph + AI answer engines explicit, machine-
