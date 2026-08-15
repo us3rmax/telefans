@@ -318,3 +318,8 @@ button { cursor: pointer; }
 .age-gate-actions button { min-height: 58px; padding: 0 28px; border: 0; border-radius: 999px; background: transparent; color: #fff; font-size: 18px; font-weight: 700; }
 .age-gate-actions button:last-child { min-width: 270px; background: #fff; color: #17181b; }
 @media (max-width: 520px) { .age-gate { padding: 18px; } .age-gate-card { padding: 28px 22px 22px; border-radius: 28px; } .age-gate-connected { margin-bottom: 28px; font-size: 16px; } .age-gate-connected img, .age-gate-connected > span { width: 64px; height: 64px; flex-basis: 64px; } .age-gate-connected strong { font-size: 22px; } .age-gate-actions { justify-content: space-between; gap: 8px; } .age-gate-actions button { padding: 0 16px; font-size: 16px; } .age-gate-actions button:last-child { min-width: 0; flex: 1; } }
+
+.user-bio { max-width: 340px; margin: 12px auto 0 !important; color: #a4a4aa !important; font-size: 14px !important; line-height: 1.45; }
+.user-edit-panel textarea, .user-edit-panel select { width: 100%; min-height: 42px; padding: 11px 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 10px; outline: 0; background: #18191d; color: #fff; font: inherit; resize: vertical; }
+.user-edit-panel textarea { min-height: 86px; }
+.user-edit-panel input:focus, .user-edit-panel textarea:focus, .user-edit-panel select:focus { border-color: #2ea8ff; }

@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronRight, Coins, Ellipsis, Heart, House, Pencil, Send, S
 import { useEffect, useMemo, useState } from 'react'
 import { authenticateTelegramMiniApp, type TelegramUser } from '@/lib/telegram-auth'
 import { listFollowedCreators } from '@/lib/admin-repository'
+import { supabase } from '@/lib/supabase'
 import '../telescope.css'
 
 const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
@@ -30,7 +31,8 @@ function TelegramClose() {
   return <button type="button" className="user-close" onClick={close}><ArrowLeft aria-hidden="true" /><span>Fechar</span></button>
 }
 
-type ProfileOverrides = { name?: string; username?: string }
+type ProfileOverrides = { name?: string; username?: string; bio?: string; gender?: string; dateOfBirth?: string; profilePhotoUrl?: string }
+
 
 export function ProfilePage() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
@@ -42,6 +44,9 @@ export function ProfilePage() {
   const [overrides, setOverrides] = useState<ProfileOverrides>({})
   const [draftName, setDraftName] = useState('')
   const [draftUsername, setDraftUsername] = useState('')
+  const [draftBio, setDraftBio] = useState('')
+  const [draftGender, setDraftGender] = useState('prefer_not_to_say')
+  const [draftDateOfBirth, setDraftDateOfBirth] = useState('')
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
 
   useEffect(() => {
@@ -60,7 +65,10 @@ export function ProfilePage() {
         if (!active) return
         setTelegramUser(user)
         setTelegramAuthState(user ? 'connected' : 'unavailable')
-        if (user) void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
+        if (user) {
+          void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
+          void supabase.from('telegram_users').select('bio, gender, date_of_birth, profile_photo_url').eq('telegram_id', user.id).maybeSingle().then(({ data }) => { if (!data) return; setOverrides(current => ({ ...current, bio: data.bio ?? '', gender: data.gender ?? 'prefer_not_to_say', dateOfBirth: data.date_of_birth ?? '', profilePhotoUrl: data.profile_photo_url ?? '' })) })
+        }
       })
       .catch(() => active && setTelegramAuthState('error'))
     return () => { active = false }
@@ -68,23 +76,32 @@ export function ProfilePage() {
 
   const displayName = overrides.name || telegramUser?.first_name || 'W'
   const displayHandle = overrides.username ? `@${overrides.username.replace(/^@/, '')}` : telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
+  const displayBio = overrides.bio || ''
+  const profilePhoto = overrides.profilePhotoUrl || telegramUser?.photo_url
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
   const openEditor = () => {
     setDraftName(displayName)
     setDraftUsername(displayHandle.replace(/^@/, ''))
+    setDraftBio(overrides.bio || '')
+    setDraftGender(overrides.gender || 'prefer_not_to_say')
+    setDraftDateOfBirth(overrides.dateOfBirth || '')
     setEditing(true)
   }
 
   const saveEditor = () => {
-    const next = { name: draftName.trim() || displayName, username: draftUsername.trim().replace(/^@/, '') || displayHandle.replace(/^@/, '') }
-    setOverrides(next)
+    const next = { name: draftName.trim() || displayName, username: draftUsername.trim().replace(/^@/, '') || displayHandle.replace(/^@/, ''), bio: draftBio.trim(), gender: draftGender, dateOfBirth: draftDateOfBirth || '' }
+    setOverrides(current => ({ ...current, ...next }))
     window.localStorage.setItem(PROFILE_OVERRIDES_KEY, JSON.stringify(next))
+    if (telegramUser) {
+      void supabase.from('telegram_users').update({ first_name: next.name, username: next.username, bio: next.bio, gender: next.gender, date_of_birth: next.dateOfBirth || null }).eq('telegram_id', telegramUser.id)
+    }
     setEditing(false)
   }
 
   const shareProfile = async () => {
-    const shareData = { title: 'TeleFans Profile', text: `Veja o perfil de ${displayName} no TeleFans`, url: window.location.href }
+    const inviteUrl = `https://t.me/telefans_offbot?startapp=ref_${telegramUser?.id ?? 'guest'}`
+    const shareData = { title: 'TeleFans', text: 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:', url: inviteUrl }
     try {
       if (navigator.share) await navigator.share(shareData)
       else await navigator.clipboard?.writeText(window.location.href)
@@ -115,9 +132,10 @@ export function ProfilePage() {
 
       <div className="user-profile-scroll">
         <section className="user-identity">
-          <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{telegramUser?.photo_url ? <img src={telegramUser.photo_url} alt="" /> : initials}</div>
+          <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{profilePhoto ? <img src={profilePhoto} alt="" /> : initials}</div>
           <h2>{displayName}</h2>
           <p>{displayHandle}</p>
+          {displayBio && <p className="user-bio">{displayBio}</p>}
         </section>
 
         <section className="user-metrics" aria-label="Estatísticas da conta">
@@ -131,6 +149,9 @@ export function ProfilePage() {
           <div className="user-edit-panel-heading"><strong>Edit profile</strong><button type="button" onClick={() => setEditing(false)} aria-label="Fechar editor"><X /></button></div>
           <label>Nome<input value={draftName} onChange={event => setDraftName(event.target.value)} maxLength={40} /></label>
           <label>Username<input value={draftUsername} onChange={event => setDraftUsername(event.target.value)} maxLength={32} /></label>
+          <label>Bio<textarea value={draftBio} onChange={event => setDraftBio(event.target.value)} maxLength={240} placeholder="Tell us a little about yourself..." /></label>
+          <label>Gender<select value={draftGender} onChange={event => setDraftGender(event.target.value)}><option value="prefer_not_to_say">Prefer not to say</option><option value="female">Female</option><option value="male">Male</option><option value="non_binary">Non-binary</option></select></label>
+          <label>Date of birth<input type="date" value={draftDateOfBirth} onChange={event => setDraftDateOfBirth(event.target.value)} /></label>
           <button type="button" className="user-edit-save" onClick={saveEditor}>Guardar alterações</button>
         </div>}
 

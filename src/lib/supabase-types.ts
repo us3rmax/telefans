@@ -380,33 +380,45 @@ export type Database = {
       telegram_users: {
         Row: {
           auth_date: string
+          bio: string
           created_at: string
+          date_of_birth: string | null
           first_name: string
           last_name: string | null
           photo_url: string | null
           telegram_id: number
           updated_at: string
           username: string | null
+          gender: string
+          profile_photo_url: string | null
         }
         Insert: {
           auth_date: string
+          bio?: string
           created_at?: string
+          date_of_birth?: string | null
           first_name: string
           last_name?: string | null
           photo_url?: string | null
           telegram_id: number
           updated_at?: string
           username?: string | null
+          gender?: string
+          profile_photo_url?: string | null
         }
         Update: {
           auth_date?: string
+          bio?: string
           created_at?: string
+          date_of_birth?: string | null
           first_name?: string
           last_name?: string | null
           photo_url?: string | null
           telegram_id?: number
           updated_at?: string
           username?: string | null
+          gender?: string
+          profile_photo_url?: string | null
         }
         Relationships: []
       }
