@@ -78,7 +78,7 @@ export async function togglePostLike(postId: string, liked: boolean) {
     if (error) throw error
     return
   }
-  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: visitorKey })
+  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: null })
   if (error && error.code !== '23505') throw error
 }
 
@@ -91,7 +91,7 @@ export async function hasPostLike(postId: string) {
 }
 
 export async function listPostComments(postId: string) {
-  const { data, error } = await supabase.from('post_comments').select('id, body, created_at').eq('post_id', postId).order('created_at', { ascending: true })
+  const { data, error } = await supabase.from('post_comments').select('id, body, created_at, visitor_key, user_id').eq('post_id', postId).order('created_at', { ascending: true })
   if (error) throw error
   return data ?? []
 }

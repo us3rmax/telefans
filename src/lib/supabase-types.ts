@@ -324,21 +324,24 @@ export type Database = {
       }
       post_likes: {
         Row: {
+          id: string
           created_at: string
           post_id: string
-          user_id: string
+          user_id: string | null
           visitor_key: string
         }
         Insert: {
+          id?: string
           created_at?: string
           post_id: string
-          user_id: string
+          user_id?: string | null
           visitor_key: string
         }
         Update: {
+          id?: string
           created_at?: string
           post_id?: string
-          user_id?: string
+          user_id?: string | null
           visitor_key?: string
         }
         Relationships: [
