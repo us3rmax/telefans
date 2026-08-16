@@ -63,7 +63,6 @@ export function CreatorProfilePage() {
           coverImage: remote.cover_image || fallback.coverImage,
           avatarImage: remote.avatar_image || fallback.avatarImage,
           bio: remote.bio || fallback.bio,
-          expandedBio: remote.expanded_bio || fallback.expandedBio,
           status: remote.status || fallback.status,
         })
         const posts = await listCreatorPosts(remote.id)
@@ -100,8 +99,8 @@ export function CreatorProfilePage() {
             <h1>{creator.name} <CreatorBadges badges={creator.badges} /></h1>
             <p className="creator-handle">{creator.handle} <b>·</b> <span className="creator-availability"><i aria-hidden="true">🟢</i>{availability}</span></p>
           </div>
-          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{expanded ? (creator.expandedBio ?? creator.bio) : creator.bio}</p>
-          <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>
+          <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{creator.bio}</p>
+          {creator.bio.length > 180 && <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>}
         </section>
 
         <section className="creator-subscription">
