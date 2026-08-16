@@ -48,8 +48,8 @@ export const exploreCreators: ExploreCreator[] = source.map(([name, id, trending
   createdAt,
 }))
 
-export function rankExploreCreators(category: ExploreCategory) {
-  return [...exploreCreators].sort((a, b) => {
+export function rankExploreCreators(category: ExploreCategory, creators: ExploreCreator[] = exploreCreators) {
+  return [...creators].sort((a, b) => {
     if (category === 'Trending') return b.trendingScore - a.trendingScore
     if (category === 'Most Popular') return b.popularScore - a.popularScore
     return b.createdAt.localeCompare(a.createdAt)

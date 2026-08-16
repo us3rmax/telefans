@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { House, PlaySquare, Search, UserRound } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { exploreCreators, rankExploreCreators, type ExploreCategory } from '@/data/explore'
+import { useEffect, useMemo, useState } from 'react'
+import { exploreCreators, rankExploreCreators, type ExploreCategory, type ExploreCreator } from '@/data/explore'
+import { listPublishedCreators } from '@/lib/telefans-data'
 import '../telescope.css'
 
 function BottomNav() {
@@ -25,7 +26,33 @@ function FilterBar({ query, setQuery, filter, setFilter }: { query: string; setQ
 export function ExplorePage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ExploreCategory>('Trending')
-  const visibleCreators = useMemo(() => rankExploreCreators(filter).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [filter, query])
+  const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[]>([])
+
+  useEffect(() => {
+    let active = true
+    void listPublishedCreators().then((rows) => {
+      if (!active) return
+      setPublishedCreators(rows.map((creator) => ({
+        name: creator.name,
+        image: creator.avatar_image || creator.cover_image || '/placeholder-avatar.svg',
+        slug: creator.slug,
+        trendingScore: 0,
+        popularScore: 0,
+        createdAt: creator.created_at || creator.updated_at || new Date(0).toISOString(),
+      })))
+    }).catch(() => {
+      // Keep the seeded Explore catalogue available if the public query is unavailable.
+    })
+    return () => { active = false }
+  }, [])
+
+  const allCreators = useMemo(() => {
+    const bySlug = new Map(exploreCreators.map((creator) => [creator.slug, creator]))
+    for (const creator of publishedCreators) bySlug.set(creator.slug, creator)
+    return [...bySlug.values()]
+  }, [publishedCreators])
+
+  const visibleCreators = useMemo(() => rankExploreCreators(filter, allCreators).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [allCreators, filter, query])
   return <main className="telescope-shell">
     <div className="content-column explore-content-column">
       <header className="brand-header"><img src="/assets/telefans-logo.png" alt="TeleFans" /></header>
