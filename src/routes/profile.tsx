@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { normalizeCreatorHandle } from '@/data/creators'
 import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import { listFollowedCreators } from '@/lib/admin-repository'
+import { PrimaryBottomNav } from '@/components/PrimaryBottomNav'
 import { supabase } from '@/lib/supabase'
 import '../telescope.css'
 
@@ -187,6 +188,7 @@ export function ProfilePage() {
       </div>
       {shared && <div className="user-share-toast"><Share2 aria-hidden="true" /> Link copied/shared</div>}
     </div>
+    <PrimaryBottomNav active="profile" />
   </main>
 }
 

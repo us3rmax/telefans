@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronLeft, Heart, House, MessageCircle, MoreHorizontal, Pause, Play, PlaySquare, Send, UserRound, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Heart, MessageCircle, MoreHorizontal, Pause, Play, Send, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, createFileRoute, useSearch } from '@tanstack/react-router'
 import { readAdminPosts } from '@/data/content'
 import { addPostComment, hasPostLike, listPostComments, listPublishedCreators, listPublishedReels, recordPostView, togglePostLike } from '@/lib/telefans-data'
 import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
+import { PrimaryBottomNav } from '@/components/PrimaryBottomNav'
 import '../telescope.css'
 
 type FeedTab = 'trending' | 'new'
@@ -40,14 +41,6 @@ function relativeTime(date: string) {
 
 function commentAuthor(comment: CommentRow, currentName: string) {
   return comment.author_name || (comment.visitor_key && comment.visitor_key === currentName ? currentName : 'TeleFans user')
-}
-
-function Nav() {
-  return <nav className="bottom-nav" aria-label="Primary navigation">
-    <Link to="/" className="nav-link"><House /><span>Explore</span></Link>
-    <Link to="/reels" search={{ tab: 'trending' }} className="nav-link nav-active"><PlaySquare /><span>Reels</span></Link>
-    <Link to="/profile" className="nav-link"><UserRound /><span>Profile</span></Link>
-  </nav>
 }
 
 function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, initialLiked, onOpenCreator }: { reel: ReelItem; active: boolean; loadVideo: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<{ applied: boolean; delta: -1 | 0 | 1 }>; initialLiked: boolean; onOpenCreator: (id: string) => void }) {
@@ -319,7 +312,7 @@ export function ReelsPage() {
       {!loading && !error && !feed.length && <div className="reels-state">Ainda não existem Reels publicados.</div>}
       {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })) } catch { /* storage opcional */ } }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { const result = await togglePostLike(reel.id, liked, currentTelegramId); if (result.applied) { setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + result.delta) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } return result } : undefined} />)}
     </div>
-    <Nav />
+    <PrimaryBottomNav active="reels" />
     {notice && <div className="reels-notice" role="status">{notice}</div>}
     {commentReel && <div className="comments-backdrop" role="presentation" onClick={() => setCommentReel(null)}><section className="comments-sheet" role="dialog" aria-modal="true" aria-label={`Comentários de ${commentReel.creator}`} onClick={(event) => event.stopPropagation()}>
       <div className="comments-heading"><strong>{commentRows.length || commentReel.comments} comments</strong><button type="button" onClick={() => setCommentReel(null)} aria-label="Fechar comentários"><X /></button></div>
