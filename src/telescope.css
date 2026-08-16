@@ -529,7 +529,7 @@ button { cursor: pointer; }
 .comments-heading strong { font-size: 17px; }
 .comments-heading button { width: 40px; height: 40px; border-radius: 50%; background: #242529; }
 .comments-list { max-height: calc(68dvh - 170px); }
-.comment-item { display: grid; grid-template-columns: minmax(0,1fr) 27px; gap: 14px; margin: 0; padding: 13px 0; background: transparent; }
+.comment-item { display: grid; grid-template-columns: 48px minmax(0,1fr) 27px; gap: 14px; margin: 0; padding: 13px 0; background: transparent; } .comment-avatar { width: 48px; height: 48px; }
 .comment-content { min-width: 0; }
 .comment-meta { display: flex; align-items: baseline; gap: 8px; }
 .comment-meta strong { font-size: 16px; }
