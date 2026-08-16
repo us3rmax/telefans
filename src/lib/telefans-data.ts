@@ -70,16 +70,25 @@ export async function listPublishedReels(limit = 40): Promise<PublishedReel[]> {
   return posts.map((post) => ({ ...post, metrics: metrics.get(post.id)! }))
 }
 
-export async function togglePostLike(postId: string, liked: boolean, telegramId?: number | null) {
+export async function togglePostLike(postId: string, liked: boolean, telegramId?: number | null): Promise<boolean> {
   const visitorKey = getVisitorKey()
-  if (!visitorKey) return
+  if (!visitorKey) return false
+
   if (!liked) {
-    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).or(`visitor_key.eq.${visitorKey},telegram_id.eq.${telegramId ?? -1}`)
+    const identityFilter = telegramId == null ? `visitor_key.eq.${visitorKey}` : `visitor_key.eq.${visitorKey},telegram_id.eq.${telegramId}`
+    const { data, error } = await supabase.from('post_likes').delete().eq('post_id', postId).or(identityFilter).select('id')
     if (error) throw error
-    return
+    return Boolean(data?.length)
   }
+
+  const identityFilter = telegramId == null ? `visitor_key.eq.${visitorKey}` : `visitor_key.eq.${visitorKey},telegram_id.eq.${telegramId}`
+  const { data: existing, error: existingError } = await supabase.from('post_likes').select('id').eq('post_id', postId).or(identityFilter).limit(1).maybeSingle()
+  if (existingError) throw existingError
+  if (existing) return false
+
   const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, telegram_id: telegramId ?? null, user_id: null })
   if (error && error.code !== '23505') throw error
+  return !error
 }
 
 export async function hasPostLike(postId: string, telegramId?: number | null) {

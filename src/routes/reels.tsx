@@ -50,7 +50,7 @@ function Nav() {
   </nav>
 }
 
-function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, initialLiked, onOpenCreator }: { reel: ReelItem; active: boolean; loadVideo: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<void>; initialLiked: boolean; onOpenCreator: (id: string) => void }) {
+function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, initialLiked, onOpenCreator }: { reel: ReelItem; active: boolean; loadVideo: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<boolean>; initialLiked: boolean; onOpenCreator: (id: string) => void }) {
   const cardRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [liked, setLiked] = useState(initialLiked)
@@ -110,7 +110,10 @@ function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, 
     const nextLiked = !liked
     setLiked(nextLiked)
     setLikeBusy(true)
-    try { await onLike(nextLiked) } catch { setLiked(!nextLiked) }
+    try {
+      const changed = await onLike(nextLiked)
+      if (!changed) setLiked(!nextLiked)
+    } catch { setLiked(!nextLiked) }
     finally { setLikeBusy(false) }
   }
 
@@ -153,12 +156,26 @@ export function ReelsPage() {
   const [likedByPost, setLikedByPost] = useState<Record<string, boolean>>({})
   const [activeReelId, setActiveReelId] = useState<string | null>(null)
   const viewedReels = useRef(new Set<string>())
+  const reelsFeedRef = useRef<HTMLDivElement>(null)
+  const restoringPosition = useRef(false)
   const positionKey = 'telefans.reels.position'
 
   useEffect(() => {
-    setInsideTelegram(Boolean(window.Telegram?.WebApp))
-    return useTelegramBackButton(() => window.history.back())
+    let attempts = 0
+    const timer = window.setInterval(() => {
+      const detected = Boolean(window.Telegram?.WebApp)
+      if (detected) setInsideTelegram(true)
+      attempts += 1
+      if (detected || attempts >= 20) window.clearInterval(timer)
+    }, 100)
+    if (window.Telegram?.WebApp) {
+      setInsideTelegram(true)
+      window.clearInterval(timer)
+    }
+    return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => useTelegramBackButton(() => window.history.back()), [])
 
   useEffect(() => {
     void getTelegramUser().then((user) => {
@@ -205,11 +222,21 @@ export function ReelsPage() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      if (!activeReelId) return
-      document.querySelector<HTMLElement>(`[data-reel-id="${CSS.escape(activeReelId)}"]`)?.scrollIntoView({ block: 'start' })
+      if (!activeReelId || !feed.length) return
+      const container = reelsFeedRef.current
+      const index = feed.findIndex((reel) => reel.id === activeReelId)
+      if (!container || index < 0) return
+      let savedTop: number | null = null
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(positionKey) || 'null')
+        savedTop = typeof saved?.scrollTop === 'number' ? saved.scrollTop : null
+      } catch { savedTop = null }
+      restoringPosition.current = true
+      container.scrollTo({ top: savedTop ?? index * container.clientHeight, behavior: 'auto' })
+      window.setTimeout(() => { restoringPosition.current = false }, 120)
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [activeReelId, feed.length])
+  }, [activeReelId, feed])
 
   useEffect(() => {
     let mounted = true
@@ -218,8 +245,9 @@ export function ReelsPage() {
   }, [feed, currentTelegramId])
 
   const handleVisible = useCallback((id: string) => {
+    if (restoringPosition.current) return
     setActiveReelId(id)
-    try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab })) } catch { /* storage opcional */ }
+    try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })) } catch { /* storage opcional */ }
     if (viewedReels.current.has(id)) return
     viewedReels.current.add(id)
     const reel = feed.find((item) => item.id === id)
@@ -267,7 +295,7 @@ export function ReelsPage() {
   const visibleFeed = useMemo(() => feed, [feed])
   const commentRows = commentReel ? comments[commentReel.id] ?? [] : []
 
-  return <main className="reels-shell">
+  return <main className={`reels-shell${commentReel ? ' comments-open' : ''}`}>
     <header className={`reels-topbar ${insideTelegram ? 'reels-topbar-telegram' : ''}`}>
       {!insideTelegram && <button type="button" className="reels-back-button" onClick={() => window.history.back()} aria-label="Voltar"><ChevronLeft /><span>Voltar</span></button>}
       <div className="reels-controls" aria-label="Filtro de Reels">
@@ -276,11 +304,11 @@ export function ReelsPage() {
       </div>
       {!insideTelegram && <button type="button" className="reels-menu-button" aria-label="Opções"><ChevronDown /><MoreHorizontal /></button>}
     </header>
-    <div className="reels-feed">
+    <div ref={reelsFeedRef} className="reels-feed">
       {loading && <div className="reels-state">A carregar Reels…</div>}
       {!loading && error && <div className="reels-state reels-state-error">{error}</div>}
       {!loading && !error && !feed.length && <div className="reels-state">Ainda não existem Reels publicados.</div>}
-      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab })) } catch { /* storage opcional */ } }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { await togglePostLike(reel.id, liked, currentTelegramId); setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + (liked ? 1 : -1)) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } : undefined} />)}
+      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })) } catch { /* storage opcional */ } }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { const changed = await togglePostLike(reel.id, liked, currentTelegramId); if (changed) { setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + (liked ? 1 : -1)) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } return changed } : undefined} />)}
     </div>
     <Nav />
     {notice && <div className="reels-notice" role="status">{notice}</div>}

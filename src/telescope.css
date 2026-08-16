@@ -526,7 +526,7 @@ button { cursor: pointer; }
 .reel-actions .liked { color: #ff526b; }
 .reel-actions button:disabled { opacity: .7; }
 .bottom-nav { position: fixed; right: 50%; bottom: max(13px, env(safe-area-inset-bottom)); z-index: 10; width: min(calc(100% - 54px), 360px); transform: translateX(50%); border: 1px solid rgba(255,255,255,.2); border-radius: 38px; background: rgba(19,19,22,.78); box-shadow: 0 8px 28px rgba(0,0,0,.3); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-.comments-backdrop { padding: 0; background: rgba(0,0,0,.54); }
+.comments-backdrop { z-index: 200; padding: 0; background: rgba(0,0,0,.54); }
 .comments-sheet { width: 100%; max-width: 620px; max-height: 68dvh; padding: 29px 31px max(22px, env(safe-area-inset-bottom)); border: 0; border-radius: 34px 34px 20px 20px; background: #101113; }
 .comments-heading { margin-bottom: 19px; font-size: 17px; }
 .comments-heading strong { font-size: 17px; }
@@ -596,6 +596,8 @@ button { cursor: pointer; }
 
 /* Reels interaction repair: keep the comment composer visible and avoid duplicated Telegram chrome. */
 .reels-topbar-telegram { grid-template-columns: 1fr; }
+.reels-topbar-telegram .reels-back-button,
+.reels-topbar-telegram .reels-menu-button { display: none !important; }
 .reels-topbar-telegram .reels-controls { position: relative; top: auto; }
 .comments-sheet { display: flex; flex-direction: column; max-height: min(82dvh, 720px); }
 .comments-list { min-height: 0; flex: 1 1 auto; max-height: none; overflow-y: auto; }

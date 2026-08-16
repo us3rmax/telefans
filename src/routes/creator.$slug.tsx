@@ -90,7 +90,7 @@ export function CreatorProfilePage() {
             <div className="creator-hero-gradient" />
           </div>
             <div className="creator-cover-header">
-            <Link to="/" className="creator-cover-back" aria-label="Back to explore"><ArrowLeft /></Link>
+            <Link to="/" className="creator-cover-back" aria-label="Back" onClick={(event) => { if (window.history.length > 1) { event.preventDefault(); window.history.back() } }}><ArrowLeft /></Link>
           </div>
           <div className="creator-avatar">            <img src={creator.avatarImage} alt={`${creator.name} avatar`} /></div>
         </section>
