@@ -115,8 +115,7 @@ export function ProfilePage() {
         </section>
 
         <section className="coins-card">
-          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
-          <strong>0</strong>
+          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><strong aria-label="Fans Coins balance">0</strong><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
           {coinsHelp && <p className="coins-help">Fans Coins can be used to unlock content and support creators.</p>}
         </section>
 

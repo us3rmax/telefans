@@ -725,17 +725,20 @@ button { cursor: pointer; }
   box-shadow: 0 18px 45px rgba(0,0,0,.22);
 }
 .coins-card {
-  min-height: 154px;
+  min-height: 0;
   margin: 30px 20px 0;
-  padding: 24px 23px 20px;
+  padding: 17px 20px;
   border-radius: 24px;
   background: radial-gradient(circle at 100% 0, rgba(217,191,82,.2), transparent 45%), linear-gradient(135deg, #302e18, #211f14 72%);
   box-shadow: 0 12px 30px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.06);
 }
-.coins-card-title { font-size: 11px; letter-spacing: .14em; }
-.coins-card-title svg { width: 17px; height: 17px; }
-.coins-card-title button { width: 29px; height: 29px; }
-.coins-card > strong { margin-top: 20px; font-size: 48px; }
+.coins-card-title { display: flex; align-items: center; gap: 10px; min-height: 42px; font-size: 11px; letter-spacing: .14em; }
+.coins-card-title svg { width: 17px; height: 17px; flex: 0 0 auto; }
+.coins-card-title span { white-space: nowrap; }
+.coins-card-title strong { margin-left: auto; color: #f8f8fa; font-size: 30px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
+.coins-card-title button { width: 29px; height: 29px; flex: 0 0 auto; }
+.coins-card > strong { display: none; }
+.coins-help { margin: 8px 0 0 27px; color: #c7c3a7; font-size: 12px; line-height: 1.4; }
 .user-action-row {
   width: calc(100% - 40px);
   min-height: 76px;
