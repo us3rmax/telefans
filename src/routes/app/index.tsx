@@ -1,7 +1,7 @@
-import { Activity, AlertTriangle, BarChart3, CheckCircle2, Clock3, Coins, Eye, FileImage, Filter, Heart, ImagePlus, Link2, Loader2, MessageCircle, RefreshCw, Send, TrendingUp, Upload, Users, UsersRound, Video, WalletCards, Star, LineChart } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Activity, AlertTriangle, BarChart3, CheckCircle2, Clock3, Coins, Eye, FileImage, Filter, Heart, Link2, Loader2, MessageCircle, RefreshCw, Send, TrendingUp, Users, UsersRound, Video, WalletCards, Star, LineChart } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { getAdminAnalytics, listAdminClients, listAdminCreators, type AdminAnalytics, type AdminClient, uploadCreatorMediaBatch, type Creator } from '@/lib/admin-repository'
+import { getAdminAnalytics, listAdminClients, listAdminCreators, type AdminAnalytics, type AdminClient, type Creator } from '@/lib/admin-repository'
 
 export const Route = createFileRoute('/app/')({ component: DashboardHome })
 type Icon = typeof Users
@@ -53,14 +53,10 @@ function DashboardHome() {
   const [clients, setClients] = useState<AdminClient[]>([])
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
-  const [unlockPrice, setUnlockPrice] = useState('10')
-  const [paidImages, setPaidImages] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [account, setAccount] = useState('all')
   const [period, setPeriod] = useState<Period>('14d')
-  const inputs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const loadDashboard = async () => {
     setLoading(true); setError('')
@@ -85,20 +81,6 @@ function DashboardHome() {
   const recentClients = useMemo(() => [...clients].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6), [clients])
   const activeClients = useMemo(() => [...clients].sort((a, b) => b.following_count - a.following_count || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 6), [clients])
 
-  const handleFiles = async (creator: Creator, files: File[]) => {
-    if (!files.length) return
-    setUploadingId(creator.id); setMessage(''); setError('')
-    try {
-      const price = Number.parseInt(unlockPrice, 10)
-      if (!Number.isFinite(price) || price < 0) throw new Error('Enter a valid Paid Media price.')
-      const result = await uploadCreatorMediaBatch(files, creator.id, price, paidImages)
-      const images = result.filter(({ asset }) => asset.kind === 'image').length
-      const videos = result.filter(({ asset }) => asset.kind === 'video').length
-      setMessage(`${creator.name}: ${images} image(s) added to the profile and ${videos} video(s) sent to Reels.`)
-      await loadDashboard()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not upload the media.') }
-    finally { setUploadingId(null) }
-  }
 
   const view = filteredAnalytics
   const overview = view?.overview
@@ -120,7 +102,7 @@ function DashboardHome() {
       <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Spender tracking</h2><p>Identify paying users, repeat buyers and high-value accounts.</p></div><UsersRound /></div><NoDataPanel icon={UsersRound} title="No spender data yet" description="This panel is intentionally empty until a purchase table links Telegram users to paid media or subscription transactions." /></section>
       <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Link analytics</h2><p>Track creator links, source traffic and conversion into follows or purchases.</p></div><Link2 /></div><NoDataPanel icon={Link2} title="No tracked links yet" description="Create link events with source, campaign, creator and destination fields to activate this report without changing the public app layout." /></section>
       <div className="admin-two-column"><section className="admin-panel"><div className="admin-panel-heading"><div><h2>New users</h2><p>Latest Telegram accounts to onboard and retain.</p></div><Clock3 /></div><div className="space-y-2">{recentClients.map(client => <ClientRow key={client.telegram_id} client={client} />)}</div></section><section className="admin-panel"><div className="admin-panel-heading"><div><h2>Most engaged users</h2><p>Users with the strongest creator-following activity.</p></div><CheckCircle2 /></div><div className="space-y-2">{activeClients.map(client => <ClientRow key={client.telegram_id} client={client} />)}</div></section></div>
-      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Creator operations</h2><p>Upload profile media and route videos to Reels.</p></div><Upload /></div><div className="admin-upload-toolbar"><label>Paid Media price<input type="number" min="0" step="1" value={unlockPrice} onChange={event => setUnlockPrice(event.target.value)} /><small>Coins per image</small></label><label className="admin-upload-paid-toggle"><input type="checkbox" checked={paidImages} onChange={event => setPaidImages(event.target.checked)} />Mark image uploads as Paid<small>Off: images go to Posts only. On: images also appear in Paid Media.</small></label></div><div className="admin-creator-grid">{models.map(model => { const busy = uploadingId === model.id; return <button key={model.id} type="button" disabled={busy} onClick={() => inputs.current[model.id]?.click()} className="admin-creator-card"><div className="admin-creator-image"><img src={model.avatar_image || model.cover_image} alt={model.name} /><div><span>{model.name}</span>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}</div></div><span className="admin-upload-label"><Upload />Add media<input ref={element => { inputs.current[model.id] = element }} type="file" accept="image/*,video/*" multiple className="sr-only" onClick={event => event.stopPropagation()} onChange={event => { void handleFiles(model, Array.from(event.target.files ?? [])); event.currentTarget.value = '' }} /></span></button> })}</div></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Creator workspaces</h2><p>Open a creator workspace to edit the profile and manage Feed, Paid Media and Reels.</p></div><a href="/app/models" className="admin-inline-link">Open Creators →</a></div><div className="admin-two-column">{models.slice(0, 6).map(model => <a key={model.id} href={`/app/models/${model.id}`} className="admin-list-row"><div className="admin-avatar">{model.avatar_image ? <img src={model.avatar_image} alt="" /> : model.name.slice(0, 1)}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{model.name}</p><p className="truncate text-xs text-muted-foreground">@{model.handle}</p></div><span className="admin-inline-link">Manage →</span></a>)}{models.length === 0 && <div className="admin-empty-state">No creators available.</div>}</div></section>
     </>}
   </div></main>
 }
