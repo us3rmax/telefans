@@ -532,14 +532,12 @@ button { cursor: pointer; }
 .comments-heading strong { font-size: 17px; }
 .comments-heading button { width: 40px; height: 40px; border-radius: 50%; background: #242529; }
 .comments-list { max-height: calc(68dvh - 170px); }
-.comment-item { display: grid; grid-template-columns: 48px minmax(0,1fr) 27px; gap: 14px; margin: 0; padding: 13px 0; background: transparent; }
-.comment-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #33353b; color: #fff; font-size: 20px; }
+.comment-item { display: grid; grid-template-columns: minmax(0,1fr) 27px; gap: 14px; margin: 0; padding: 13px 0; background: transparent; }
 .comment-content { min-width: 0; }
 .comment-meta { display: flex; align-items: baseline; gap: 8px; }
 .comment-meta strong { font-size: 16px; }
 .comment-meta small { color: #8e9096; font-size: 12px; }
 .comment-content p { margin: 8px 0 5px; color: #f3f3f4; font-size: 15px; line-height: 1.4; }
-.comment-reply { padding: 0; border: 0; background: transparent; color: #95979d; font: inherit; font-size: 14px; font-weight: 600; }
 .comment-like { display: flex; flex-direction: column; align-items: center; gap: 2px; align-self: start; padding: 3px 0; border: 0; background: transparent; color: #aeb0b6; }
 .comment-like svg { width: 24px; height: 24px; }
 .comment-like small { font-size: 12px; }
@@ -602,8 +600,6 @@ button { cursor: pointer; }
 .comments-sheet { display: flex; flex-direction: column; max-height: min(82dvh, 720px); }
 .comments-list { min-height: 0; flex: 1 1 auto; max-height: none; overflow-y: auto; }
 .comment-form { flex: 0 0 auto; padding-bottom: max(2px, env(safe-area-inset-bottom)); }
-.comment-avatar { display: inline-grid; place-items: center; overflow: hidden; }
-.comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Final viewport centering for Telegram Reels tabs. */
 .reels-topbar-telegram {
