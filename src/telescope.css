@@ -458,3 +458,38 @@ button { cursor: pointer; }
 .unlock-section, .following-section { margin-inline: 24px; }
 .user-profile-bottom-space { height: max(78px, env(safe-area-inset-bottom)); }
 .user-profile-page svg { transform: scale(.55); transform-origin: center; }
+
+/* Reels correction pass: one feed filter bar, bounded media loading and safe-area layout. */
+.reels-shell { min-height: 100dvh; height: 100dvh; padding-top: 0; overflow: hidden; }
+.reels-feed { position: relative; height: 100%; padding-top: max(54px, calc(var(--tg-chrome-top, 0px) + 14px)); padding-bottom: calc(92px + env(safe-area-inset-bottom)); overscroll-behavior-y: contain; }
+.reels-controls { position: absolute; top: max(12px, calc(var(--tg-chrome-top, 0px) + 4px)); left: 50%; z-index: 8; display: flex; gap: 22px; transform: translateX(-50%); }
+.reels-controls .reel-tab { padding: 8px 2px; color: rgba(255,255,255,.72); font-size: 16px; white-space: nowrap; }
+.reels-controls .reel-tab.active { color: #fff; font-weight: 700; }
+.reels-controls .reel-tab.active::after { bottom: -3px; height: 3px; }
+.reel-card { height: calc(100dvh - max(54px, calc(var(--tg-chrome-top, 0px) + 14px))); min-height: 0; }
+.reel-card .reel-image { transform: none; }
+.reel-media-error, .reels-state { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 24px; color: rgba(255,255,255,.82); text-align: center; }
+.reels-state { position: relative; min-height: 45dvh; }
+.reels-state-error { color: #ff9d9d; }
+.reels-notice { position: fixed; right: 18px; bottom: calc(96px + env(safe-area-inset-bottom)); left: 18px; z-index: 50; padding: 10px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(22,22,25,.92); color: #fff; font-size: 13px; text-align: center; }
+.reel-actions button:disabled { cursor: not-allowed; opacity: .45; }
+.comments-backdrop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding: 16px; background: rgba(0,0,0,.46); }
+.comments-sheet { width: min(100%, 620px); max-height: min(72dvh, 620px); overflow: hidden; padding: 18px 18px max(18px, env(safe-area-inset-bottom)); border: 1px solid rgba(255,255,255,.12); border-radius: 22px 22px 14px 14px; background: #18181b; color: #fff; box-shadow: 0 -14px 50px rgba(0,0,0,.38); }
+.comments-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.comments-heading button { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; color: #fff; }
+.comments-heading svg { width: 20px; height: 20px; }
+.comments-list { max-height: min(42dvh, 360px); overflow-y: auto; }
+.comment-item { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.07); font-size: 14px; line-height: 1.4; }
+.comments-empty { margin: 28px 0; color: rgba(255,255,255,.56); font-size: 14px; text-align: center; }
+.comment-form { display: flex; gap: 8px; margin-top: 14px; }
+.comment-form input { min-width: 0; flex: 1; height: 42px; padding: 0 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 11px; outline: 0; background: rgba(255,255,255,.06); color: #fff; font: inherit; }
+.comment-form button { min-width: 72px; height: 42px; border: 0; border-radius: 11px; background: #fff; color: #17181b; font-weight: 700; }
+.comments-count { display: block; margin-top: 10px; color: rgba(255,255,255,.5); font-size: 12px; }
+@media (max-width: 420px) {
+  .reels-controls { gap: 18px; }
+  .reels-controls .reel-tab { font-size: 15px; }
+  .reel-caption { right: 10px; bottom: calc(100px + env(safe-area-inset-bottom)); left: 10px; }
+  .reel-creator-link { gap: 7px; font-size: 15px; }
+  .reel-creator-avatar { width: 32px; height: 32px; }
+  .reel-actions { gap: 13px; }
+}

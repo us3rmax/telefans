@@ -37,10 +37,37 @@ export async function listCreatorPosts(creatorId: string): Promise<PostRow[]> {
   return data ?? []
 }
 
-export async function listPublishedReels(limit = 40): Promise<PostRow[]> {
+export type ReelMetrics = {
+  likes: number
+  comments: number
+  views: number
+}
+
+export type PublishedReel = PostRow & { metrics: ReelMetrics }
+
+async function loadReelMetrics(postIds: string[]) {
+  const metrics = new Map<string, ReelMetrics>(postIds.map((id) => [id, { likes: 0, comments: 0, views: 0 }]))
+  if (!postIds.length) return metrics
+  const [{ data: likes, error: likesError }, { data: comments, error: commentsError }, { data: views, error: viewsError }] = await Promise.all([
+    supabase.from('post_likes').select('post_id').in('post_id', postIds),
+    supabase.from('post_comments').select('post_id').in('post_id', postIds),
+    supabase.from('post_views').select('post_id').in('post_id', postIds),
+  ])
+  if (likesError) throw likesError
+  if (commentsError) throw commentsError
+  if (viewsError) throw viewsError
+  for (const row of likes ?? []) metrics.get(row.post_id)!.likes += 1
+  for (const row of comments ?? []) metrics.get(row.post_id)!.comments += 1
+  for (const row of views ?? []) metrics.get(row.post_id)!.views += 1
+  return metrics
+}
+
+export async function listPublishedReels(limit = 40): Promise<PublishedReel[]> {
   const { data, error } = await supabase.from('creator_posts').select('*').eq('published', true).eq('reels_enabled', true).eq('type', 'video').order('created_at', { ascending: false }).limit(limit)
   if (error) throw error
-  return data ?? []
+  const posts = data ?? []
+  const metrics = await loadReelMetrics(posts.map((post) => post.id))
+  return posts.map((post) => ({ ...post, metrics: metrics.get(post.id)! }))
 }
 
 export async function togglePostLike(postId: string, liked: boolean) {

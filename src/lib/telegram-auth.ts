@@ -16,6 +16,7 @@ type TelegramWebApp = {
   isFullscreen?: boolean
   isVersionAtLeast?: (version: string) => boolean
   close?: () => void
+  openTelegramLink?: (url: string) => void
   disableVerticalSwipes?: () => void
   enableVerticalSwipes?: () => void
   disableClosingConfirmation?: () => void
