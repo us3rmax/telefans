@@ -75,14 +75,28 @@ export function TelegramAuthBootstrap() {
   }, [])
 
   useEffect(() => {
-    try { setAgeVerified(window.localStorage.getItem('telefans.age_verified') === 'true') } catch { setAgeVerified(false) }
     let active = true
-    void authenticateTelegramMiniApp().then((telegramUser) => { if (active && telegramUser) { setUser(telegramUser); setConnected(true) } }).catch(() => { if (active) setConnected(false) })
+    let verified = false
+    try { verified = window.localStorage.getItem('telefans.age_verified') === 'true' } catch { verified = false }
+    setAgeVerified(verified)
+
+    // Do not authenticate or create the Telegram account until age consent exists.
+    if (!verified) return () => { active = false }
+
+    void authenticateTelegramMiniApp().then((telegramUser) => {
+      if (active && telegramUser) { setUser(telegramUser); setConnected(true) }
+    }).catch(() => { if (active) setConnected(false) })
     return () => { active = false }
   }, [])
 
-  const confirmAge = () => { try { window.localStorage.setItem('telefans.age_verified', 'true') } catch { /* storage opcional */ }; setAgeVerified(true) }
+  const confirmAge = () => {
+    try { window.localStorage.setItem('telefans.age_verified', 'true') } catch { /* storage opcional */ }
+    setAgeVerified(true)
+    void authenticateTelegramMiniApp().then((telegramUser) => {
+      if (telegramUser) { setUser(telegramUser); setConnected(true) }
+    }).catch(() => setConnected(false))
+  }
   const leave = () => { const webApp = window.Telegram?.WebApp; if (webApp?.close) webApp.close(); else window.history.back() }
 
-  return connected && user && ageVerified === false ? <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="global-age-gate-title"><div className="age-gate-card"><div className="age-gate-connected">{user.photo_url ? <img src={user.photo_url} alt="" /> : <span>{user.first_name.slice(0, 1).toUpperCase()}</span>}<p>Connected as<strong>{user.first_name}</strong></p></div><h2 id="global-age-gate-title">Adults only</h2><p className="age-gate-copy">TeleFans contains 18+ premium content. Confirm once that you are 18 years old or above to continue.</p><div className="age-gate-actions"><button type="button" onClick={leave}>Leave</button><button type="button" onClick={confirmAge}>I confirm I am 18+</button></div></div></div> : null
+  return ageVerified === false ? <div className="age-gate" role="dialog" aria-modal="true" aria-labelledby="global-age-gate-title"><div className="age-gate-card"><h2 id="global-age-gate-title">Adults only</h2><p className="age-gate-copy">This app contains 18+ content. You must confirm that you are 18 years old or above before creating an account or continuing.</p><div className="age-gate-actions"><button type="button" onClick={leave}>Leave</button><button type="button" onClick={confirmAge}>I confirm I am 18+</button></div></div></div> : null
 }
