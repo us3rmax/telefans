@@ -10,6 +10,11 @@ import '../telescope.css'
 
 const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>
+  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 function telegramWebApp() {
   return (window as Window & {
     Telegram?: { WebApp?: {
@@ -17,9 +22,13 @@ function telegramWebApp() {
       ready?: () => void
       expand?: () => void
       addToHomeScreen?: () => void
+      checkHomeScreenStatus?: () => void
+      addEventListener?: (event: string, callback: () => void) => void
+      removeEventListener?: (event: string, callback: () => void) => void
       openTelegramLink?: (url: string) => void
       shareMessage?: (preparedMessageId: string) => void
       initData?: string
+      platform?: string
     } }
   }).Telegram?.WebApp
 }
@@ -33,6 +42,8 @@ export function ProfilePage() {
   const [shared, setShared] = useState(false)
   const [coinsHelp, setCoinsHelp] = useState(false)
   const [homeAdded, setHomeAdded] = useState(false)
+  const [homeInstruction, setHomeInstruction] = useState('Save TeleFans for faster access')
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [profileSync, setProfileSync] = useState<ProfileSync>({})
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
   const [coinsBalance, setCoinsBalance] = useState(0)
@@ -41,7 +52,24 @@ export function ProfilePage() {
   useEffect(() => {
     let active = true
     const webApp = telegramWebApp()
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      if (active) setInstallPrompt(event as BeforeInstallPromptEvent)
+    }
+    const handleHomeScreenAdded = () => {
+      if (!active) return
+      setHomeAdded(true)
+      setHomeInstruction('TeleFans was added to your home screen')
+    }
     const cleanupBackButton = useTelegramBackButton(() => window.history.back())
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', () => {
+      if (!active) return
+      setHomeAdded(true)
+      setHomeInstruction('TeleFans was added to your home screen')
+      setInstallPrompt(null)
+    })
+    webApp?.addEventListener?.('homeScreenAdded', handleHomeScreenAdded)
     webApp?.ready?.()
     webApp?.expand?.()
     setTelegramAuthState('connecting')
@@ -63,7 +91,12 @@ export function ProfilePage() {
         }
       })
       .catch(() => active && setTelegramAuthState('error'))
-    return () => { active = false; cleanupBackButton() }
+    return () => {
+      active = false
+      cleanupBackButton()
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      webApp?.removeEventListener?.('homeScreenAdded', handleHomeScreenAdded)
+    }
   }, [])
 
   const displayName = telegramUser?.first_name || 'W'
@@ -112,10 +145,36 @@ export function ProfilePage() {
     window.setTimeout(() => setShared(false), 1800)
   }
 
-  const addToHomeScreen = () => {
-    // Keep the instruction in-app so Safari/Telegram cannot replace it with a localized native prompt.
+  const addToHomeScreen = async () => {
+    const webApp = telegramWebApp()
+
+    if (webApp?.addToHomeScreen && webApp.initData) {
+      webApp.addToHomeScreen()
+      setHomeAdded(true)
+      setHomeInstruction('Telegram will ask you to confirm the shortcut')
+      window.setTimeout(() => setHomeAdded(false), 4200)
+      return
+    }
+
+    if (installPrompt) {
+      const prompt = installPrompt
+      setInstallPrompt(null)
+      const result = await prompt.prompt()
+      setHomeAdded(true)
+      setHomeInstruction(result.outcome === 'accepted' ? 'TeleFans was added to your home screen' : 'Installation was cancelled')
+      window.setTimeout(() => setHomeAdded(false), 4200)
+      return
+    }
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    const isSafari = isIOS || (/safari/i.test(navigator.userAgent) && !/chrome|android/i.test(navigator.userAgent))
     setHomeAdded(true)
-    window.setTimeout(() => setHomeAdded(false), 4200)
+    setHomeInstruction(
+      isSafari
+        ? 'In Safari, tap Share, then choose “Add to Home Screen”'
+        : 'Open your browser menu and choose “Add to Home screen”',
+    )
+    window.setTimeout(() => setHomeAdded(false), 5200)
   }
 
   return <main className="user-profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
@@ -152,7 +211,7 @@ export function ProfilePage() {
         </button>
         <button type="button" className="user-action-row user-home-row" onClick={addToHomeScreen}>
           <House aria-hidden="true" />
-          <span><strong>Add to home screen</strong><small>{homeAdded ? 'Open your browser menu and choose “Add to Home Screen”' : 'Save TeleFans for faster access'}</small></span>
+          <span><strong>Add to home screen</strong><small>{homeAdded ? homeInstruction : 'Save TeleFans for faster access'}</small></span>
           <ChevronRight aria-hidden="true" />
         </button>
 
