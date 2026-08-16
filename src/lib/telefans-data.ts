@@ -25,6 +25,64 @@ export async function listPublishedCreators(): Promise<CreatorRow[]> {
   return data ?? []
 }
 
+export type PublishedCreatorExploreStats = CreatorRow & {
+  trendingScore: number
+  popularScore: number
+}
+
+export async function listPublishedCreatorExploreStats(): Promise<PublishedCreatorExploreStats[]> {
+  const creators = await listPublishedCreators()
+  if (!creators.length) return []
+  const creatorIds = creators.map((creator) => creator.id)
+  const [{ data: posts, error: postsError }, { data: follows, error: followsError }] = await Promise.all([
+    supabase.from('creator_posts').select('id, creator_id, created_at, published').in('creator_id', creatorIds).eq('published', true),
+    supabase.from('creator_following').select('creator_id').in('creator_id', creatorIds),
+  ])
+  if (postsError) throw postsError
+  if (followsError) throw followsError
+  const postRows = posts ?? []
+  const postIds = postRows.map((post) => post.id)
+  const [{ data: likes, error: likesError }, { data: comments, error: commentsError }, { data: views, error: viewsError }] = await Promise.all([
+    postIds.length ? supabase.from('post_likes').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
+    postIds.length ? supabase.from('post_comments').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
+    postIds.length ? supabase.from('post_views').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
+  ])
+  if (likesError) throw likesError
+  if (commentsError) throw commentsError
+  if (viewsError) throw viewsError
+  const postById = new Map(postRows.map((post) => [post.id, post]))
+  const followerCounts = new Map<string, number>()
+  for (const follow of follows ?? []) followerCounts.set(follow.creator_id, (followerCounts.get(follow.creator_id) ?? 0) + 1)
+  const stats = new Map<string, { recent: number; total: number }>()
+  for (const creator of creators) stats.set(creator.id, { recent: 0, total: 0 })
+  const cutoff = Date.now() - 30 * 86400000
+  const addMetric = (rows: Array<{ post_id: string; created_at: string }>, weight: number) => {
+    for (const row of rows) {
+      const post = postById.get(row.post_id)
+      if (!post) continue
+      const value = weight
+      const creatorStats = stats.get(post.creator_id)
+      if (!creatorStats) continue
+      creatorStats.total += value
+      if (new Date(row.created_at).getTime() >= cutoff) creatorStats.recent += value
+    }
+  }
+  addMetric(likes ?? [], 3)
+  addMetric(comments ?? [], 5)
+  addMetric(views ?? [], 0.2)
+  for (const post of postRows) {
+    const creatorStats = stats.get(post.creator_id)
+    if (!creatorStats) continue
+    creatorStats.total += 2
+    if (new Date(post.created_at).getTime() >= cutoff) creatorStats.recent += 4
+  }
+  return creators.map((creator) => {
+    const creatorStats = stats.get(creator.id) ?? { recent: 0, total: 0 }
+    const followers = followerCounts.get(creator.id) ?? 0
+    return { ...creator, trendingScore: Math.round((creatorStats.recent + followers * 0.5) * 10) / 10, popularScore: Math.round((creatorStats.total + followers * 5) * 10) / 10 }
+  })
+}
+
 function slugToken(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '')
 }

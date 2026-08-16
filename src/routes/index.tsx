@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { House, PlaySquare, Search, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { exploreCreators, rankExploreCreators, type ExploreCategory, type ExploreCreator } from '@/data/explore'
-import { listPublishedCreators } from '@/lib/telefans-data'
+import { listPublishedCreatorExploreStats } from '@/lib/telefans-data'
 import '../telescope.css'
 
 function BottomNav() {
@@ -30,14 +30,14 @@ export function ExplorePage() {
 
   useEffect(() => {
     let active = true
-    void listPublishedCreators().then((rows) => {
+    void listPublishedCreatorExploreStats().then((rows) => {
       if (!active) return
       setPublishedCreators(rows.map((creator) => ({
         name: creator.name,
         image: creator.avatar_image || creator.cover_image || '/placeholder-avatar.svg',
         slug: creator.slug,
-        trendingScore: 0,
-        popularScore: 0,
+        trendingScore: creator.trendingScore,
+        popularScore: creator.popularScore,
         createdAt: creator.created_at || creator.updated_at || new Date(0).toISOString(),
       })))
     }).catch(() => {
