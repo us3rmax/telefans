@@ -510,10 +510,10 @@ button { cursor: pointer; }
 .reel-card .reel-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .reel-top-gradient { position: absolute; inset: 0 0 auto; z-index: 1; height: 180px; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.32), transparent); }
 .reel-bottom-gradient { position: absolute; right: 0; bottom: 0; left: 0; z-index: 1; height: 280px; pointer-events: none; background: linear-gradient(0deg, rgba(0,0,0,.72), transparent); }
-.reels-creator-caption { position: absolute; right: 100px; bottom: calc(112px + env(safe-area-inset-bottom)); left: 22px; z-index: 4; }
+.reels-creator-caption { position: absolute; right: 100px; bottom: calc(88px + env(safe-area-inset-bottom)); left: 22px; z-index: 4; }
 .reels-creator-caption .reel-creator-link { display: inline-flex; gap: 9px; align-items: center; color: #fff; font-size: 18px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.45); }
 .reel-creator-avatar { width: 36px; height: 36px; border: 2px solid #fff; }
-.reel-actions { position: absolute; right: 22px; bottom: calc(126px + env(safe-area-inset-bottom)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 19px; }
+.reel-actions { position: absolute; right: 22px; bottom: calc(102px + env(safe-area-inset-bottom)); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 19px; }
 .reel-actions button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 42px; padding: 0; border: 0; background: transparent; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
 .reel-actions button svg { width: 31px; height: 31px; stroke-width: 1.8; }
 .reel-actions button small { font-size: 14px; font-weight: 600; }
