@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title>TeleFans</title>
+  <desc>TeleFans star mark</desc>
+  <rect width="64" height="64" rx="16" fill="#101827"/>
+  <path d="M32 9l4.7 14.3L51 28l-14.3 4.7L32 47l-4.7-14.3L13 28l14.3-4.7L32 9z" fill="#fff"/>
+  <path d="M48.5 42.5l1.7 5.3 5.3 1.7-5.3 1.7-1.7 5.3-1.7-5.3-5.3-1.7 5.3-1.7 1.7-5.3z" fill="#2bb7f0"/>
+  <circle cx="32" cy="28" r="4" fill="#2bb7f0"/>
+</svg>
