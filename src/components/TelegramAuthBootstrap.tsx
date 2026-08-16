@@ -75,6 +75,14 @@ export function TelegramAuthBootstrap() {
   }, [])
 
   useEffect(() => {
+    const path = window.location.pathname
+    const isAdminRoute = path.startsWith('/admin') || path.startsWith('/app')
+    if (isAdminRoute) {
+      setAgeVerified(null)
+      setConnected(false)
+      return
+    }
+
     let active = true
     let verified = false
     try { verified = window.localStorage.getItem('telefans.age_verified') === 'true' } catch { verified = false }
