@@ -135,7 +135,6 @@ function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, 
     <div className="reel-bottom-gradient" />
     <div className="reels-creator-caption">
       <Link to="/creator/$slug" params={{ slug: reel.slug }} onClick={() => onOpenCreator(reel.id)} className="reel-creator-link" aria-label={`Abrir perfil de ${reel.creator}`}>
-        <span className="reel-creator-avatar">{reel.avatar ? <img src={reel.avatar} alt="" /> : reel.creator.slice(0, 1)}</span>
         <span>{reel.creator}</span>
       </Link>
     </div>
