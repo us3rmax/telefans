@@ -4,10 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { CreatorForm } from '@/components/admin/CreatorForm'
 import { listAdminCreators, setCreatorPublished, type Creator } from '@/lib/admin-repository'
 
+const normalizeNewFlag = (value: unknown) => {
+  const normalized = String(value ?? '').replace(/^"|"$/g, '')
+  return normalized === '1' ? '1' : undefined
+}
+
 export const Route = createFileRoute('/app/models')({
   validateSearch: (search: Record<string, unknown>) => ({
     edit: typeof search.edit === 'string' ? search.edit : undefined,
-    new: search.new === '1' ? '1' : undefined,
+    new: normalizeNewFlag(search.new),
   }),
   component: AdminModelsPage,
 })
