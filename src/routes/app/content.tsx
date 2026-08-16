@@ -30,7 +30,7 @@ function AdminContentPage() {
       setPosts(nextPosts); setCreators(nextCreators)
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not load content.') } finally { setLoading(false) }
   }
-  useEffect(() => { void load() }, [])
+  useEffect(() => { const selectedCreator = new URLSearchParams(window.location.search).get('creator'); if (selectedCreator) setCreatorId(selectedCreator); void load() }, [])
 
   const visiblePosts = useMemo(() => {
     const normalized = query.trim().toLowerCase()
