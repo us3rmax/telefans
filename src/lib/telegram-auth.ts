@@ -91,11 +91,14 @@ async function waitForWebApp(timeoutMs = 3500): Promise<TelegramWebApp | null> {
 }
 
 async function authenticateOnce(): Promise<TelegramUser | null> {
-  const cached = readCachedUser()
   const webApp = await waitForWebApp()
   syncTelegramViewport(webApp)
   webApp?.ready?.(); webApp?.expand?.()
-  if (!webApp?.initData) return cached
+  if (!webApp?.initData) {
+    // A cached identity is not sufficient: Telegram initData must be validated on each app bootstrap.
+    clearTelegramSession()
+    return null
+  }
   const { data, error } = await supabase.functions.invoke<{ ok: boolean; user?: TelegramUser; error?: string }>('telegram-auth', { body: { initData: webApp.initData } })
   if (error) throw error
   if (!data?.ok || !data.user) throw new Error(data?.error ?? 'Could not authenticate with Telegram.')
