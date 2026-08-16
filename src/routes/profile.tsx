@@ -87,10 +87,9 @@ export function ProfilePage() {
   }
 
   const addToHomeScreen = () => {
-    const webApp = telegramWebApp()
-    if (webApp?.addToHomeScreen) webApp.addToHomeScreen()
+    // Keep the instruction in-app so Safari/Telegram cannot replace it with a localized native prompt.
     setHomeAdded(true)
-    window.setTimeout(() => setHomeAdded(false), 2200)
+    window.setTimeout(() => setHomeAdded(false), 4200)
   }
 
   return <main className="user-profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
@@ -128,7 +127,7 @@ export function ProfilePage() {
         </button>
         <button type="button" className="user-action-row user-home-row" onClick={addToHomeScreen}>
           <House aria-hidden="true" />
-          <span><strong>Add to home screen</strong><small>{homeAdded ? 'Added to your Telegram home screen' : 'Open TeleFans faster'}</small></span>
+          <span><strong>Add to home screen</strong><small>{homeAdded ? 'Open your browser menu and choose “Add to Home Screen”' : 'Save TeleFans for faster access'}</small></span>
           <ChevronRight aria-hidden="true" />
         </button>
 
