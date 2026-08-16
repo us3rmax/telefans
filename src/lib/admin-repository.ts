@@ -184,30 +184,17 @@ export async function getAdminClientMetrics() {
 
 
 export type AdminAnalytics = {
-  overview: {
-    users: number
-    creators: number
-    publishedCreators: number
-    posts: number
-    reels: number
-    views: number
-    likes: number
-    comments: number
-    follows: number
-    coinsIssued: number
-    referrals: number
-  }
+  overview: { users: number; creators: number; publishedCreators: number; posts: number; reels: number; views: number; likes: number; comments: number; follows: number; coinsIssued: number; referrals: number }
   daily: Array<{ label: string; users: number; views: number; likes: number }>
-  creators: Array<{ id: string; name: string; slug: string; avatar_image: string; posts: number; views: number; likes: number; comments: number; followers: number }>
-  topContent: Array<{ id: string; title: string; creator: string; type: string; views: number; likes: number; comments: number }>
-  regions: Array<{ label: string; value: number }>
-  devices: Array<{ label: string; value: number }>
+  creators: Array<{ id: string; name: string; slug: string; avatar_image: string; posts: number; views: number; likes: number; comments: number; followers: number; engagementRate: number }>
+  topContent: Array<{ id: string; title: string; creator: string; type: string; views: number; likes: number; comments: number; engagementRate: number }>
+  actions: { creatorsWithoutContent: number; contentWithoutViews: number; drafts: number; scheduled: number; newUsers7d: number; referrals7d: number }
 }
 
 export async function getAdminAnalytics(): Promise<AdminAnalytics> {
   const [creatorsResult, postsResult, usersResult, viewsResult, likesResult, commentsResult, followsResult, coinsResult] = await Promise.all([
     supabase.from('creators').select('id, name, slug, avatar_image, published').order('name', { ascending: true }),
-    supabase.from('creator_posts').select('id, creator_id, title, type, created_at, published').order('created_at', { ascending: false }).limit(1000),
+    supabase.from('creator_posts').select('id, creator_id, title, type, created_at, published, status').order('created_at', { ascending: false }).limit(1000),
     supabase.from('telegram_users').select('telegram_id, created_at').order('created_at', { ascending: false }).limit(1000),
     supabase.from('post_views').select('post_id, created_at').order('created_at', { ascending: false }).limit(5000),
     supabase.from('post_likes').select('post_id, created_at').order('created_at', { ascending: false }).limit(5000),
@@ -216,43 +203,11 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
     supabase.from('coin_transactions').select('amount, referred_telegram_id, created_at').order('created_at', { ascending: false }).limit(5000),
   ])
   for (const result of [creatorsResult, postsResult, usersResult, viewsResult, likesResult, commentsResult, followsResult, coinsResult]) assertNoError(result.error)
-
-  const creators = creatorsResult.data ?? []
-  const posts = postsResult.data ?? []
-  const users = usersResult.data ?? []
-  const views = viewsResult.data ?? []
-  const likes = likesResult.data ?? []
-  const comments = commentsResult.data ?? []
-  const follows = followsResult.data ?? []
-  const coins = coinsResult.data ?? []
-  const creatorById = new Map(creators.map(creator => [creator.id, creator]))
-  const postById = new Map(posts.map(post => [post.id, post]))
-  const countBy = (rows: Array<{ post_id?: string | null; creator_id?: string | null }>, key: string) => rows.reduce((map, row) => { const id = row[key as keyof typeof row]; if (typeof id === 'string') map.set(id, (map.get(id) ?? 0) + 1); return map }, new Map<string, number>())
-  const viewsByPost = countBy(views, 'post_id')
-  const likesByPost = countBy(likes, 'post_id')
-  const commentsByPost = countBy(comments, 'post_id')
-  const followersByCreator = countBy(follows, 'creator_id')
-  const viewsByCreator = new Map<string, number>()
-  const likesByCreator = new Map<string, number>()
-  const commentsByCreator = new Map<string, number>()
-  for (const post of posts) {
-    viewsByCreator.set(post.creator_id, (viewsByCreator.get(post.creator_id) ?? 0) + (viewsByPost.get(post.id) ?? 0))
-    likesByCreator.set(post.creator_id, (likesByCreator.get(post.creator_id) ?? 0) + (likesByPost.get(post.id) ?? 0))
-    commentsByCreator.set(post.creator_id, (commentsByCreator.get(post.creator_id) ?? 0) + (commentsByPost.get(post.id) ?? 0))
-  }
-  const daily = Array.from({ length: 14 }, (_, index) => {
-    const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - (13 - index))
-    const next = new Date(date); next.setDate(next.getDate() + 1)
-    const inDay = (createdAt: string) => { const time = new Date(createdAt).getTime(); return time >= date.getTime() && time < next.getTime() }
-    return { label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), users: users.filter(row => inDay(row.created_at)).length, views: views.filter(row => inDay(row.created_at)).length, likes: likes.filter(row => inDay(row.created_at)).length }
-  })
-  const topContent = posts.map(post => ({ id: post.id, title: post.title || 'Untitled post', creator: creatorById.get(post.creator_id)?.name ?? 'Unknown creator', type: post.type, views: viewsByPost.get(post.id) ?? 0, likes: likesByPost.get(post.id) ?? 0, comments: commentsByPost.get(post.id) ?? 0 })).sort((a, b) => (b.views + b.likes * 3 + b.comments * 4) - (a.views + a.likes * 3 + a.comments * 4)).slice(0, 8)
-  return {
-    overview: { users: users.length, creators: creators.length, publishedCreators: creators.filter(creator => creator.published).length, posts: posts.length, reels: posts.filter(post => post.type === 'video').length, views: views.length, likes: likes.length, comments: comments.length, follows: follows.length, coinsIssued: coins.reduce((sum, row) => sum + (row.amount ?? 0), 0), referrals: coins.filter(row => row.referred_telegram_id !== null).length },
-    daily,
-    creators: creators.map(creator => ({ id: creator.id, name: creator.name, slug: creator.slug, avatar_image: creator.avatar_image, posts: posts.filter(post => post.creator_id === creator.id).length, views: viewsByCreator.get(creator.id) ?? 0, likes: likesByCreator.get(creator.id) ?? 0, comments: commentsByCreator.get(creator.id) ?? 0, followers: followersByCreator.get(creator.id) ?? 0 })).sort((a, b) => (b.views + b.followers * 5) - (a.views + a.followers * 5)),
-    topContent,
-    regions: [{ label: 'Telegram users', value: users.length }],
-    devices: [{ label: 'Telegram Mini App', value: users.length }],
-  }
+  const creators = creatorsResult.data ?? []; const posts = postsResult.data ?? []; const users = usersResult.data ?? []; const views = viewsResult.data ?? []; const likes = likesResult.data ?? []; const comments = commentsResult.data ?? []; const follows = followsResult.data ?? []; const coins = coinsResult.data ?? []
+  const creatorById = new Map(creators.map(creator => [creator.id, creator])); const countBy = (rows: Array<{ post_id?: string | null; creator_id?: string | null }>, key: string) => rows.reduce((map, row) => { const id = row[key as keyof typeof row]; if (typeof id === 'string') map.set(id, (map.get(id) ?? 0) + 1); return map }, new Map<string, number>())
+  const viewsByPost = countBy(views, 'post_id'); const likesByPost = countBy(likes, 'post_id'); const commentsByPost = countBy(comments, 'post_id'); const followersByCreator = countBy(follows, 'creator_id')
+  const creatorRows = creators.map(creator => { const creatorPosts = posts.filter(post => post.creator_id === creator.id); const viewCount = creatorPosts.reduce((sum, post) => sum + (viewsByPost.get(post.id) ?? 0), 0); const likeCount = creatorPosts.reduce((sum, post) => sum + (likesByPost.get(post.id) ?? 0), 0); const commentCount = creatorPosts.reduce((sum, post) => sum + (commentsByPost.get(post.id) ?? 0), 0); return { id: creator.id, name: creator.name, slug: creator.slug, avatar_image: creator.avatar_image, posts: creatorPosts.length, views: viewCount, likes: likeCount, comments: commentCount, followers: followersByCreator.get(creator.id) ?? 0, engagementRate: viewCount ? Math.round((likeCount + commentCount) / viewCount * 1000) / 10 : 0 } }).sort((a, b) => (b.engagementRate - a.engagementRate) || (b.views - a.views))
+  const topContent = posts.map(post => { const viewCount = viewsByPost.get(post.id) ?? 0; const likeCount = likesByPost.get(post.id) ?? 0; const commentCount = commentsByPost.get(post.id) ?? 0; return { id: post.id, title: post.title || 'Untitled post', creator: creatorById.get(post.creator_id)?.name ?? 'Unknown creator', type: post.type, views: viewCount, likes: likeCount, comments: commentCount, engagementRate: viewCount ? Math.round((likeCount + commentCount) / viewCount * 1000) / 10 : 0 } }).sort((a, b) => (b.engagementRate - a.engagementRate) || (b.views - a.views)).slice(0, 8)
+  const cutoff = Date.now() - 7 * 86400000; const daily = Array.from({ length: 14 }, (_, index) => { const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - (13 - index)); const next = new Date(date); next.setDate(next.getDate() + 1); const inDay = (createdAt: string) => { const time = new Date(createdAt).getTime(); return time >= date.getTime() && time < next.getTime() }; return { label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), users: users.filter(row => inDay(row.created_at)).length, views: views.filter(row => inDay(row.created_at)).length, likes: likes.filter(row => inDay(row.created_at)).length } })
+  return { overview: { users: users.length, creators: creators.length, publishedCreators: creators.filter(creator => creator.published).length, posts: posts.filter(post => post.published).length, reels: posts.filter(post => post.type === 'video' && post.published).length, views: views.length, likes: likes.length, comments: comments.length, follows: follows.length, coinsIssued: coins.reduce((sum, row) => sum + (row.amount ?? 0), 0), referrals: coins.filter(row => row.referred_telegram_id !== null).length }, daily, creators: creatorRows, topContent, actions: { creatorsWithoutContent: creators.filter(creator => !posts.some(post => post.creator_id === creator.id)).length, contentWithoutViews: posts.filter(post => !viewsByPost.has(post.id)).length, drafts: posts.filter(post => post.status === 'draft').length, scheduled: posts.filter(post => post.status === 'scheduled').length, newUsers7d: users.filter(user => new Date(user.created_at).getTime() >= cutoff).length, referrals7d: coins.filter(row => row.referred_telegram_id !== null && new Date(row.created_at).getTime() >= cutoff).length } }
 }
