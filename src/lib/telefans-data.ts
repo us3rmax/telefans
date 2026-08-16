@@ -70,43 +70,68 @@ export async function listPublishedReels(limit = 40): Promise<PublishedReel[]> {
   return posts.map((post) => ({ ...post, metrics: metrics.get(post.id)! }))
 }
 
-export async function togglePostLike(postId: string, liked: boolean) {
+export async function togglePostLike(postId: string, liked: boolean, telegramId?: number | null) {
   const visitorKey = getVisitorKey()
   if (!visitorKey) return
   if (!liked) {
-    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('visitor_key', visitorKey)
+    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).or(`visitor_key.eq.${visitorKey},telegram_id.eq.${telegramId ?? -1}`)
     if (error) throw error
     return
   }
-  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, user_id: null })
+  const { error } = await supabase.from('post_likes').insert({ post_id: postId, visitor_key: visitorKey, telegram_id: telegramId ?? null, user_id: null })
   if (error && error.code !== '23505') throw error
 }
 
-export async function hasPostLike(postId: string) {
+export async function hasPostLike(postId: string, telegramId?: number | null) {
   const visitorKey = getVisitorKey()
   if (!visitorKey) return false
-  const { data, error } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('visitor_key', visitorKey).maybeSingle()
-  if (error) throw error
-  return Boolean(data)
+  const { data: byVisitor, error: visitorError } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('visitor_key', visitorKey).maybeSingle()
+  if (visitorError) throw visitorError
+  if (byVisitor) return true
+  if (telegramId == null) return false
+  const { data: byTelegram, error: telegramError } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('telegram_id', telegramId).maybeSingle()
+  if (telegramError) throw telegramError
+  return Boolean(byTelegram)
 }
 
-export async function listPostComments(postId: string) {
-  const { data, error } = await supabase.from('post_comments').select('id, body, created_at, visitor_key, user_id').eq('post_id', postId).order('created_at', { ascending: true })
-  if (error) throw error
-  return data ?? []
+export type PostCommentWithAuthor = {
+  id: string
+  body: string
+  created_at: string
+  visitor_key?: string | null
+  user_id?: string | null
+  telegram_id?: number | null
+  author_name?: string | null
+  author_username?: string | null
+  author_photo_url?: string | null
 }
 
-export async function addPostComment(postId: string, body: string) {
+export async function listPostComments(postId: string): Promise<PostCommentWithAuthor[]> {
+  const { data, error } = await supabase.from('post_comments').select('id, body, created_at, visitor_key, user_id, telegram_id').eq('post_id', postId).order('created_at', { ascending: true })
+  if (error) throw error
+  const rows = data ?? []
+  const telegramIds = [...new Set(rows.map((row) => row.telegram_id).filter((id): id is number => typeof id === 'number'))]
+  if (!telegramIds.length) return rows
+  const { data: profiles, error: profilesError } = await supabase.from('telegram_users').select('telegram_id, first_name, last_name, username, photo_url, profile_photo_url').in('telegram_id', telegramIds)
+  if (profilesError) throw profilesError
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.telegram_id, profile]))
+  return rows.map((row) => {
+    const profile = row.telegram_id == null ? undefined : profileMap.get(row.telegram_id)
+    return { ...row, author_name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : null, author_username: profile?.username ?? null, author_photo_url: profile?.profile_photo_url ?? profile?.photo_url ?? null }
+  })
+}
+
+export async function addPostComment(postId: string, body: string, telegramId?: number | null) {
   const visitorKey = getVisitorKey()
   if (!visitorKey || !body.trim()) return null
-  const { data, error } = await supabase.from('post_comments').insert({ post_id: postId, body: body.trim(), visitor_key: visitorKey }).select('*').single()
+  const { data, error } = await supabase.from('post_comments').insert({ post_id: postId, body: body.trim(), visitor_key: visitorKey, telegram_id: telegramId ?? null }).select('*').single()
   if (error) throw error
   return data
 }
 
-export async function recordPostView(postId: string) {
+export async function recordPostView(postId: string, telegramId?: number | null) {
   const visitorKey = getVisitorKey()
   if (!visitorKey) return
-  const { error } = await supabase.from('post_views').insert({ post_id: postId, visitor_key: visitorKey })
+  const { error } = await supabase.from('post_views').insert({ post_id: postId, visitor_key: visitorKey, telegram_id: telegramId ?? null })
   if (error) throw error
 }

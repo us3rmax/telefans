@@ -295,6 +295,7 @@ export type Database = {
           post_id: string
           user_id: string | null
           visitor_key: string | null
+          telegram_id: number | null
         }
         Insert: {
           body: string
@@ -303,6 +304,7 @@ export type Database = {
           post_id: string
           user_id?: string | null
           visitor_key?: string | null
+          telegram_id?: number | null
         }
         Update: {
           body?: string
@@ -311,6 +313,7 @@ export type Database = {
           post_id?: string
           user_id?: string | null
           visitor_key?: string | null
+          telegram_id?: number | null
         }
         Relationships: [
           {
@@ -329,6 +332,7 @@ export type Database = {
           post_id: string
           user_id: string | null
           visitor_key: string
+          telegram_id: number | null
         }
         Insert: {
           id?: string
@@ -336,6 +340,7 @@ export type Database = {
           post_id: string
           user_id?: string | null
           visitor_key: string
+          telegram_id?: number | null
         }
         Update: {
           id?: string
@@ -343,6 +348,7 @@ export type Database = {
           post_id?: string
           user_id?: string | null
           visitor_key?: string
+          telegram_id?: number | null
         }
         Relationships: [
           {
@@ -361,6 +367,7 @@ export type Database = {
           post_id: string
           user_id: string | null
           visitor_key: string | null
+          telegram_id: number | null
         }
         Insert: {
           created_at?: string
@@ -368,6 +375,7 @@ export type Database = {
           post_id: string
           user_id?: string | null
           visitor_key?: string | null
+          telegram_id?: number | null
         }
         Update: {
           created_at?: string
@@ -375,6 +383,7 @@ export type Database = {
           post_id?: string
           user_id?: string | null
           visitor_key?: string | null
+          telegram_id?: number | null
         }
         Relationships: [
           {

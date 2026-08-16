@@ -8,7 +8,7 @@ import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import '../telescope.css'
 
 type FeedTab = 'trending' | 'new'
-type CommentRow = { id: string; body: string; created_at: string; visitor_key?: string | null; user_id?: string | null }
+type CommentRow = { id: string; body: string; created_at: string; visitor_key?: string | null; user_id?: string | null; telegram_id?: number | null; author_name?: string | null; author_username?: string | null; author_photo_url?: string | null }
 
 type ReelItem = {
   id: string
@@ -39,8 +39,7 @@ function relativeTime(date: string) {
 }
 
 function commentAuthor(comment: CommentRow, currentName: string) {
-  if (comment.visitor_key) return comment.visitor_key === currentName ? currentName : 'TeleFans user'
-  return currentName || 'TeleFans user'
+  return comment.author_name || (comment.visitor_key && comment.visitor_key === currentName ? currentName : 'TeleFans user')
 }
 
 function Nav() {
@@ -51,7 +50,7 @@ function Nav() {
   </nav>
 }
 
-function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, initialLiked }: { reel: ReelItem; active: boolean; loadVideo: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<void>; initialLiked: boolean }) {
+function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, initialLiked, onOpenCreator }: { reel: ReelItem; active: boolean; loadVideo: boolean; onVisible: (id: string) => void; onComment: () => void; onShare: () => void; onLike?: (liked: boolean) => Promise<void>; initialLiked: boolean; onOpenCreator: (id: string) => void }) {
   const cardRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [liked, setLiked] = useState(initialLiked)
@@ -115,21 +114,21 @@ function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, 
     finally { setLikeBusy(false) }
   }
 
-  return <article ref={cardRef} className="reel-card">
+  return <article ref={cardRef} data-reel-id={reel.id} className="reel-card">
     {loadVideo && !mediaError ? <video ref={videoRef} className="reel-image" src={reel.video} poster={reel.thumbnail || undefined} preload="metadata" loop playsInline muted={muted} onClick={togglePlayback} onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onError={() => setMediaError(true)} aria-label={`Reel de ${reel.creator}`} /> : <img className="reel-image" src={reel.thumbnail || reel.video} alt={`Reel de ${reel.creator}`} loading="lazy" />}
     {loadVideo && !mediaError && <button type="button" className="reel-play-toggle" onClick={togglePlayback} aria-label={paused ? 'Reproduzir reel' : 'Pausar reel'}>{paused ? <Play /> : <Pause />}</button>}
     {mediaError && <div className="reel-media-error">Não foi possível carregar este vídeo.</div>}
     <div className="reel-top-gradient" />
     <div className="reel-bottom-gradient" />
     <div className="reels-creator-caption">
-      <Link to="/creator/$slug" params={{ slug: reel.slug }} className="reel-creator-link" aria-label={`Abrir perfil de ${reel.creator}`}>
+      <Link to="/creator/$slug" params={{ slug: reel.slug }} onClick={() => onOpenCreator(reel.id)} className="reel-creator-link" aria-label={`Abrir perfil de ${reel.creator}`}>
         <span className="reel-creator-avatar">{reel.avatar ? <img src={reel.avatar} alt="" /> : reel.creator.slice(0, 1)}</span>
         <span>{reel.creator}</span>
       </Link>
     </div>
     <div className="reel-actions" aria-label={`Acções de ${reel.creator}`}>
-      <Link to="/creator/$slug" params={{ slug: reel.slug }} className="reel-follow-avatar" aria-label={`Abrir perfil de ${reel.creator}`}>{reel.avatar ? <img src={reel.avatar} alt="" /> : reel.creator.slice(0, 1)}<span>+</span></Link>
-      <button type="button" onClick={() => void handleLike()} aria-pressed={liked} aria-label="Gostar do Reel" disabled={!onLike || likeBusy} className={liked ? 'liked' : ''}><Heart fill={liked ? 'currentColor' : 'none'} /><small>{formatCount(reel.likes + (liked ? 1 : 0))}</small></button>
+      <Link to="/creator/$slug" params={{ slug: reel.slug }} onClick={() => onOpenCreator(reel.id)} className="reel-follow-avatar" aria-label={`Abrir perfil de ${reel.creator}`}>{reel.avatar ? <img src={reel.avatar} alt="" /> : reel.creator.slice(0, 1)}<span>+</span></Link>
+      <button type="button" onClick={() => void handleLike()} aria-pressed={liked} aria-label="Gostar do Reel" disabled={!onLike || likeBusy} className={liked ? 'liked' : ''}><Heart fill={liked ? 'currentColor' : 'none'} /><small>{formatCount(reel.likes)}</small></button>
       <button type="button" onClick={onComment} aria-label={reel.commentsEnabled ? 'Abrir comentários' : 'Comentários desactivados'} disabled={!reel.commentsEnabled}><MessageCircle /><small>{formatCount(reel.comments)}</small></button>
       <button type="button" onClick={onShare} aria-label="Partilhar Reel"><Send /><small>{formatCount(reel.views)}</small></button>
     </div>
@@ -149,14 +148,25 @@ export function ReelsPage() {
   const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({})
   const [commentBusy, setCommentBusy] = useState(false)
   const [currentUserName, setCurrentUserName] = useState('')
+  const [currentTelegramId, setCurrentTelegramId] = useState<number | null>(null)
+  const [insideTelegram, setInsideTelegram] = useState(false)
   const [likedByPost, setLikedByPost] = useState<Record<string, boolean>>({})
   const [activeReelId, setActiveReelId] = useState<string | null>(null)
   const viewedReels = useRef(new Set<string>())
-
-  useEffect(() => useTelegramBackButton(() => window.history.back()), [])
+  const positionKey = 'telefans.reels.position'
 
   useEffect(() => {
-    void getTelegramUser().then((user) => { if (user) setCurrentUserName([user.first_name, user.last_name].filter(Boolean).join(' ')) }).catch(() => undefined)
+    setInsideTelegram(Boolean(window.Telegram?.WebApp))
+    return useTelegramBackButton(() => window.history.back())
+  }, [])
+
+  useEffect(() => {
+    void getTelegramUser().then((user) => {
+      if (user) {
+        setCurrentUserName([user.first_name, user.last_name].filter(Boolean).join(' '))
+        setCurrentTelegramId(user.id)
+      }
+    }).catch(() => undefined)
   }, [])
 
   const showNotice = useCallback((message: string) => {
@@ -179,7 +189,12 @@ export function ReelsPage() {
         const localVideos: ReelItem[] = readAdminPosts().filter((post) => post.type === 'video' && post.published && post.mediaUrl).map((post) => ({ id: post.id, creator: post.creatorName, slug: post.creatorSlug, thumbnail: '', video: post.mediaUrl, likes: 0, comments: 0, views: 0, commentsEnabled: true, persisted: false }))
         const unique = [...remoteVideos, ...localVideos.filter((local) => !remoteVideos.some((remote) => remote.video === local.video))]
         const sorted = activeTab === 'new' ? unique.sort((a, b) => b.id.localeCompare(a.id)) : unique.sort((a, b) => (b.likes * 3 + b.comments * 2 + b.views) - (a.likes * 3 + a.comments * 2 + a.views))
-        if (mounted) { setFeed(sorted); setActiveReelId(sorted[0]?.id ?? null) }
+        if (mounted) {
+          setFeed(sorted)
+          let restoredId: string | null = null
+          try { restoredId = JSON.parse(sessionStorage.getItem(positionKey) || 'null')?.id ?? null } catch { restoredId = null }
+          setActiveReelId(restoredId && sorted.some((item) => item.id === restoredId) ? restoredId : sorted[0]?.id ?? null)
+        }
       } catch (loadError) {
         if (mounted) { setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os Reels.'); setFeed([]) }
       } finally { if (mounted) setLoading(false) }
@@ -189,18 +204,27 @@ export function ReelsPage() {
   }, [activeTab])
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      if (!activeReelId) return
+      document.querySelector<HTMLElement>(`[data-reel-id="${CSS.escape(activeReelId)}"]`)?.scrollIntoView({ block: 'start' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeReelId, feed.length])
+
+  useEffect(() => {
     let mounted = true
-    void Promise.all(feed.filter((reel) => reel.persisted).map(async (reel) => { try { return [reel.id, await hasPostLike(reel.id)] as const } catch { return [reel.id, false] as const } })).then((entries) => { if (mounted) setLikedByPost(Object.fromEntries(entries)) })
+    void Promise.all(feed.filter((reel) => reel.persisted).map(async (reel) => { try { return [reel.id, await hasPostLike(reel.id, currentTelegramId)] as const } catch { return [reel.id, false] as const } })).then((entries) => { if (mounted) setLikedByPost(Object.fromEntries(entries)) })
     return () => { mounted = false }
-  }, [feed])
+  }, [feed, currentTelegramId])
 
   const handleVisible = useCallback((id: string) => {
     setActiveReelId(id)
+    try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab })) } catch { /* storage opcional */ }
     if (viewedReels.current.has(id)) return
     viewedReels.current.add(id)
     const reel = feed.find((item) => item.id === id)
-    if (reel?.persisted) void recordPostView(id).catch(() => undefined)
-  }, [feed])
+    if (reel?.persisted) void recordPostView(id, currentTelegramId).catch(() => undefined)
+  }, [feed, activeTab, currentTelegramId])
 
   const openComments = async (reel: ReelItem) => {
     if (!reel.commentsEnabled) return
@@ -228,10 +252,10 @@ export function ReelsPage() {
     setCommentBusy(true)
     try {
       if (commentReel.persisted) {
-        const created = await addPostComment(commentReel.id, value) as CommentRow | null
-        if (created) setComments((current) => ({ ...current, [commentReel.id]: [...(current[commentReel.id] ?? []), created] }))
+        const created = await addPostComment(commentReel.id, value, currentTelegramId) as CommentRow | null
+        if (created) setComments((current) => ({ ...current, [commentReel.id]: [...(current[commentReel.id] ?? []), { ...created, telegram_id: currentTelegramId, author_name: currentUserName || 'TeleFans user' }] }))
       } else {
-        setComments((current) => ({ ...current, [commentReel.id]: [...(current[commentReel.id] ?? []), { id: crypto.randomUUID(), body: value, created_at: new Date().toISOString(), visitor_key: currentUserName }] }))
+        setComments((current) => ({ ...current, [commentReel.id]: [...(current[commentReel.id] ?? []), { id: crypto.randomUUID(), body: value, created_at: new Date().toISOString(), visitor_key: currentUserName, telegram_id: currentTelegramId, author_name: currentUserName || 'TeleFans user' }] }))
       }
       setFeed((current) => current.map((item) => item.id === commentReel.id ? { ...item, comments: item.comments + 1 } : item))
       setCommentDraft('')
@@ -244,25 +268,25 @@ export function ReelsPage() {
   const commentRows = commentReel ? comments[commentReel.id] ?? [] : []
 
   return <main className="reels-shell">
-    <header className="reels-topbar">
-      <button type="button" className="reels-back-button" onClick={() => window.history.back()} aria-label="Voltar"><ChevronLeft /><span>Voltar</span></button>
+    <header className={`reels-topbar ${insideTelegram ? 'reels-topbar-telegram' : ''}`}>
+      {!insideTelegram && <button type="button" className="reels-back-button" onClick={() => window.history.back()} aria-label="Voltar"><ChevronLeft /><span>Voltar</span></button>}
       <div className="reels-controls" aria-label="Filtro de Reels">
         <Link to="/reels" search={{ tab: 'trending' }} className={`reel-tab ${activeTab === 'trending' ? 'active' : ''}`}>Trending</Link>
         <Link to="/reels" search={{ tab: 'new' }} className={`reel-tab ${activeTab === 'new' ? 'active' : ''}`}>New</Link>
       </div>
-      <button type="button" className="reels-menu-button" aria-label="Opções"><ChevronDown /><MoreHorizontal /></button>
+      {!insideTelegram && <button type="button" className="reels-menu-button" aria-label="Opções"><ChevronDown /><MoreHorizontal /></button>}
     </header>
     <div className="reels-feed">
       {loading && <div className="reels-state">A carregar Reels…</div>}
       {!loading && error && <div className="reels-state reels-state-error">{error}</div>}
       {!loading && !error && !feed.length && <div className="reels-state">Ainda não existem Reels publicados.</div>}
-      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { await togglePostLike(reel.id, liked); setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + (liked ? 1 : -1)) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } : undefined} />)}
+      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab })) } catch { /* storage opcional */ } }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { await togglePostLike(reel.id, liked, currentTelegramId); setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + (liked ? 1 : -1)) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } : undefined} />)}
     </div>
     <Nav />
     {notice && <div className="reels-notice" role="status">{notice}</div>}
     {commentReel && <div className="comments-backdrop" role="presentation" onClick={() => setCommentReel(null)}><section className="comments-sheet" role="dialog" aria-modal="true" aria-label={`Comentários de ${commentReel.creator}`} onClick={(event) => event.stopPropagation()}>
       <div className="comments-heading"><strong>{commentRows.length || commentReel.comments} comments</strong><button type="button" onClick={() => setCommentReel(null)} aria-label="Fechar comentários"><X /></button></div>
-      <div className="comments-list">{commentRows.map((comment) => <article key={comment.id} className="comment-item"><span className="comment-avatar">{commentAuthor(comment, currentUserName).slice(0, 1).toUpperCase()}</span><div className="comment-content"><div className="comment-meta"><strong>{commentAuthor(comment, currentUserName)}</strong><small>{relativeTime(comment.created_at)}</small></div><p>{comment.body}</p><button type="button" className="comment-reply">Reply</button></div><button type="button" className={`comment-like ${commentLikes[comment.id] ? 'liked' : ''}`} onClick={() => setCommentLikes((current) => ({ ...current, [comment.id]: !current[comment.id] }))} aria-label="Gostar do comentário"><Heart fill={commentLikes[comment.id] ? 'currentColor' : 'none'} /><small>{commentLikes[comment.id] ? 1 : 0}</small></button></article>)}{!commentRows.length && <p className="comments-empty">Ainda não há comentários neste Reel.</p>}</div>
+      <div className="comments-list">{commentRows.map((comment) => <article key={comment.id} className="comment-item"><span className="comment-avatar">{comment.author_photo_url ? <img src={comment.author_photo_url} alt="" /> : commentAuthor(comment, currentUserName).slice(0, 1).toUpperCase()}</span><div className="comment-content"><div className="comment-meta"><strong>{commentAuthor(comment, currentUserName)}</strong><small>{relativeTime(comment.created_at)}</small></div><p>{comment.body}</p><button type="button" className="comment-reply">Reply</button></div><button type="button" className={`comment-like ${commentLikes[comment.id] ? 'liked' : ''}`} onClick={() => setCommentLikes((current) => ({ ...current, [comment.id]: !current[comment.id] }))} aria-label="Gostar do comentário"><Heart fill={commentLikes[comment.id] ? 'currentColor' : 'none'} /><small>{commentLikes[comment.id] ? 1 : 0}</small></button></article>)}{!commentRows.length && <p className="comments-empty">Ainda não há comentários neste Reel.</p>}</div>
       <form className="comment-form" onSubmit={submitComment}><input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Add comment…" aria-label="Adicionar comentário" maxLength={1000} disabled={commentBusy} /><button type="submit" disabled={commentBusy || !commentDraft.trim()}>{commentBusy ? '...' : 'Post'}</button></form>
     </section></div>}
   </main>
