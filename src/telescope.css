@@ -613,3 +613,15 @@ button { cursor: pointer; }
 @media (max-width: 520px) {
   .reels-topbar-telegram { height: 46px; }
 }
+
+/* Primary navigation has one fixed geometry on every public route. */
+.bottom-nav {
+  width: min(calc(100% - 54px), 360px) !important;
+  height: 62px !important;
+  box-sizing: border-box;
+}
+.bottom-nav .nav-link {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
