@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ChevronRight, Coins, Heart, House, Pencil, Send, Share2, Sparkles, Star, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Coins, Heart, House, Send, Share2, Sparkles, Star } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { normalizeCreatorHandle } from '@/data/creators'
 import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
@@ -9,8 +9,6 @@ import { supabase } from '@/lib/supabase'
 import '../telescope.css'
 
 const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
-const bellaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/437fa29e-489c-4a08-3439-38ea8137d700/public'
-const PROFILE_OVERRIDES_KEY = 'telefans_profile_overrides'
 
 function telegramWebApp() {
   return (window as Window & {
@@ -26,30 +24,19 @@ function telegramWebApp() {
   }).Telegram?.WebApp
 }
 
-type ProfileOverrides = { name?: string; username?: string; bio?: string; gender?: string; dateOfBirth?: string; profilePhotoUrl?: string }
+type ProfileSync = { bio?: string; profilePhotoUrl?: string }
 
 
 export function ProfilePage() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [telegramAuthState, setTelegramAuthState] = useState<'idle' | 'connecting' | 'connected' | 'unavailable' | 'error'>('idle')
   const [shared, setShared] = useState(false)
-  const [editing, setEditing] = useState(false)
   const [coinsHelp, setCoinsHelp] = useState(false)
   const [homeAdded, setHomeAdded] = useState(false)
-  const [overrides, setOverrides] = useState<ProfileOverrides>({})
-  const [draftName, setDraftName] = useState('')
-  const [draftUsername, setDraftUsername] = useState('')
-  const [draftBio, setDraftBio] = useState('')
-  const [draftGender, setDraftGender] = useState('prefer_not_to_say')
-  const [draftDateOfBirth, setDraftDateOfBirth] = useState('')
+  const [profileSync, setProfileSync] = useState<ProfileSync>({})
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(PROFILE_OVERRIDES_KEY)
-      if (stored) setOverrides(JSON.parse(stored) as ProfileOverrides)
-    } catch { /* storage pode estar indisponível no Mini App */ }
-
     let active = true
     const webApp = telegramWebApp()
     const cleanupBackButton = useTelegramBackButton(() => window.history.back())
@@ -63,37 +50,18 @@ export function ProfilePage() {
         setTelegramAuthState(user ? 'connected' : 'unavailable')
         if (user) {
           void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
-          void supabase.from('telegram_users').select('bio, gender, date_of_birth, profile_photo_url').eq('telegram_id', user.id).maybeSingle().then(({ data }) => { if (!data) return; setOverrides(current => ({ ...current, bio: data.bio ?? '', gender: data.gender ?? 'prefer_not_to_say', dateOfBirth: data.date_of_birth ?? '', profilePhotoUrl: data.profile_photo_url ?? '' })) })
+          void supabase.from('telegram_users').select('bio, profile_photo_url').eq('telegram_id', user.id).maybeSingle().then(({ data }) => { if (!data) return; setProfileSync({ bio: data.bio ?? '', profilePhotoUrl: data.profile_photo_url ?? '' }) })
         }
       })
       .catch(() => active && setTelegramAuthState('error'))
     return () => { active = false; cleanupBackButton() }
   }, [])
 
-  const displayName = overrides.name || telegramUser?.first_name || 'W'
-  const displayHandle = overrides.username ? `@${overrides.username.replace(/^@/, '')}` : telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
-  const displayBio = overrides.bio || ''
-  const profilePhoto = overrides.profilePhotoUrl || telegramUser?.photo_url
+  const displayName = telegramUser?.first_name || 'W'
+  const displayHandle = telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
+  const displayBio = profileSync.bio || ''
+  const profilePhoto = profileSync.profilePhotoUrl || telegramUser?.photo_url
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
-
-  const openEditor = () => {
-    setDraftName(displayName)
-    setDraftUsername(displayHandle.replace(/^@/, ''))
-    setDraftBio(overrides.bio || '')
-    setDraftGender(overrides.gender || 'prefer_not_to_say')
-    setDraftDateOfBirth(overrides.dateOfBirth || '')
-    setEditing(true)
-  }
-
-  const saveEditor = () => {
-    const next = { name: draftName.trim() || displayName, username: draftUsername.trim().replace(/^@/, '') || displayHandle.replace(/^@/, ''), bio: draftBio.trim(), gender: draftGender, dateOfBirth: draftDateOfBirth || '' }
-    setOverrides(current => ({ ...current, ...next }))
-    window.localStorage.setItem(PROFILE_OVERRIDES_KEY, JSON.stringify(next))
-    if (telegramUser) {
-      void supabase.from('telegram_users').update({ first_name: next.name, username: next.username, bio: next.bio, gender: next.gender, date_of_birth: next.dateOfBirth || null }).eq('telegram_id', telegramUser.id)
-    }
-    setEditing(false)
-  }
 
   const shareProfile = async () => {
     const inviteUrl = `https://t.me/telefans_offbot?startapp=ref_${telegramUser?.id ?? 'guest'}`
@@ -146,17 +114,6 @@ export function ProfilePage() {
           <div><Star aria-hidden="true" /><strong>0</strong><span>STARS SPENT</span></div>
           <div><Heart aria-hidden="true" /><strong>{following.length}</strong><span>FOLLOWING</span></div>
         </section>
-
-        <button type="button" className="user-edit-button" onClick={openEditor}><Pencil aria-hidden="true" /> Edit profile</button>
-        {editing && <div className="user-edit-panel" role="dialog" aria-label="Editar perfil">
-          <div className="user-edit-panel-heading"><strong>Edit profile</strong><button type="button" onClick={() => setEditing(false)} aria-label="Fechar editor"><X /></button></div>
-          <label>Nome<input value={draftName} onChange={event => setDraftName(event.target.value)} maxLength={40} /></label>
-          <label>Username<input value={draftUsername} onChange={event => setDraftUsername(event.target.value)} maxLength={32} /></label>
-          <label>Bio<textarea value={draftBio} onChange={event => setDraftBio(event.target.value)} maxLength={240} placeholder="Tell us a little about yourself..." /></label>
-          <label>Gender<select value={draftGender} onChange={event => setDraftGender(event.target.value)}><option value="prefer_not_to_say">Prefer not to say</option><option value="female">Female</option><option value="male">Male</option><option value="non_binary">Non-binary</option></select></label>
-          <label>Date of birth<input type="date" value={draftDateOfBirth} onChange={event => setDraftDateOfBirth(event.target.value)} /></label>
-          <button type="button" className="user-edit-save" onClick={saveEditor}>Guardar alterações</button>
-        </div>}
 
         <section className="coins-card">
           <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><button type="button" aria-label="Sobre Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
