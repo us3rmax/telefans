@@ -73,12 +73,12 @@ export function ProfilePage() {
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
   const shareProfile = async () => {
-    const inviteUrl = `https://t.me/telefans_offbot?startapp=ref_${telegramUser?.id ?? 'guest'}`
+    const inviteUrl = telegramUser?.id ? `https://t.me/telefans_offbot?startapp=ref_${telegramUser.id}` : null
     const message = 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:'
     const webApp = telegramWebApp()
 
-    if (webApp?.shareMessage && webApp.initData) {
-      const { data, error } = await supabase.functions.invoke<{ ok: boolean; id?: string }>('telegram-share', { body: { initData: webApp.initData, inviteUrl } })
+    if (inviteUrl && webApp?.shareMessage && webApp.initData) {
+      const { data, error } = await supabase.functions.invoke<{ ok: boolean; id?: string }>('telegram-share', { body: { initData: webApp.initData } })
       if (!error && data?.id) {
         webApp.shareMessage(data.id)
         setShared(true)
@@ -88,9 +88,12 @@ export function ProfilePage() {
     }
 
     // Older Telegram clients and ordinary browsers keep a safe fallback.
-    const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`
-    if (webApp?.openTelegramLink) webApp.openTelegramLink(telegramShareUrl)
-    else void navigator.clipboard?.writeText(`${message}\n${inviteUrl}`)
+    const telegramShareUrl = inviteUrl
+      ? `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(message)}`
+      : null
+    if (telegramShareUrl && webApp?.openTelegramLink) webApp.openTelegramLink(telegramShareUrl)
+    else if (telegramShareUrl) void navigator.clipboard?.writeText(`${message}\n${inviteUrl}`)
+    else void navigator.clipboard?.writeText(message)
     setShared(true)
     window.setTimeout(() => setShared(false), 1800)
   }

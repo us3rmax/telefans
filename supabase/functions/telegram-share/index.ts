@@ -48,19 +48,23 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return new Response(JSON.stringify({ ok: false, error: 'Method not allowed' }), { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   try {
-    const { initData, inviteUrl } = await request.json()
+    const { initData, inviteUrl: requestedInviteUrl } = await request.json()
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')
-    if (!botToken || typeof initData !== 'string' || typeof inviteUrl !== 'string') throw new Error('Telegram sharing is not configured')
-    if (!/^https:\/\/t\.me\/[a-zA-Z0-9_]+\?startapp=/.test(inviteUrl)) throw new Error('Invalid invite URL')
+    if (!botToken || typeof initData !== 'string') throw new Error('Telegram sharing is not configured')
 
     const user = await validateInitData(initData, botToken)
+    const botUsername = Deno.env.get('TELEGRAM_BOT_USERNAME') || 'telefans_offbot'
+    const inviteUrl = `https://t.me/${botUsername}?startapp=ref_${user.id}`
+    if (requestedInviteUrl !== undefined && requestedInviteUrl !== inviteUrl) throw new Error('Invite link does not belong to the authenticated user')
+
     const result = {
       type: 'article',
       id: `telefans-profile-${user.id}`,
       title: 'Discover TeleFans',
-      description: 'Share TeleFans with a friend',
+      description: 'Discover content creators on Telegram 💙',
       input_message_content: {
-        message_text: `I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here: ${inviteUrl}`,
+        message_text: `I found a Telegram app you are going to love 👀\n\n<a href="${inviteUrl}">Discover TeleFans here:</a>`,
+        parse_mode: 'HTML',
       },
     }
     const prepared = await telegramApi('savePreparedInlineMessage', botToken, {
