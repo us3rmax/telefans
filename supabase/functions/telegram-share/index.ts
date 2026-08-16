@@ -69,13 +69,14 @@ Deno.serve(async (request) => {
       'This isn’t soft… this is full explicit heat 🔥\nClaim your access now:',
     ] as const
     const message = inviteMessages[Math.floor(Math.random() * inviteMessages.length)]
+    const [messageBody, messageCta] = message.split('\n')
     const result = {
       type: 'article',
       id: `telefans-profile-${user.id}`,
       title: 'Discover TeleFans',
       description: 'Discover content creators on Telegram 💙',
       input_message_content: {
-        message_text: `${message}\n\n<a href="${inviteUrl}">Open the private page:</a>`,
+        message_text: `${messageBody}\n\n<a href="${inviteUrl}">${messageCta}</a>`,
         parse_mode: 'HTML',
       },
     }
