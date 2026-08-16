@@ -45,10 +45,10 @@ interface NavItemDef {
 // e.g. `src/routes/app/items.tsx` → { href: '/app/items', label: 'Items' }.
 const NAV_ITEMS: NavItemDef[] = [
   { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard' },
-  { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Modelos' },
-  { href: '/app/content', icon: <Files className="h-4 w-4" />, label: 'Conteúdo' },
+  { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Creators' },
+  { href: '/app/content', icon: <Files className="h-4 w-4" />, label: 'Content' },
   { href: '/app/reels', icon: <Clapperboard className="h-4 w-4" />, label: 'Reels' },
-  { href: '/app/media', icon: <ImageIcon className="h-4 w-4" />, label: 'Biblioteca' },
+  { href: '/app/media', icon: <ImageIcon className="h-4 w-4" />, label: 'Library' },
 ]
 
 function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) {

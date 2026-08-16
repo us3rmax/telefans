@@ -94,30 +94,30 @@ export function ProfilePage() {
 
   return <main className="user-profile-page" data-telegram-user-id={telegramUser?.id ?? undefined}>
     <span className="sr-only" role="status" aria-live="polite">
-      {telegramAuthState === 'connected' && `Ligado como ${displayName}.`}
-      {telegramAuthState === 'connecting' && 'A ligar à conta Telegram...'}
-      {telegramAuthState === 'error' && 'Não foi possível ligar à conta Telegram.'}
+      {telegramAuthState === 'connected' && `Connected as ${displayName}.`}
+      {telegramAuthState === 'connecting' && 'Connecting to your Telegram account...'}
+      {telegramAuthState === 'error' && 'Could not connect to your Telegram account.'}
     </span>
     <div className="user-profile-frame">
       <div className="user-profile-scroll">
-        <div className="user-profile-titlebar"><Link to="/" className="user-profile-back" aria-label="Voltar para Explore"><ArrowLeft /></Link><h1 className="user-profile-title">Profile</h1><span aria-hidden="true" /></div>
+        <div className="user-profile-titlebar"><Link to="/" className="user-profile-back" aria-label="Back to Explore"><ArrowLeft /></Link><h1 className="user-profile-title">Profile</h1><span aria-hidden="true" /></div>
         <section className="user-identity">
-          <div className="user-avatar" aria-label={`Avatar de ${displayName}`}>{profilePhoto ? <img src={profilePhoto} alt="" /> : initials}</div>
+          <div className="user-avatar" aria-label={`Avatar of ${displayName}`}>{profilePhoto ? <img src={profilePhoto} alt="" /> : initials}</div>
           <h2>{displayName}</h2>
           <p>{displayHandle}</p>
           {displayBio && <p className="user-bio">{displayBio}</p>}
         </section>
 
-        <section className="user-metrics" aria-label="Estatísticas da conta">
+        <section className="user-metrics" aria-label="Account statistics">
           <div><Sparkles aria-hidden="true" /><strong>0</strong><span>UNLOCKS</span></div>
           <div><Star aria-hidden="true" /><strong>0</strong><span>STARS SPENT</span></div>
           <div><Heart aria-hidden="true" /><strong>{following.length}</strong><span>FOLLOWING</span></div>
         </section>
 
         <section className="coins-card">
-          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><button type="button" aria-label="Sobre Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
+          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
           <strong>0</strong>
-          {coinsHelp && <p className="coins-help">Fans Coins podem ser usados para desbloquear conteúdos e apoiar creators.</p>}
+          {coinsHelp && <p className="coins-help">Fans Coins can be used to unlock content and support creators.</p>}
         </section>
 
         <button type="button" className="user-action-row" onClick={shareProfile}>
@@ -138,7 +138,7 @@ export function ProfilePage() {
 
         <section className="following-section">
           <div className="user-section-heading"><div><small>FOLLOWING</small><h2>Following</h2></div><b>{following.length}</b></div>
-          <div className="following-grid">{following.map((item) => { const creator = item.creators; return <Link key={item.creator_id} to="/creator/$slug" params={{ slug: creator?.slug ?? '' }} className="following-card"><img src={creator?.avatar_image ?? miaImage} alt={creator?.name ?? ''} /><span className="following-shade" /><div><strong>{creator?.name ?? 'Creator'}</strong><span>{creator?.handle ? normalizeCreatorHandle(creator.handle) : ''}</span></div><em>0<br />LIKES</em></Link> })}{following.length === 0 && <p className="user-empty-following">Ainda não segue nenhum creator.</p>}</div>
+          <div className="following-grid">{following.map((item) => { const creator = item.creators; return <Link key={item.creator_id} to="/creator/$slug" params={{ slug: creator?.slug ?? '' }} className="following-card"><img src={creator?.avatar_image ?? miaImage} alt={creator?.name ?? ''} /><span className="following-shade" /><div><strong>{creator?.name ?? 'Creator'}</strong><span>{creator?.handle ? normalizeCreatorHandle(creator.handle) : ''}</span></div><em>0<br />LIKES</em></Link> })}{following.length === 0 && <p className="user-empty-following">You are not following any creators yet.</p>}</div>
         </section>
         <div className="user-profile-bottom-space" />
       </div>
@@ -149,6 +149,6 @@ export function ProfilePage() {
 }
 
 export const Route = createFileRoute('/profile')({
-  head: () => ({ meta: [{ title: 'Profile · TeleFans' }, { name: 'description', content: 'Perfil do utilizador TeleFans.' }] }),
+  head: () => ({ meta: [{ title: 'Profile · TeleFans' }, { name: 'description', content: 'Your TeleFans user profile.' }] }),
   component: ProfilePage,
 })

@@ -15,7 +15,7 @@ export async function signInAdmin(email: string, password: string) {
   const isAdmin = await getCurrentAdmin()
   if (!isAdmin) {
     await supabase.auth.signOut()
-    throw new Error('Esta conta ainda não tem permissão de administrador.')
+    throw new Error('This account does not have administrator access yet.')
   }
   return data.user
 }

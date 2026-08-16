@@ -34,5 +34,5 @@ export function writeAdminCreators(creators: AdminCreator[]) {
 }
 
 export function toAdminCreator(creator: CreatorProfile): AdminCreator {
-  return { ...creator, published: true, updatedAt: new Date().toLocaleDateString('pt-PT') }
+  return { ...creator, published: true, updatedAt: new Date().toLocaleDateString('en-US') }
 }

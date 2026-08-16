@@ -98,7 +98,7 @@ async function authenticateOnce(): Promise<TelegramUser | null> {
   if (!webApp?.initData) return cached
   const { data, error } = await supabase.functions.invoke<{ ok: boolean; user?: TelegramUser; error?: string }>('telegram-auth', { body: { initData: webApp.initData } })
   if (error) throw error
-  if (!data?.ok || !data.user) throw new Error(data?.error ?? 'Não foi possível autenticar com o Telegram.')
+  if (!data?.ok || !data.user) throw new Error(data?.error ?? 'Could not authenticate with Telegram.')
   saveCachedUser(data.user)
   return data.user
 }

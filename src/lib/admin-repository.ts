@@ -29,7 +29,7 @@ export async function getAdminCreator(id: string) {
 export async function createAdminCreator(input: CreatorInsert) {
   const { data, error } = await supabase.from('creators').insert(input).select('*').single()
   assertNoError(error)
-  if (!data) throw new Error('Creator não foi criado')
+  if (!data) throw new Error('Creator was not created')
   await writeAudit('creator.created', 'creator', data.id, { slug: data.slug })
   return data
 }
@@ -58,7 +58,7 @@ export async function listAdminPosts(filters?: { creatorId?: string; type?: stri
 export async function createAdminPost(input: CreatorPostInsert) {
   const { data, error } = await supabase.from('creator_posts').insert(input).select('*').single()
   assertNoError(error)
-  if (!data) throw new Error('Post não foi criado')
+  if (!data) throw new Error('Post was not created')
   await writeAudit('post.created', 'creator_post', data.id, { creator_id: data.creator_id })
   return data
 }
@@ -88,7 +88,7 @@ export async function uploadMediaAsset(file: File, creatorId?: string) {
   const insert: MediaAssetInsert = { creator_id: creatorId ?? null, kind, storage_path: path, public_url: urlData.publicUrl, original_name: file.name, mime_type: file.type, byte_size: file.size, status: 'ready' }
   const { data, error } = await supabase.from('media_assets').insert(insert).select('*').single()
   assertNoError(error)
-  if (!data) throw new Error('Mídia não foi registada')
+  if (!data) throw new Error('Media was not registered')
   await writeAudit('media.uploaded', 'media_asset', data.id, { path, kind })
   return data
 }
@@ -133,7 +133,7 @@ export async function uploadCreatorMediaBatch(files: File[], creatorId: string, 
     const isVideo = asset.kind === 'video'
     const post = await createAdminPost({
       creator_id: creatorId,
-      title: file.name.replace(/\.[^.]+$/, '') || (isVideo ? 'Novo Reel' : 'Novo post'),
+      title: file.name.replace(/\.[^.]+$/, '') || (isVideo ? 'New Reel' : 'New post'),
       caption: '',
       media_url: asset.public_url ?? '',
       thumbnail_url: asset.thumbnail_url,
