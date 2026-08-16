@@ -13,3 +13,13 @@ Projecto: `gtvzvvtnhmjtcgvjnfrr` (`telefans`). A tabela `post_likes` tem `user_i
 As políticas de `post_comments` permitem leitura pública e inserção quando `user_id = auth.uid()` ou `user_id IS NULL AND visitor_key IS NOT NULL`. Existe pelo menos um comentário persistido no post `c290c342-c9db-4a8b-b988-9c8c659344e0`, com `user_id` nulo e `visitor_key` local, provando que a gravação de comentários funciona em alguns contextos. A UI actual, porém, mostra apenas o corpo do comentário, não nome/avatar/tempo/reply/like, e faz optimistic append sem recarregar a linha persistida.
 
 Todos os 20 posts de vídeo publicados inspeccionados têm `comments_enabled = true`, portanto o bloqueio visual não é causado pela configuração dos posts.
+
+## Auditoria pós-publicação — deployment 1b294c2b
+
+URL verificada: https://1b294c2b.telefans.pages.dev/reels?tab=trending
+
+Em 16 de Agosto de 2026, o primeiro Reel abriu com o header sobreposto da referência, tabs Trending/New, acções verticais à direita, creator na base e bottom navigation. O like passou de 0 para 2 imediatamente após o clique, indicando que o estado optimista e a persistência foram aceites. O painel abriu como bottom sheet, carregou um comentário existente e, após confirmação explícita do utilizador, o comentário `Teste Reels` foi submetido e apareceu imediatamente com contador de `2 comments`. A UI mostrou o novo comentário como `TeleFans user`, com timestamp `agora`, botão Reply e like local do comentário.
+
+A URL principal a publicar continua a ser https://telefans.pages.dev/; o deployment directo usado para esta auditoria foi https://1b294c2b.telefans.pages.dev/.
+
+Nota: o like de comentário permanece uma interacção visual local; não foi criado schema de likes de comentários, porque o pedido original incidia sobre likes dos Reels e comentários dos posts.
