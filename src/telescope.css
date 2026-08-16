@@ -455,7 +455,8 @@ button { cursor: pointer; }
 .user-home-row { min-height: 78px; }
 .unlock-section, .following-section { margin-inline: 24px; }
 .user-profile-bottom-space { height: max(78px, env(safe-area-inset-bottom)); }
-.user-profile-page svg { transform: scale(.55); transform-origin: center; }
+.user-profile-scroll svg { transform: scale(.55); transform-origin: center; }
+.user-profile-page > .bottom-nav svg { width: 24px; height: 24px; transform: none; }
 
 /* Reels correction pass: one feed filter bar, bounded media loading and safe-area layout. */
 .reels-shell { min-height: 100dvh; height: 100dvh; padding-top: 0; overflow: hidden; }
