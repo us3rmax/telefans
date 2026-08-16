@@ -33,7 +33,7 @@ function telegramWebApp() {
   }).Telegram?.WebApp
 }
 
-type ProfileSync = { bio?: string; profilePhotoUrl?: string; coinsBalance?: number; referralCount?: number }
+type ProfileSync = { bio?: string; profilePhotoUrl?: string }
 
 
 export function ProfilePage() {
@@ -82,11 +82,12 @@ export function ProfilePage() {
           setCoinsBalance(user.coins_balance ?? 0)
           setReferralCount(user.referral_count ?? 0)
           void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
-          void supabase.from('telegram_users').select('bio, profile_photo_url, coins_balance, referral_count').eq('telegram_id', user.id).maybeSingle().then(({ data }) => {
+          void supabase.from('telegram_users').select('bio, profile_photo_url').eq('telegram_id', user.id).maybeSingle().then(({ data }) => {
             if (!data) return
-            setProfileSync({ bio: data.bio ?? '', profilePhotoUrl: data.profile_photo_url ?? '', coinsBalance: data.coins_balance ?? 0, referralCount: data.referral_count ?? 0 })
-            setCoinsBalance(data.coins_balance ?? 0)
-            setReferralCount(data.referral_count ?? 0)
+            // Coins and referral totals come only from telegram-auth, which validates
+            // Telegram initData and returns the authoritative server-side account row.
+            // Do not let this secondary public profile read overwrite them with stale data.
+            setProfileSync({ bio: data.bio ?? '', profilePhotoUrl: data.profile_photo_url ?? '' })
           })
         }
       })
@@ -103,8 +104,8 @@ export function ProfilePage() {
   const displayHandle = telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
   const displayBio = profileSync.bio || ''
   const profilePhoto = profileSync.profilePhotoUrl || telegramUser?.photo_url
-  const displayCoins = profileSync.coinsBalance ?? coinsBalance
-  const displayReferrals = profileSync.referralCount ?? referralCount
+  const displayCoins = coinsBalance
+  const displayReferrals = referralCount
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
   const inviteMessages = [
