@@ -53,7 +53,7 @@ Deno.serve(async (request) => {
     if (!botToken || typeof initData !== 'string') throw new Error('Telegram sharing is not configured')
 
     const user = await validateInitData(initData, botToken)
-    const botUsername = Deno.env.get('TELEGRAM_BOT_USERNAME') || 'telefans_offbot'
+    const botUsername = Deno.env.get('TELEGRAM_BOT_USERNAME') || 'telefansapp_bot'
     const inviteUrl = `https://t.me/${botUsername}?startapp=ref_${user.id}`
     if (requestedInviteUrl !== undefined && requestedInviteUrl !== inviteUrl) throw new Error('Invite link does not belong to the authenticated user')
 

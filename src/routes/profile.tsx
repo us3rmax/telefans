@@ -73,7 +73,7 @@ export function ProfilePage() {
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
   const shareProfile = async () => {
-    const inviteUrl = telegramUser?.id ? `https://t.me/telefans_offbot?startapp=ref_${telegramUser.id}` : null
+    const inviteUrl = telegramUser?.id ? `https://t.me/telefansapp_bot?startapp=ref_${telegramUser.id}` : null
     const message = 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:'
     const webApp = telegramWebApp()
 
