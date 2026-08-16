@@ -565,3 +565,19 @@ button { cursor: pointer; }
   .reels-menu-button { margin-right: 16px; }
   .reel-actions { right: 12px; }
 }
+
+/* Keep the primary Explore / Reels / Profile navigation visible above every Reel layer. */
+.reels-shell > .bottom-nav {
+  position: fixed !important;
+  right: 50% !important;
+  bottom: max(13px, env(safe-area-inset-bottom)) !important;
+  left: auto !important;
+  z-index: 100 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: min(calc(100% - 54px), 360px) !important;
+  height: 62px !important;
+  transform: translateX(50%) !important;
+}
+.reels-shell > .bottom-nav .nav-link { display: flex !important; visibility: visible !important; opacity: 1 !important; }
