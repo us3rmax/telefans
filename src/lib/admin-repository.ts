@@ -27,7 +27,9 @@ export async function getAdminCreator(id: string) {
 }
 
 export async function createAdminCreator(input: CreatorInsert) {
-  const { data, error } = await supabase.from('creators').insert(input).select('*').single()
+  const normalized = { ...input, handle: input.handle?.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase(), slug: input.slug?.trim().replace(/^\/+|\/+$/g, '').replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').toLowerCase() }
+  if (!normalized.name?.trim() || !normalized.handle || !normalized.slug) throw new Error('Name, handle and slug are required.')
+  const { data, error } = await supabase.from('creators').insert(normalized).select('*').single()
   assertNoError(error)
   if (!data) throw new Error('Creator was not created')
   await writeAudit('creator.created', 'creator', data.id, { slug: data.slug })
@@ -35,7 +37,11 @@ export async function createAdminCreator(input: CreatorInsert) {
 }
 
 export async function updateAdminCreator(id: string, input: CreatorUpdate) {
-  const { data, error } = await supabase.from('creators').update(input).eq('id', id).select('*').single()
+  const normalized = { ...input, ...(input.handle !== undefined ? { handle: input.handle.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() } : {}), ...(input.slug !== undefined ? { slug: input.slug.trim().replace(/^\/+|\/+$/g, '').replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').toLowerCase() } : {}) }
+  if (normalized.name !== undefined && !normalized.name.trim()) throw new Error('Name is required.')
+  if (normalized.handle !== undefined && !normalized.handle) throw new Error('Handle is required.')
+  if (normalized.slug !== undefined && !normalized.slug) throw new Error('Slug is required.')
+  const { data, error } = await supabase.from('creators').update(normalized).eq('id', id).select('*').single()
   assertNoError(error)
   await writeAudit('creator.updated', 'creator', id, { fields: Object.keys(input) })
   return data
@@ -68,6 +74,24 @@ export async function updateAdminPost(id: string, input: CreatorPostUpdate) {
   assertNoError(error)
   await writeAudit('post.updated', 'creator_post', id, { fields: Object.keys(input) })
   return data
+}
+
+export async function deleteAdminPost(id: string) {
+  const { data: post, error: postError } = await supabase.from('creator_posts').select('id, media_url').eq('id', id).maybeSingle()
+  assertNoError(postError)
+  const { error } = await supabase.from('creator_posts').delete().eq('id', id)
+  assertNoError(error)
+  await writeAudit('post.deleted', 'creator_post', id, { media_url: post?.media_url ?? null })
+}
+
+export async function deleteMediaAsset(id: string, storagePath?: string) {
+  if (storagePath) {
+    const { error: storageError } = await supabase.storage.from('media').remove([storagePath])
+    assertNoError(storageError)
+  }
+  const { error } = await supabase.from('media_assets').delete().eq('id', id)
+  assertNoError(error)
+  await writeAudit('media.deleted', 'media_asset', id, { storage_path: storagePath ?? null })
 }
 
 export async function listMediaAssets(creatorId?: string) {
