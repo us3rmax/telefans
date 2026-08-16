@@ -24,7 +24,7 @@ function telegramWebApp() {
   }).Telegram?.WebApp
 }
 
-type ProfileSync = { bio?: string; profilePhotoUrl?: string }
+type ProfileSync = { bio?: string; profilePhotoUrl?: string; coinsBalance?: number; referralCount?: number }
 
 
 export function ProfilePage() {
@@ -35,6 +35,8 @@ export function ProfilePage() {
   const [homeAdded, setHomeAdded] = useState(false)
   const [profileSync, setProfileSync] = useState<ProfileSync>({})
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
+  const [coinsBalance, setCoinsBalance] = useState(0)
+  const [referralCount, setReferralCount] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -50,7 +52,12 @@ export function ProfilePage() {
         setTelegramAuthState(user ? 'connected' : 'unavailable')
         if (user) {
           void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
-          void supabase.from('telegram_users').select('bio, profile_photo_url').eq('telegram_id', user.id).maybeSingle().then(({ data }) => { if (!data) return; setProfileSync({ bio: data.bio ?? '', profilePhotoUrl: data.profile_photo_url ?? '' }) })
+          void supabase.from('telegram_users').select('bio, profile_photo_url, coins_balance, referral_count').eq('telegram_id', user.id).maybeSingle().then(({ data }) => {
+            if (!data) return
+            setProfileSync({ bio: data.bio ?? '', profilePhotoUrl: data.profile_photo_url ?? '', coinsBalance: data.coins_balance ?? 0, referralCount: data.referral_count ?? 0 })
+            setCoinsBalance(data.coins_balance ?? 0)
+            setReferralCount(data.referral_count ?? 0)
+          })
         }
       })
       .catch(() => active && setTelegramAuthState('error'))
@@ -61,6 +68,8 @@ export function ProfilePage() {
   const displayHandle = telegramUser?.username ? `@${telegramUser.username}` : '@wvvtr'
   const displayBio = profileSync.bio || ''
   const profilePhoto = profileSync.profilePhotoUrl || telegramUser?.photo_url
+  const displayCoins = profileSync.coinsBalance ?? coinsBalance
+  const displayReferrals = profileSync.referralCount ?? referralCount
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
   const shareProfile = async () => {
@@ -115,13 +124,13 @@ export function ProfilePage() {
         </section>
 
         <section className="coins-card">
-          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><strong aria-label="Fans Coins balance">0</strong><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
+          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><strong aria-label={`Fans Coins balance: ${displayCoins}`}>{displayCoins}</strong><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
           {coinsHelp && <p className="coins-help">Fans Coins can be used to unlock content and support creators.</p>}
         </section>
 
         <button type="button" className="user-action-row" onClick={shareProfile}>
           <Send aria-hidden="true" />
-          <span><strong>Invite a friend</strong><small>10 Coins when they open TeleFans for the first time</small></span>
+          <span><strong>Invite a friend</strong><small>Earn 2 Coins when a friend joins through your link</small></span>
           <b>Share</b>
         </button>
         <button type="button" className="user-action-row user-home-row" onClick={addToHomeScreen}>
@@ -129,6 +138,8 @@ export function ProfilePage() {
           <span><strong>Add to home screen</strong><small>{homeAdded ? 'Open your browser menu and choose “Add to Home Screen”' : 'Save TeleFans for faster access'}</small></span>
           <ChevronRight aria-hidden="true" />
         </button>
+
+        <p className="referral-summary" aria-live="polite">{displayReferrals} {displayReferrals === 1 ? 'friend has' : 'friends have'} joined through your link</p>
 
         <section className="unlock-section">
           <div className="user-section-heading"><div><small>PURCHASE HISTORY</small><h2>Recent unlocks</h2></div><b>0</b></div>

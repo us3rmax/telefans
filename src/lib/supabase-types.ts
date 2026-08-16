@@ -395,9 +395,42 @@ export type Database = {
           },
         ]
       }
+      coin_transactions: {
+        Row: {
+          id: string
+          telegram_id: number
+          amount: number
+          transaction_type: 'referral_signup'
+          referred_telegram_id: number | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          telegram_id: number
+          amount: number
+          transaction_type: 'referral_signup'
+          referred_telegram_id?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          telegram_id?: number
+          amount?: number
+          transaction_type?: 'referral_signup'
+          referred_telegram_id?: number | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       telegram_users: {
         Row: {
           auth_date: string
+          coins_balance: number
+          referral_count: number
+          referred_by: number | null
           bio: string
           created_at: string
           date_of_birth: string | null
@@ -412,6 +445,9 @@ export type Database = {
         }
         Insert: {
           auth_date: string
+          coins_balance?: number
+          referral_count?: number
+          referred_by?: number | null
           bio?: string
           created_at?: string
           date_of_birth?: string | null
@@ -426,6 +462,9 @@ export type Database = {
         }
         Update: {
           auth_date?: string
+          coins_balance?: number
+          referral_count?: number
+          referred_by?: number | null
           bio?: string
           created_at?: string
           date_of_birth?: string | null
