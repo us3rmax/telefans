@@ -57,13 +57,25 @@ Deno.serve(async (request) => {
     const inviteUrl = `https://t.me/${botUsername}?startapp=ref_${user.id}`
     if (requestedInviteUrl !== undefined && requestedInviteUrl !== inviteUrl) throw new Error('Invite link does not belong to the authenticated user')
 
+    const inviteMessages = [
+      'I found the dirtiest OF you’ll ever jerk to 🔥\nGet unlimited access here:',
+      'This OF is pure filth… and it’s waiting for you 😈\nJoin the private club now:',
+      'She posts the kind of explicit shit that gets you hooked in seconds 👀\nUnlock everything here:',
+      'Ready for the hottest uncensored drops?\nDive into her OF right here:',
+      'This isn’t teasing… this is full raw heat 🔥\nClaim your access now:',
+      'The kind of OF that makes you cancel all your plans 😏\nEnter the private page here:',
+      'She just dropped something that will ruin your night (in the best way) 😈\nSee it first here:',
+      'One click away from the most addictive explicit content online 🔥\nJoin her exclusive fans here:',
+      'This isn’t soft… this is full explicit heat 🔥\nClaim your access now:',
+    ] as const
+    const message = inviteMessages[Math.floor(Math.random() * inviteMessages.length)]
     const result = {
       type: 'article',
       id: `telefans-profile-${user.id}`,
       title: 'Discover TeleFans',
       description: 'Discover content creators on Telegram 💙',
       input_message_content: {
-        message_text: `I found a Telegram app you are going to love 👀\n\n<a href="${inviteUrl}">Discover TeleFans here:</a>`,
+        message_text: `${message}\n\n<a href="${inviteUrl}">Open the private page:</a>`,
         parse_mode: 'HTML',
       },
     }
@@ -76,7 +88,7 @@ Deno.serve(async (request) => {
       allow_channel_chats: true,
     })
 
-    return new Response(JSON.stringify({ ok: true, id: prepared.id }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ ok: true, id: prepared.id, message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     return new Response(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Telegram sharing failed' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }

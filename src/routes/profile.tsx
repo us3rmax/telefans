@@ -72,13 +72,25 @@ export function ProfilePage() {
   const displayReferrals = profileSync.referralCount ?? referralCount
   const initials = useMemo(() => displayName.slice(0, 1).toUpperCase(), [displayName])
 
+  const inviteMessages = [
+    'I found the dirtiest OF you’ll ever jerk to 🔥\nGet unlimited access here:',
+    'This OF is pure filth… and it’s waiting for you 😈\nJoin the private club now:',
+    'She posts the kind of explicit shit that gets you hooked in seconds 👀\nUnlock everything here:',
+    'Ready for the hottest uncensored drops?\nDive into her OF right here:',
+    'This isn’t teasing… this is full raw heat 🔥\nClaim your access now:',
+    'The kind of OF that makes you cancel all your plans 😏\nEnter the private page here:',
+    'She just dropped something that will ruin your night (in the best way) 😈\nSee it first here:',
+    'One click away from the most addictive explicit content online 🔥\nJoin her exclusive fans here:',
+    'This isn’t soft… this is full explicit heat 🔥\nClaim your access now:',
+  ] as const
+
   const shareProfile = async () => {
     const inviteUrl = telegramUser?.id ? `https://t.me/telefansapp_bot?startapp=ref_${telegramUser.id}` : null
-    const message = 'I found a Telegram app you are going to love 👀\n\nDiscover TeleFans here:'
+    const message = inviteMessages[Math.floor(Math.random() * inviteMessages.length)]
     const webApp = telegramWebApp()
 
     if (inviteUrl && webApp?.shareMessage && webApp.initData) {
-      const { data, error } = await supabase.functions.invoke<{ ok: boolean; id?: string }>('telegram-share', { body: { initData: webApp.initData } })
+      const { data, error } = await supabase.functions.invoke<{ ok: boolean; id?: string; message?: string }>('telegram-share', { body: { initData: webApp.initData } })
       if (!error && data?.id) {
         webApp.shareMessage(data.id)
         setShared(true)
