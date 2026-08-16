@@ -84,6 +84,19 @@ export async function deleteAdminPost(id: string) {
   await writeAudit('post.deleted', 'creator_post', id, { media_url: post?.media_url ?? null })
 }
 
+export async function setMediaAssetsPrice(assetIds: string[], price: number) {
+  if (!assetIds.length) return []
+  const normalizedPrice = Math.max(0, Math.floor(price))
+  const { data: assets, error: assetsError } = await supabase.from('media_assets').select('id, public_url, kind').in('id', assetIds)
+  assertNoError(assetsError)
+  const imageUrls = (assets ?? []).filter(asset => asset.kind === 'image' && asset.public_url).map(asset => asset.public_url as string)
+  if (!imageUrls.length) return []
+  const { data, error } = await supabase.from('creator_posts').update({ is_paid: normalizedPrice > 0, unlock_price: normalizedPrice }).in('media_url', imageUrls).select('*')
+  assertNoError(error)
+  for (const post of data ?? []) await writeAudit('post.price_updated', 'creator_post', post.id, { is_paid: normalizedPrice > 0, unlock_price: normalizedPrice })
+  return data ?? []
+}
+
 export async function deleteMediaAsset(id: string, storagePath?: string) {
   if (storagePath) {
     const { error: storageError } = await supabase.storage.from('media').remove([storagePath])
