@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Check, Feather, Heart, LockKeyhole } from 'lucide-react'
+import { ArrowLeft, Check, Feather, Heart, LockKeyhole, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts } from '@/lib/telefans-data'
@@ -41,12 +41,31 @@ export function CreatorProfilePage() {
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
   const [offerOpened, setOfferOpened] = useState(false)
+  const [expandedPost, setExpandedPost] = useState<PublicCreatorPost | null>(null)
   const availability = getCreatorAvailability(slug)
 
   useEffect(() => useTelegramBackButton(() => {
+    if (expandedPost) {
+      setExpandedPost(null)
+      return
+    }
     if (window.history.length > 1) window.history.back()
     else window.location.assign('/')
-  }), [])
+  }), [expandedPost])
+
+  useEffect(() => {
+    if (!expandedPost) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpandedPost(null)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [expandedPost])
 
   useEffect(() => {
     let active = true
@@ -113,9 +132,10 @@ export function CreatorProfilePage() {
           </button>
         </section>
 
-        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>Paid Media</button></div><div className="creator-grid-preview creator-paid-grid">{activeTab === 'media' ? (publicPosts.filter(post => post.type === 'image' && post.isPaid).length ? publicPosts.filter(post => post.type === 'image' && post.isPaid).map((post) => <article className="paid-media-card" key={post.id}><img src={post.mediaUrl} alt="Paid media" /><div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div></article>) : <div className="creator-media-empty">There is no Paid Media available for this creator yet.</div>) : (publicPosts.filter(post => post.type === 'image').length ? publicPosts.filter(post => post.type === 'image').map((post) => <article className="creator-post-card" key={post.id}><img src={post.mediaUrl} alt={post.title || `${creator.name} post`} />{post.isPaid && <span className="creator-post-paid-badge">Paid</span>}</article>) : <div className="creator-media-empty">There are no posts available for this creator yet.</div>)}</div></section>
+        <section className="creator-content"><div className="creator-tabs"><button type="button" className={activeTab === 'posts' ? 'active' : ''} onClick={() => setActiveTab('posts')}>{creator.tabs.postsLabel}</button><button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>Paid Media</button></div><div className="creator-grid-preview creator-paid-grid">{activeTab === 'media' ? (publicPosts.filter(post => post.type === 'image' && post.isPaid).length ? publicPosts.filter(post => post.type === 'image' && post.isPaid).map((post) => <button type="button" className="paid-media-card" key={post.id} onClick={() => setExpandedPost(post)} aria-label={`Open paid media from ${creator.name}`}><img src={post.mediaUrl} alt="Paid media" /><div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div></button>) : <div className="creator-media-empty">There is no Paid Media available for this creator yet.</div>) : (publicPosts.filter(post => post.type === 'image').length ? publicPosts.filter(post => post.type === 'image').map((post) => <button type="button" className="creator-post-card" key={post.id} onClick={() => setExpandedPost(post)} aria-label={`Open post from ${creator.name}`}><img src={post.mediaUrl} alt={post.title || `${creator.name} post`} />{post.isPaid && <span className="creator-post-paid-badge">Paid</span>}</button>) : <div className="creator-media-empty">There are no posts available for this creator yet.</div>)}</div></section>
       </div>
       {offerOpened && <div className="creator-offer-toast" role="status">Subscription offer selected</div>}
+      {expandedPost && <div className="creator-media-lightbox" role="dialog" aria-modal="true" aria-label="Expanded media" onClick={() => setExpandedPost(null)}><button type="button" className="creator-media-lightbox-close" onClick={() => setExpandedPost(null)} aria-label="Close expanded media"><X /></button><div className="creator-media-lightbox-content" onClick={event => event.stopPropagation()}><img src={expandedPost.mediaUrl} alt={expandedPost.title || `${creator.name} post`} /><div className="creator-media-lightbox-caption"><strong>{creator.name}</strong>{expandedPost.caption && <span>{expandedPost.caption}</span>}</div></div></div>}
     </div>
   </main>
 }
