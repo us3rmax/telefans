@@ -1,14 +1,14 @@
-import { Activity, BarChart3, CheckCircle2, Clock3, Coins, Eye, FileImage, Heart, ImagePlus, Loader2, MessageCircle, RefreshCw, Send, TrendingUp, Upload, Users, Video, AlertTriangle } from 'lucide-react'
+import { Activity, AlertTriangle, BarChart3, CheckCircle2, Clock3, Coins, Eye, FileImage, Filter, Heart, ImagePlus, Link2, Loader2, MessageCircle, RefreshCw, Send, TrendingUp, Upload, Users, UsersRound, Video, WalletCards } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { getAdminAnalytics, listAdminClients, listAdminCreators, type AdminAnalytics, type AdminClient, uploadCreatorMediaBatch, type Creator } from '@/lib/admin-repository'
 
 export const Route = createFileRoute('/app/')({ component: DashboardHome })
-
 type Icon = typeof Users
+type Period = '14d' | '7d' | '30d' | 'all'
 
-function MetricCard({ label, value, detail, icon: IconComponent, tone = 'default' }: { label: string; value: number | string; detail?: string; icon: Icon; tone?: 'default' | 'green' | 'gold' | 'blue' }) {
-  return <div className={`admin-metric-card ${tone}`}><div className="flex items-center justify-between"><span className="admin-metric-icon"><IconComponent /></span><TrendingUp className="h-4 w-4 opacity-40" /></div><strong>{typeof value === 'number' ? value.toLocaleString('en-US') : value}</strong><span>{label}</span>{detail && <small>{detail}</small>}</div>
+function MetricCard({ label, value, detail, icon: IconComponent, tone = 'default', muted = false }: { label: string; value: number | string; detail?: string; icon: Icon; tone?: 'default' | 'green' | 'gold' | 'blue'; muted?: boolean }) {
+  return <div className={`admin-metric-card ${tone} ${muted ? 'is-muted' : ''}`}><div className="flex items-center justify-between"><span className="admin-metric-icon"><IconComponent /></span><TrendingUp className="h-4 w-4 opacity-40" /></div><strong>{typeof value === 'number' ? value.toLocaleString('en-US') : value}</strong><span>{label}</span>{detail && <small>{detail}</small>}</div>
 }
 
 function ClientRow({ client }: { client: AdminClient }) {
@@ -19,7 +19,7 @@ function ClientRow({ client }: { client: AdminClient }) {
 
 function ActivityChart({ daily }: { daily: AdminAnalytics['daily'] }) {
   const max = Math.max(1, ...daily.map(day => Math.max(day.views, day.users, day.likes)))
-  return <div className="admin-chart"><div className="admin-chart-legend"><span><i className="views" />Views</span><span><i className="users" />New users</span><span><i className="likes" />Likes</span></div><div className="admin-chart-bars">{daily.map(day => <div className="admin-chart-day" key={day.label}><div className="admin-bar-stack"><span className="views" style={{ height: `${Math.max(3, day.views / max * 100)}%` }} /><span className="users" style={{ height: `${Math.max(3, day.users / max * 100)}%` }} /><span className="likes" style={{ height: `${Math.max(3, day.likes / max * 100)}%` }} /></div><small>{day.label}</small></div>)}</div></div>
+  return <div className="admin-chart"><div className="admin-chart-legend"><span><i className="views" />Views</span><span><i className="users" />New users</span><span><i className="likes" />Likes</span></div>{daily.length ? <div className="admin-chart-bars">{daily.map(day => <div className="admin-chart-day" key={day.label}><div className="admin-bar-stack"><span className="views" style={{ height: `${Math.max(3, day.views / max * 100)}%` }} /><span className="users" style={{ height: `${Math.max(3, day.users / max * 100)}%` }} /><span className="likes" style={{ height: `${Math.max(3, day.likes / max * 100)}%` }} /></div><small>{day.label}</small></div>)}</div> : <div className="admin-empty-state">No activity recorded for this period.</div>}</div>
 }
 
 function ActionQueue({ actions }: { actions: AdminAnalytics['actions'] }) {
@@ -32,6 +32,10 @@ function ActionQueue({ actions }: { actions: AdminAnalytics['actions'] }) {
   return <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Today’s action queue</h2><p>Operational items that need attention.</p></div><AlertTriangle /></div><div className="admin-action-grid">{items.map(item => <a href={item.href} className={`admin-action-card ${item.tone}`} key={item.label}><item.icon /><span>{item.label}</span><strong>{item.value}</strong><small>Open queue →</small></a>)}</div></section>
 }
 
+function NoDataPanel({ icon: IconComponent, title, description }: { icon: Icon; title: string; description: string }) {
+  return <div className="admin-empty-state admin-empty-panel"><IconComponent /><strong>{title}</strong><p>{description}</p></div>
+}
+
 function DashboardHome() {
   const [models, setModels] = useState<Creator[]>([])
   const [clients, setClients] = useState<AdminClient[]>([])
@@ -41,6 +45,8 @@ function DashboardHome() {
   const [unlockPrice, setUnlockPrice] = useState('10')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [account, setAccount] = useState('all')
+  const [period, setPeriod] = useState<Period>('14d')
   const inputs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const loadDashboard = async () => {
@@ -52,6 +58,16 @@ function DashboardHome() {
     finally { setLoading(false) }
   }
   useEffect(() => { void loadDashboard() }, [])
+
+  const filteredAnalytics = useMemo(() => {
+    if (!analytics) return null
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : period === 'all' ? analytics.daily.length : 14
+    const daily = analytics.daily.slice(-days)
+    const selectedCreator = account === 'all' ? null : analytics.creators.find(creator => creator.id === account)
+    const scopedCreators = selectedCreator ? analytics.creators.filter(creator => creator.id === selectedCreator.id) : analytics.creators
+    const scopedOverview = selectedCreator ? { ...analytics.overview, posts: selectedCreator.posts, views: selectedCreator.views, likes: selectedCreator.likes, comments: selectedCreator.comments, follows: selectedCreator.followers } : analytics.overview
+    return { ...analytics, daily, creators: scopedCreators, overview: scopedOverview }
+  }, [analytics, account, period])
 
   const recentClients = useMemo(() => [...clients].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6), [clients])
   const activeClients = useMemo(() => [...clients].sort((a, b) => b.following_count - a.following_count || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 6), [clients])
@@ -71,17 +87,24 @@ function DashboardHome() {
     finally { setUploadingId(null) }
   }
 
-  const overview = analytics?.overview
+  const view = filteredAnalytics
+  const overview = view?.overview
   const engagementRate = overview?.views ? ((overview.likes + overview.comments) / overview.views * 100).toFixed(1) : '0.0'
+  const selectedAccountName = account === 'all' ? 'All accounts' : models.find(model => model.id === account)?.name ?? 'Selected account'
   return <main className="admin-dashboard"><div className="admin-dashboard-inner">
-    <header className="admin-dashboard-header"><div><p className="admin-eyebrow">TeleFans CRM</p><h1>Creator control center</h1><p>Run the creator business from one operational dashboard.</p></div><button type="button" onClick={() => void loadDashboard()} className="admin-refresh"><RefreshCw className="h-4 w-4" />Refresh data</button></header>
+    <header className="admin-dashboard-header"><div><p className="admin-eyebrow">TeleFans CRM</p><h1>Creator control center</h1><p>Track audience, content operations and monetization readiness from one place.</p></div><button type="button" onClick={() => void loadDashboard()} className="admin-refresh"><RefreshCw className="h-4 w-4" />Refresh data</button></header>
+    <section className="admin-filter-bar"><div className="admin-filter-title"><Filter /><span>CRM filters</span><small>{selectedAccountName}</small></div><label>Account<select value={account} onChange={event => setAccount(event.target.value)}><option value="all">All creators</option>{models.map(model => <option value={model.id} key={model.id}>{model.name}</option>)}</select></label><label>Period<select value={period} onChange={event => setPeriod(event.target.value as Period)}><option value="7d">Last 7 days</option><option value="14d">Last 14 days</option><option value="30d">Last 30 days</option><option value="all">Available history</option></select></label></section>
     {message && <div className="admin-alert success">{message}</div>}{error && <div className="admin-alert error">{error}</div>}
-    {loading || !analytics ? <div className="admin-loading"><Loader2 className="h-5 w-5 animate-spin" />Loading CRM data…</div> : <>
-      <section className="admin-metrics-grid"><MetricCard label="Telegram users" value={overview?.users ?? 0} detail={`+${analytics.actions.newUsers7d} in the last 7 days`} icon={Users} tone="blue" /><MetricCard label="Published creators" value={overview?.publishedCreators ?? 0} detail={`${overview?.creators ?? 0} total profiles`} icon={Users} tone="default" /><MetricCard label="Engagement rate" value={`${engagementRate}%`} detail={`${overview?.likes ?? 0} likes · ${overview?.comments ?? 0} comments`} icon={Heart} tone="green" /><MetricCard label="Published content" value={overview?.posts ?? 0} detail={`${overview?.reels ?? 0} active Reels`} icon={Video} tone="default" /><MetricCard label="Referral growth" value={`+${analytics.actions.referrals7d}`} detail={`${overview?.referrals ?? 0} total referrals`} icon={Send} tone="blue" /><MetricCard label="Coins issued" value={overview?.coinsIssued ?? 0} detail="Referral rewards only" icon={Coins} tone="gold" /></section>
-      <ActionQueue actions={analytics.actions} />
-      <section className="admin-panel admin-activity-panel"><div className="admin-panel-heading"><div><h2>Growth and engagement</h2><p>Recorded user and content activity over the last 14 days.</p></div><Activity /></div><ActivityChart daily={analytics.daily} /></section>
-      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Creator health</h2><p>Use engagement rate and follower growth to decide who needs attention.</p></div><BarChart3 /></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Creator</th><th>Content</th><th>Views</th><th>Engagement</th><th>Followers</th><th>Next action</th></tr></thead><tbody>{analytics.creators.map(creator => <tr key={creator.id}><td><div className="flex items-center gap-2"><div className="admin-table-avatar">{creator.avatar_image ? <img src={creator.avatar_image} alt="" /> : creator.name.slice(0, 1)}</div><span>{creator.name}</span></div></td><td>{creator.posts}</td><td>{creator.views.toLocaleString('en-US')}</td><td><strong>{creator.engagementRate}%</strong></td><td>{creator.followers}</td><td><a href={`/app/models/${creator.id}`} className="admin-inline-link">Open profile</a></td></tr>)}</tbody></table></div></section>
-      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Content intelligence</h2><p>Top content by engagement rate, with raw counts for context.</p></div><FileImage /></div><div className="admin-content-grid">{analytics.topContent.map(item => <div className="admin-content-card" key={item.id}><div><strong>{item.title}</strong><small>{item.creator} · {item.type === 'video' ? 'Reel' : 'Paid Media'} · {item.engagementRate}% engagement</small></div><div className="admin-content-stats"><span><Eye />{item.views}</span><span><Heart />{item.likes}</span><span><MessageCircle />{item.comments}</span></div></div>)}</div></section>
+    {loading || !view ? <div className="admin-loading"><Loader2 className="h-5 w-5 animate-spin" />Loading CRM data…</div> : <>
+      <section className="admin-metrics-grid"><MetricCard label="Telegram users" value={overview?.users ?? 0} detail={`+${view.actions.newUsers7d} in the last 7 days`} icon={Users} tone="blue" /><MetricCard label="Published creators" value={overview?.publishedCreators ?? 0} detail={`${overview?.creators ?? 0} total profiles`} icon={UsersRound} /><MetricCard label="Engagement rate" value={`${engagementRate}%`} detail={`${overview?.likes ?? 0} likes · ${overview?.comments ?? 0} comments`} icon={Heart} tone="green" /><MetricCard label="Published content" value={overview?.posts ?? 0} detail={`${overview?.reels ?? 0} active Reels`} icon={Video} /><MetricCard label="Referral growth" value={`+${view.actions.referrals7d}`} detail={`${overview?.referrals ?? 0} total referrals`} icon={Send} tone="blue" /><MetricCard label="Coins issued" value={overview?.coinsIssued ?? 0} detail="Referral rewards only" icon={Coins} tone="gold" /></section>
+      <section className="admin-metrics-grid admin-metrics-grid-secondary"><MetricCard label="Revenue" value="Not tracked" detail="Purchase ledger not connected" icon={WalletCards} muted /><MetricCard label="Paying users" value="Not tracked" detail="Requires purchase events" icon={UsersRound} muted /><MetricCard label="Average spend" value="Not tracked" detail="Requires purchase events" icon={Coins} muted /><MetricCard label="Link conversions" value="Not tracked" detail="No link events recorded" icon={Link2} muted /></section>
+      <ActionQueue actions={view.actions} />
+      <section className="admin-panel admin-activity-panel"><div className="admin-panel-heading"><div><h2>Growth and engagement</h2><p>{selectedAccountName} · {period === 'all' ? 'available history' : `last ${period.replace('d', ' days')}`}</p></div><Activity /></div><ActivityChart daily={view.daily} /></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Creator health</h2><p>Use engagement rate and follower growth to decide who needs attention.</p></div><BarChart3 /></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Creator</th><th>Content</th><th>Views</th><th>Engagement</th><th>Followers</th><th>Next action</th></tr></thead><tbody>{view.creators.map(creator => <tr key={creator.id}><td><div className="flex items-center gap-2"><div className="admin-table-avatar">{creator.avatar_image ? <img src={creator.avatar_image} alt="" /> : creator.name.slice(0, 1)}</div><span>{creator.name}</span></div></td><td>{creator.posts}</td><td>{creator.views.toLocaleString('en-US')}</td><td><strong>{creator.engagementRate}%</strong></td><td>{creator.followers}</td><td><a href={`/app/models/${creator.id}`} className="admin-inline-link">Open profile</a></td></tr>)}</tbody></table></div></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Revenue breakdown</h2><p>Prepared for paid media, subscriptions and creator payouts.</p></div><WalletCards /></div><NoDataPanel icon={Coins} title="No purchase ledger connected" description="The current Supabase schema records referral Coins, views and engagement, but not paid unlocks or payouts. Revenue cards will populate when purchase events are added." /></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Spender tracking</h2><p>Identify paying users, repeat buyers and high-value accounts.</p></div><UsersRound /></div><NoDataPanel icon={UsersRound} title="No spender data yet" description="This panel is intentionally empty until a purchase table links Telegram users to paid media or subscription transactions." /></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Link analytics</h2><p>Track creator links, source traffic and conversion into follows or purchases.</p></div><Link2 /></div><NoDataPanel icon={Link2} title="No tracked links yet" description="Create link events with source, campaign, creator and destination fields to activate this report without changing the public app layout." /></section>
+      <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Content intelligence</h2><p>Top content by engagement rate, with raw counts for context.</p></div><FileImage /></div><div className="admin-content-grid">{view.topContent.map(item => <div className="admin-content-card" key={item.id}><div><strong>{item.title}</strong><small>{item.creator} · {item.type === 'video' ? 'Reel' : 'Paid Media'} · {item.engagementRate}% engagement</small></div><div className="admin-content-stats"><span><Eye />{item.views}</span><span><Heart />{item.likes}</span><span><MessageCircle />{item.comments}</span></div></div>)}</div></section>
       <div className="admin-two-column"><section className="admin-panel"><div className="admin-panel-heading"><div><h2>New users</h2><p>Latest Telegram accounts to onboard and retain.</p></div><Clock3 /></div><div className="space-y-2">{recentClients.map(client => <ClientRow key={client.telegram_id} client={client} />)}</div></section><section className="admin-panel"><div className="admin-panel-heading"><div><h2>Most engaged users</h2><p>Users with the strongest creator-following activity.</p></div><CheckCircle2 /></div><div className="space-y-2">{activeClients.map(client => <ClientRow key={client.telegram_id} client={client} />)}</div></section></div>
       <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Creator operations</h2><p>Upload profile media and route videos to Reels.</p></div><Upload /></div><div className="admin-upload-toolbar"><label>Paid Media price<input type="number" min="0" step="1" value={unlockPrice} onChange={event => setUnlockPrice(event.target.value)} /><small>Coins per image</small></label></div><div className="admin-creator-grid">{models.map(model => { const busy = uploadingId === model.id; return <button key={model.id} type="button" disabled={busy} onClick={() => inputs.current[model.id]?.click()} className="admin-creator-card"><div className="admin-creator-image"><img src={model.avatar_image || model.cover_image} alt={model.name} /><div><span>{model.name}</span>{busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}</div></div><span className="admin-upload-label"><Upload />Add media<input ref={element => { inputs.current[model.id] = element }} type="file" accept="image/*,video/*" multiple className="sr-only" onClick={event => event.stopPropagation()} onChange={event => { void handleFiles(model, Array.from(event.target.files ?? [])); event.currentTarget.value = '' }} /></span></button> })}</div></section>
     </>}
