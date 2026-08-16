@@ -31,7 +31,15 @@ declare global {
   interface Window { Telegram?: { WebApp?: TelegramWebApp } }
 }
 
-export type TelegramUser = { id: number; username?: string; first_name: string; last_name?: string; photo_url?: string }
+export type TelegramUser = {
+  id: number
+  username?: string
+  first_name: string
+  last_name?: string
+  photo_url?: string
+  coins_balance?: number
+  referral_count?: number
+}
 export type TelegramAuthState = 'idle' | 'connecting' | 'connected' | 'unavailable' | 'error'
 
 const SESSION_KEY = 'telefans.telegram.session'

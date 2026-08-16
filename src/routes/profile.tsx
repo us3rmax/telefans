@@ -51,6 +51,8 @@ export function ProfilePage() {
         setTelegramUser(user)
         setTelegramAuthState(user ? 'connected' : 'unavailable')
         if (user) {
+          setCoinsBalance(user.coins_balance ?? 0)
+          setReferralCount(user.referral_count ?? 0)
           void listFollowedCreators(String(user.id)).then(setFollowing).catch(() => setFollowing([]))
           void supabase.from('telegram_users').select('bio, profile_photo_url, coins_balance, referral_count').eq('telegram_id', user.id).maybeSingle().then(({ data }) => {
             if (!data) return
