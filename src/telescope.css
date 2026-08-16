@@ -626,3 +626,178 @@ button { cursor: pointer; }
   visibility: visible !important;
   opacity: 1 !important;
 }
+
+/* Profile visual system — polished mobile-first pass at the 391px Telegram frame. */
+.user-profile-page {
+  background: #101114;
+  color: #f8f8fa;
+}
+.user-profile-frame {
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 11%, rgba(78, 86, 116, .16), transparent 28%),
+    linear-gradient(180deg, #18191d 0%, #15161a 58%, #111216 100%);
+}
+.user-profile-scroll {
+  padding-bottom: 18px;
+  overscroll-behavior-y: contain;
+}
+.user-profile-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  min-height: 56px;
+  margin: 0;
+  padding: 7px 18px 5px;
+  background: rgba(24, 25, 29, .82);
+  border-bottom: 1px solid rgba(255, 255, 255, .055);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.user-profile-title {
+  font-size: 20px;
+  letter-spacing: -.025em;
+}
+.user-profile-back {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.045);
+}
+.user-profile-back svg { width: 19px; height: 19px; }
+.user-identity {
+  padding: 30px 20px 0;
+}
+.user-avatar {
+  width: 128px;
+  height: 128px;
+  margin-bottom: 17px;
+  border: 2px solid rgba(255,255,255,.7);
+  box-shadow: 0 12px 32px rgba(0,0,0,.22), 0 0 0 7px rgba(255,255,255,.035);
+}
+.user-identity h2 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -.045em;
+}
+.user-identity > p {
+  margin-top: 7px;
+  color: #aeb0b8;
+  font-size: 16px;
+  font-weight: 500;
+}
+.user-bio {
+  max-width: 300px;
+  margin-top: 14px !important;
+  color: #c5c6cc !important;
+  font-size: 14px !important;
+  line-height: 1.5;
+}
+.user-metrics {
+  margin: 32px 20px 0;
+  padding: 18px 8px 16px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 20px;
+  background: rgba(255,255,255,.035);
+}
+.user-metrics div { gap: 6px; }
+.user-metrics svg { width: 20px; height: 20px; color: #d9d9de; }
+.user-metrics strong { font-size: 22px; }
+.user-metrics span { color: #a8a9b1; font-size: 9px; letter-spacing: .13em; }
+.user-edit-button {
+  margin-top: 18px;
+  padding: 11px 20px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  font-size: 15px;
+  transition: transform 160ms ease-out, background 160ms ease-out;
+}
+.user-edit-button:active { transform: scale(.97); background: rgba(255,255,255,.12); }
+.user-edit-button svg { width: 18px; height: 18px; }
+.user-edit-panel {
+  width: calc(100% - 40px);
+  margin-top: 14px;
+  padding: 16px;
+  border-color: rgba(255,255,255,.12);
+  border-radius: 20px;
+  background: #22242a;
+  box-shadow: 0 18px 45px rgba(0,0,0,.22);
+}
+.coins-card {
+  min-height: 154px;
+  margin: 30px 20px 0;
+  padding: 24px 23px 20px;
+  border-radius: 24px;
+  background: radial-gradient(circle at 100% 0, rgba(217,191,82,.2), transparent 45%), linear-gradient(135deg, #302e18, #211f14 72%);
+  box-shadow: 0 12px 30px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.coins-card-title { font-size: 11px; letter-spacing: .14em; }
+.coins-card-title svg { width: 17px; height: 17px; }
+.coins-card-title button { width: 29px; height: 29px; }
+.coins-card > strong { margin-top: 20px; font-size: 48px; }
+.user-action-row {
+  width: calc(100% - 40px);
+  min-height: 76px;
+  margin: 10px 20px 0;
+  padding: 0 16px;
+  gap: 13px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+  transition: transform 160ms ease-out, background 160ms ease-out;
+}
+.user-action-row:active { transform: scale(.985); background: rgba(255,255,255,.075); }
+.user-action-row > svg { width: 21px; height: 21px; color: #d7d8dd; }
+.user-action-row strong { font-size: 15px; }
+.user-action-row small { color: #a8a9b1; font-size: 12px; }
+.user-action-row b { min-width: 70px; height: 36px; font-size: 13px; }
+.user-home-row { margin-top: 8px; }
+.unlock-section, .following-section {
+  margin: 40px 20px 0;
+  padding-top: 4px;
+}
+.user-section-heading small { color: #9698a1; font-size: 10px; letter-spacing: .14em; }
+.user-section-heading h2 { font-size: 23px; }
+.user-section-heading > b {
+  width: 34px;
+  height: 34px;
+  background: rgba(255,255,255,.08);
+  color: #c9cad0;
+  font-size: 14px;
+}
+.unlock-empty {
+  margin-top: 24px;
+  padding: 30px 18px;
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 20px;
+  background: rgba(255,255,255,.025);
+}
+.unlock-empty > span { width: 62px; height: 62px; margin-bottom: 17px; }
+.unlock-empty > span svg { width: 27px; height: 27px; }
+.unlock-empty strong { font-size: 18px; }
+.unlock-empty p { margin-top: 12px; color: #a7a8af; font-size: 14px; line-height: 1.45; }
+.following-grid { gap: 9px; margin-top: 18px; }
+.following-card { border-radius: 16px; }
+.user-empty-following {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 25px 15px;
+  border: 1px dashed rgba(255,255,255,.11);
+  border-radius: 16px;
+  color: #a7a8af;
+  text-align: center;
+  font-size: 14px;
+}
+.user-profile-bottom-space { height: 128px; }
+@media (max-width: 420px) {
+  .user-profile-titlebar { min-height: 54px; padding-inline: 16px; }
+  .user-identity { padding-top: 27px; }
+  .user-avatar { width: 122px; height: 122px; }
+  .user-metrics { margin-inline: 18px; }
+  .coins-card, .user-action-row { width: calc(100% - 36px); margin-inline: 18px; }
+  .unlock-section, .following-section { margin-inline: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .user-edit-button, .user-action-row { transition: none; }
+}
