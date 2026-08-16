@@ -52,6 +52,7 @@ function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, 
   const [mediaError, setMediaError] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
   const optimisticLikeRef = useRef(false)
+  const suppressLikeClickRef = useRef(false)
 
   useEffect(() => {
     if (!optimisticLikeRef.current) setLiked(initialLiked)
@@ -133,7 +134,7 @@ function Reel({ reel, active, loadVideo, onVisible, onComment, onShare, onLike, 
     </div>
     <div className="reel-actions" aria-label={`Acções de ${reel.creator}`}>
       <Link to="/creator/$slug" params={{ slug: reel.slug }} onClick={() => onOpenCreator(reel.id)} className="reel-follow-avatar" aria-label={`Abrir perfil de ${reel.creator}`}>{reel.avatar ? <img src={reel.avatar} alt="" /> : reel.creator.slice(0, 1)}<span>+</span></Link>
-      <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.preventDefault(); event.stopPropagation(); void handleLike() }} aria-pressed={liked} aria-label="Gostar do Reel" disabled={!onLike || likeBusy} className={liked ? 'liked' : ''}><Heart fill={liked ? 'currentColor' : 'none'} /><small>{formatCount(reel.likes)}</small></button>
+      <button type="button" onPointerDown={(event) => { event.stopPropagation(); if (event.pointerType === 'touch') { event.preventDefault(); suppressLikeClickRef.current = true; window.setTimeout(() => { suppressLikeClickRef.current = false }, 600); void handleLike() } }} onClick={(event) => { event.preventDefault(); event.stopPropagation(); if (suppressLikeClickRef.current) { suppressLikeClickRef.current = false; return } void handleLike() }} aria-pressed={liked} aria-label="Gostar do Reel" disabled={!onLike || likeBusy} className={liked ? 'liked' : ''}><Heart fill={liked ? 'currentColor' : 'none'} /><small>{formatCount(reel.likes)}</small></button>
       <button type="button" onClick={onComment} aria-label={reel.commentsEnabled ? 'Abrir comentários' : 'Comentários desactivados'} disabled={!reel.commentsEnabled}><MessageCircle /><small>{formatCount(reel.comments)}</small></button>
       <button type="button" onClick={onShare} aria-label="Partilhar Reel"><Send /><small>{formatCount(reel.views)}</small></button>
     </div>
