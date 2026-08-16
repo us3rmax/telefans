@@ -581,3 +581,15 @@ button { cursor: pointer; }
   transform: translateX(50%) !important;
 }
 .reels-shell > .bottom-nav .nav-link { display: flex !important; visibility: visible !important; opacity: 1 !important; }
+
+/* Viewport-centred primary navigation on Explore and Reels. */
+.bottom-nav {
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+.reels-shell > .bottom-nav {
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
