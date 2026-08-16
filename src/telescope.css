@@ -551,8 +551,8 @@ button { cursor: pointer; }
   .reels-menu-button svg:first-child { width: 21px; }
   .reels-controls { gap: 20px; }
   .reels-controls .reel-tab { font-size: 16px; }
-  .reels-creator-caption { bottom: calc(116px + env(safe-area-inset-bottom)); left: 22px; }
-  .reel-actions { right: 18px; bottom: calc(134px + env(safe-area-inset-bottom)); gap: 17px; }
+  .reels-creator-caption { bottom: calc(92px + env(safe-area-inset-bottom)); left: 22px; }
+  .reel-actions { right: 18px; bottom: calc(110px + env(safe-area-inset-bottom)); gap: 17px; }
   .comments-sheet { padding-inline: 31px; }
 }
 @media (max-width: 380px) {
