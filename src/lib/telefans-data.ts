@@ -25,10 +25,21 @@ export async function listPublishedCreators(): Promise<CreatorRow[]> {
   return data ?? []
 }
 
+function slugToken(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
 export async function getPublishedCreator(slug: string): Promise<CreatorRow | null> {
-  const { data, error } = await supabase.from('creators').select('*').eq('slug', slug).eq('published', true).maybeSingle()
+  const { data: exact, error: exactError } = await supabase.from('creators').select('*').eq('slug', slug).eq('published', true).maybeSingle()
+  if (exactError) throw exactError
+  if (exact) return exact
+
+  // Preserve compatibility with legacy links such as /creator/pleasantmorenaa
+  // while the CRM stores canonical slugs with or without separators.
+  const { data: published, error } = await supabase.from('creators').select('*').eq('published', true).limit(500)
   if (error) throw error
-  return data
+  const requested = slugToken(slug)
+  return (published ?? []).find((creator) => slugToken(creator.slug) === requested) ?? null
 }
 
 export async function listCreatorPosts(creatorId: string): Promise<PostRow[]> {
