@@ -24,7 +24,6 @@ import {
   LogOut,
   PanelLeft,
   UsersRound,
-  Files,
   BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -45,7 +44,6 @@ interface NavItemDef {
 const NAV_ITEMS: NavItemDef[] = [
   { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard' },
   { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Creators' },
-  { href: '/app/content', icon: <Files className="h-4 w-4" />, label: 'Content' },
   { href: '/app/fans', icon: <BarChart3 className="h-4 w-4" />, label: 'Fan metrics' },
 ]
 
