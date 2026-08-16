@@ -404,10 +404,13 @@ button { cursor: pointer; }
 .paid-media-card img { display: block; width: 100%; height: 100%; object-fit: contain; background: #e9eaec; }
 .paid-media-overlay { position: absolute; inset: auto 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 8px; color: #fff; background: linear-gradient(transparent, rgba(15,18,22,.82)); font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.45); }
 .paid-media-lock { width: 17px; height: 17px; stroke-width: 2.4; }
+.creator-post-card { position: relative; overflow: hidden; min-width: 0; aspect-ratio: 3 / 4; border-radius: 12px; background: #e9eaec; }
+.creator-post-card img { display: block; width: 100%; height: 100%; object-fit: contain; background: #e9eaec; }
+.creator-post-paid-badge { position: absolute; top: 8px; right: 8px; padding: 4px 7px; border-radius: 999px; color: #fff; background: rgba(15,18,22,.72); font-size: 10px; font-weight: 700; }
 .creator-media-empty { grid-column: 1 / -1; padding: 40px 20px; color: #8b8b8b; text-align: center; font-size: 14px; }
 @media (max-width: 480px) {
   .creator-paid-grid { gap: 6px; padding-inline: 10px; }
-  .paid-media-card { border-radius: 9px; }
+  .paid-media-card, .creator-post-card { border-radius: 9px; }
 }
 
 /* Telegram owns the Mini App chrome; keep one in-app title inside the safe area. */
