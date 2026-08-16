@@ -3,7 +3,12 @@ import { Edit3, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { deleteAdminPost, listAdminCreators, listAdminPosts, updateAdminPost, type Creator } from '@/lib/admin-repository'
 
-export const Route = createFileRoute('/app/content')({ component: AdminContentPage })
+export const Route = createFileRoute('/app/content')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    creator: typeof search.creator === 'string' ? search.creator : undefined,
+  }),
+  component: AdminContentPage,
+})
 type AdminPost = Awaited<ReturnType<typeof listAdminPosts>>[number]
 type Draft = { title: string; caption: string; media_url: string; thumbnail_url: string; status: string; published: boolean; reels_enabled: boolean; is_paid: boolean; unlock_price: string; comments_enabled: boolean }
 const toDraft = (post: AdminPost): Draft => ({ title: post.title ?? '', caption: post.caption ?? '', media_url: post.media_url ?? '', thumbnail_url: post.thumbnail_url ?? '', status: post.status ?? 'draft', published: Boolean(post.published), reels_enabled: Boolean(post.reels_enabled), is_paid: Boolean(post.is_paid), unlock_price: String(post.unlock_price ?? 0), comments_enabled: post.comments_enabled !== false })
@@ -22,6 +27,7 @@ function AdminContentPage() {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const { creator: creatorFromSearch } = Route.useSearch()
 
   const load = async () => {
     setLoading(true); setError('')
@@ -30,7 +36,8 @@ function AdminContentPage() {
       setPosts(nextPosts); setCreators(nextCreators)
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not load content.') } finally { setLoading(false) }
   }
-  useEffect(() => { const selectedCreator = new URLSearchParams(window.location.search).get('creator'); if (selectedCreator) setCreatorId(selectedCreator); void load() }, [])
+  useEffect(() => { if (creatorFromSearch) setCreatorId(creatorFromSearch) }, [creatorFromSearch])
+  useEffect(() => { void load() }, [])
 
   const visiblePosts = useMemo(() => {
     const normalized = query.trim().toLowerCase()
