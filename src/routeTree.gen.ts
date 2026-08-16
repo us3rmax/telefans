@@ -20,6 +20,7 @@ import { Route as CreatorSlugRouteImport } from './routes/creator.$slug'
 import { Route as AppReelsRouteImport } from './routes/app/reels'
 import { Route as AppModelsRouteImport } from './routes/app/models'
 import { Route as AppMediaRouteImport } from './routes/app/media'
+import { Route as AppFansRouteImport } from './routes/app/fans'
 import { Route as AppContentRouteImport } from './routes/app/content'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AppModelsNewRouteImport } from './routes/app/models.new'
@@ -80,6 +81,11 @@ const AppMediaRoute = AppMediaRouteImport.update({
   path: '/media',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFansRoute = AppFansRouteImport.update({
+  id: '/fans',
+  path: '/fans',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppContentRoute = AppContentRouteImport.update({
   id: '/content',
   path: '/content',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
+  '/app/fans': typeof AppFansRoute
   '/app/media': typeof AppMediaRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
+  '/app/fans': typeof AppFansRoute
   '/app/media': typeof AppMediaRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
   '/app/content': typeof AppContentRoute
+  '/app/fans': typeof AppFansRoute
   '/app/media': typeof AppMediaRoute
   '/app/models': typeof AppModelsRouteWithChildren
   '/app/reels': typeof AppReelsRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/login'
     | '/app/content'
+    | '/app/fans'
     | '/app/media'
     | '/app/models'
     | '/app/reels'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/login'
     | '/app/content'
+    | '/app/fans'
     | '/app/media'
     | '/app/models'
     | '/app/reels'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/login'
     | '/app/content'
+    | '/app/fans'
     | '/app/media'
     | '/app/models'
     | '/app/reels'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMediaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/fans': {
+      id: '/app/fans'
+      path: '/fans'
+      fullPath: '/app/fans'
+      preLoaderRoute: typeof AppFansRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/content': {
       id: '/app/content'
       path: '/content'
@@ -342,6 +361,7 @@ const AppModelsRouteWithChildren = AppModelsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppContentRoute: typeof AppContentRoute
+  AppFansRoute: typeof AppFansRoute
   AppMediaRoute: typeof AppMediaRoute
   AppModelsRoute: typeof AppModelsRouteWithChildren
   AppReelsRoute: typeof AppReelsRoute
@@ -350,6 +370,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppContentRoute: AppContentRoute,
+  AppFansRoute: AppFansRoute,
   AppMediaRoute: AppMediaRoute,
   AppModelsRoute: AppModelsRouteWithChildren,
   AppReelsRoute: AppReelsRoute,
