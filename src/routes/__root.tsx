@@ -52,14 +52,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover' },
-      { title: 'Telescope' },
-      { name: 'description', content: 'Explore creators and watch trending reels on Telescope.' },
+      { title: 'TeleFans' },
+      { name: 'description', content: 'Explore creators and watch trending reels on TeleFans.' },
       { name: 'theme-color', content: '#101010' },
       { property: 'og:type', content: 'website' },
-      { property: 'og:title', content: 'Telescope' },
-      { property: 'og:description', content: 'Explore creators and watch trending reels on Telescope.' },
+      { property: 'og:title', content: 'TeleFans' },
+      { property: 'og:description', content: 'Explore creators and watch trending reels on TeleFans.' },
       // Shared-shell SEO defaults — set these to the real brand/locale per app.
-      { property: 'og:site_name', content: 'Telescope' },
+      { property: 'og:site_name', content: 'TeleFans' },
       { property: 'og:locale', content: 'en_US' },
       { name: 'twitter:card', content: 'summary_large_image' },
     ],
@@ -94,8 +94,8 @@ function RootDocument({ children }: { children: ReactNode }) {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@graph': [
-                { '@type': 'WebSite', name: 'Telescope', url: '/' },
-                { '@type': 'Organization', name: 'Telescope', url: '/', sameAs: [] },
+                { '@type': 'WebSite', name: 'TeleFans', url: '/' },
+                { '@type': 'Organization', name: 'TeleFans', url: '/', sameAs: [] },
               ],
             }),
           }}

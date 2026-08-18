@@ -140,6 +140,6 @@ export function CreatorProfilePage() {
   </main>
 }
 
-export const Route = createFileRoute('/creator/$slug')({ head: ({ params }) => ({ meta: [{ title: `${params.slug} · Telescope` }, { name: 'description', content: 'View this creator profile on Telescope.' }] }), component: CreatorProfilePage })
+export const Route = createFileRoute('/creator/$slug')({ head: ({ params }) => ({ meta: [{ title: `${params.slug} · TeleFans` }, { name: 'description', content: 'View this creator profile on TeleFans.' }] }), component: CreatorProfilePage })
 
 export { slugify }
