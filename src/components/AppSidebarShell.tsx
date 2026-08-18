@@ -1,16 +1,6 @@
-/**
- * Collapsible SaaS sidebar — OPT-IN (rendered by SharedAppLayout, which the
- * template root does NOT apply by default). Only reach for this when building a
- * SaaS / dashboard app; landing & marketing pages stay full-bleed.
- *
- * Expands to 15rem, collapses to 3rem (icon-only).
- * State is persisted to localStorage. Tooltips appear automatically when collapsed.
- *
- * A native flex-col implementation (shadcn Button/Avatar/Tooltip primitives) for
- * full layout control — every line is yours to edit.
- */
 import { useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
+import { useLocation } from '@tanstack/react-router'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,11 +10,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import {
-    LayoutDashboard,
+  BarChart3,
+  ChevronRight,
+  LayoutDashboard,
   LogOut,
   PanelLeft,
+  Settings2,
+  Sparkles,
   UsersRound,
-  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,33 +27,33 @@ interface NavItemDef {
   href: string
   icon: ReactNode
   label: string
-  active?: boolean
+  exact?: boolean
 }
 
-// Every href here MUST have a real route file, and every page you add under
-// `src/routes/app/` should get an entry here — a nav link with no route ships a
-// 404. Only the shipped dashboard route is listed; add yours as you create them,
-// e.g. `src/routes/app/items.tsx` → { href: '/app/items', label: 'Items' }.
 const NAV_ITEMS: NavItemDef[] = [
-  { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Dashboard' },
+  { href: '/app', icon: <LayoutDashboard className="h-4 w-4" />, label: 'Overview', exact: true },
   { href: '/app/models', icon: <UsersRound className="h-4 w-4" />, label: 'Creators' },
   { href: '/app/fans', icon: <BarChart3 className="h-4 w-4" />, label: 'Fan metrics' },
 ]
 
-function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) {
+function NavItem({ item, collapsed, active }: { item: NavItemDef; collapsed: boolean; active: boolean }) {
   const link = (
     <a
       href={item.href}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2.5 rounded-md text-sm transition-colors cursor-pointer',
-        collapsed ? 'justify-center w-8 h-8 mx-auto' : 'px-3 py-2 w-full',
-        item.active
-          ? 'bg-accent text-foreground font-medium'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        'group flex items-center gap-3 rounded-xl text-[13px] transition-all duration-200 cursor-pointer',
+        collapsed ? 'justify-center w-9 h-9 mx-auto' : 'px-3 h-10 w-full',
+        active
+          ? 'bg-cyan-400/12 text-cyan-200 ring-1 ring-cyan-300/15'
+          : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100'
       )}
     >
-      <span className="shrink-0">{item.icon}</span>
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      <span className={cn('shrink-0 transition-colors', active ? 'text-cyan-300' : 'text-slate-500 group-hover:text-slate-300')}>
+        {item.icon}
+      </span>
+      {!collapsed && <span className="truncate font-medium">{item.label}</span>}
+      {!collapsed && active && <ChevronRight className="ml-auto h-3.5 w-3.5 text-cyan-300/70" />}
     </a>
   )
   if (!collapsed) return link
@@ -73,18 +66,16 @@ function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: boolean }) 
 }
 
 export function AppSidebarShell() {
-  // SSR always renders expanded; the saved preference is restored after mount.
-  // Reading localStorage in the initializer makes the client's first render
-  // differ from the server markup → hydration mismatch on hard refresh.
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time restore of a persisted preference; reading localStorage in the useState initializer causes an SSR hydration mismatch
     if (localStorage.getItem(SIDEBAR_KEY) === 'true') setCollapsed(true)
   }, [])
 
   const toggle = useCallback(() => {
-    setCollapsed(v => {
-      const next = !v
+    setCollapsed(value => {
+      const next = !value
       localStorage.setItem(SIDEBAR_KEY, String(next))
       return next
     })
@@ -92,121 +83,47 @@ export function AppSidebarShell() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div
-        className={cn(
-          'flex flex-col h-full bg-background border-r border-border overflow-hidden',
-          'transition-[width] duration-200 ease-linear shrink-0',
-          collapsed ? 'w-[3rem]' : 'w-[15rem]'
-        )}
-      >
-        {/* ── Header ────────────────────────────────────── */}
-        <div
-          className={cn(
-            'flex items-center gap-2 shrink-0 border-b border-border h-[52px] px-3',
-            collapsed && 'justify-center px-2'
-          )}
-        >
-          {!collapsed && (
-            <>
-              <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
-                A
-              </div>
-              <span className="flex-1 font-semibold text-sm truncate">App</span>
-            </>
-          )}
+      <div className={cn('crm-sidebar flex flex-col h-full overflow-hidden shrink-0 transition-[width] duration-200 ease-linear', collapsed ? 'w-[4.25rem]' : 'w-[16.5rem]')}>
+        <div className={cn('flex items-center gap-3 shrink-0 h-[72px] px-5 border-b border-white/[0.06]', collapsed && 'justify-center px-2')}>
+          <div className="crm-brand-mark"><Sparkles className="h-4 w-4" /></div>
+          {!collapsed && <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold tracking-tight text-slate-100">TeleFans</p><p className="truncate text-[10px] uppercase tracking-[0.16em] text-slate-500">Creator CRM</p></div>}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={toggle}
-              >
-                <PanelLeft
-                  className={cn(
-                    'h-4 w-4 transition-transform duration-200',
-                    collapsed && 'rotate-180'
-                  )}
-                />
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0 text-slate-500 hover:bg-white/[0.06] hover:text-slate-100" onClick={toggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                <PanelLeft className={cn('h-4 w-4 transition-transform duration-200', collapsed && 'rotate-180')} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">
-              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            </TooltipContent>
+            <TooltipContent side="right">{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</TooltipContent>
           </Tooltip>
         </div>
 
-        {/* ── Nav (only this section scrolls) ───────────── */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-2 space-y-0.5">
-          {!collapsed && (
-            <p className="px-3 pt-1 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              Main
-            </p>
-          )}
-          {NAV_ITEMS.map(item => (
-            <NavItem key={item.href} item={item} collapsed={collapsed} />
-          ))}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-5 space-y-1">
+          {!collapsed && <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">Workspace</p>}
+          {NAV_ITEMS.map(item => {
+            const active = item.exact ? location.pathname === item.href : location.pathname === item.href || location.pathname.startsWith(`${item.href}/`)
+            return <NavItem key={item.href} item={item} collapsed={collapsed} active={active} />
+          })}
+          {!collapsed && <p className="px-3 pt-7 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">System</p>}
+          <button type="button" className={cn('group flex items-center gap-3 rounded-xl text-[13px] transition-all duration-200 text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'justify-center w-9 h-9 mx-auto' : 'px-3 h-10 w-full')}>
+            <Settings2 className="h-4 w-4 shrink-0 text-slate-600 group-hover:text-slate-300" />
+            {!collapsed && <span className="font-medium">Settings</span>}
+          </button>
         </div>
 
-        {/* ── Footer (always pinned to bottom) ──────────── */}
-        <div
-          className={cn(
-            'shrink-0 border-t border-border',
-            collapsed ? 'flex flex-col items-center gap-1 p-2' : 'p-3 space-y-1'
-          )}
-        >
-          {/* User row */}
+        <div className={cn('shrink-0 border-t border-white/[0.06]', collapsed ? 'flex flex-col items-center gap-2 p-3' : 'p-4 space-y-3')}>
           {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors cursor-pointer">
-                  <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-[10px] bg-muted">U</AvatarFallback>
-                  </Avatar>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">User · user@example.com</TooltipContent>
-            </Tooltip>
+            <Tooltip><TooltipTrigger asChild><button type="button" className="flex items-center justify-center h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors"><Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar></button></TooltipTrigger><TooltipContent side="right">Agency workspace</TooltipContent></Tooltip>
           ) : (
-            <button className="flex items-center gap-2 rounded-md hover:bg-accent transition-colors cursor-pointer w-full px-2 py-1.5">
-              <Avatar className="h-6 w-6 shrink-0">
-                <AvatarFallback className="text-[10px] bg-muted">U</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-xs font-medium leading-tight truncate">User</p>
-                <p className="text-[10px] text-muted-foreground leading-tight truncate">
-                  user@example.com
-                </p>
-              </div>
-            </button>
+            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+              <Avatar className="h-8 w-8"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar>
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-200">Agency workspace</p><p className="truncate text-[10px] text-slate-500">Admin CRM</p></div>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </div>
           )}
-
-          {/* Sign out */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Sign out</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start px-2 gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              Sign out
-            </Button>
-          )}
+          <Button type="button" variant="ghost" size="sm" className={cn('text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'h-8 w-8 p-0' : 'w-full justify-start px-2 gap-2')}>
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && 'Sign out'}
+          </Button>
         </div>
       </div>
     </TooltipProvider>

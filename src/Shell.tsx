@@ -1,25 +1,11 @@
-/**
- * Shell — Mobile-responsive app layout (shadcn/ui based).
- *
- * USAGE (in a route or SharedAppLayout):
- * <Shell sidebar={<MySidebarContent />}>
- *     <Page>...</Page>
- * </Shell>
- *
- * Desktop (md+): the sidebar is a fixed column on the left, main content fills
- * the rest. Mobile: the sidebar is hidden and opens in a Sheet drawer via the
- * hamburger button in the mobile header. Customize freely — this is your code.
- */
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Menu } from 'lucide-react'
+import { Bell, Menu, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 
 interface ShellProps {
-  /** Sidebar content — e.g. <AppSidebarShell /> or your own nav */
   sidebar: ReactNode
-  /** App name shown in the mobile header */
   appName?: string
   children: ReactNode
 }
@@ -28,35 +14,31 @@ export function Shell({ sidebar, appName = 'App', children }: ShellProps) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex min-h-dvh">
-      {/* Desktop sidebar — hidden on mobile, always visible on md+.
-          AppSidebarShell owns its own width and collapse animation. */}
+    <div className="crm-shell flex min-h-dvh bg-[#090c12]">
       <aside className="hidden md:block shrink-0">{sidebar}</aside>
 
-      {/* Mobile sidebar — Sheet drawer opened by the hamburger below. */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-[17rem] border-white/[0.08] bg-[#0d111a] p-0">
           {sidebar}
         </SheetContent>
       </Sheet>
 
-      {/* Main content column */}
       <main className="flex flex-1 min-w-0 flex-col">
-        {/* Mobile header — hamburger + app name, only shown below md. */}
-        <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-border bg-background sticky top-0 z-30">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="-ml-2"
-            aria-label="Open menu"
-            onClick={() => setOpen(true)}
-          >
-            <Menu className="size-5" />
-          </Button>
-          <span className="font-semibold text-sm">{appName}</span>
-        </div>
-
-        {children}
+        <header className="crm-topbar flex h-16 shrink-0 items-center justify-between border-b border-white/[0.06] px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button variant="ghost" size="icon" className="-ml-2 text-slate-400 hover:bg-white/[0.06] hover:text-white md:hidden" aria-label="Open menu" onClick={() => setOpen(true)}>
+              <Menu className="size-5" />
+            </Button>
+            <div className="min-w-0"><p className="truncate text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500">{appName}</p><p className="truncate text-sm font-semibold text-slate-200">Agency operations</p></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label="Search" className="crm-topbar-icon hidden sm:grid"><Search className="h-4 w-4" /></button>
+            <button type="button" aria-label="Notifications" className="crm-topbar-icon"><Bell className="h-4 w-4" /><span className="crm-notification-dot" /></button>
+            <div className="hidden h-7 w-px bg-white/[0.08] sm:block" />
+            <div className="crm-status-chip"><span />Live workspace</div>
+          </div>
+        </header>
+        <div className="min-w-0 flex-1">{children}</div>
       </main>
     </div>
   )

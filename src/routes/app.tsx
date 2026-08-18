@@ -13,7 +13,7 @@ export const Route = createFileRoute('/app')({
 
 function AppLayout() {
   return (
-    <SharedAppLayout appName="App">
+    <SharedAppLayout appName="TeleFans CRM">
       <Outlet />
     </SharedAppLayout>
   )
