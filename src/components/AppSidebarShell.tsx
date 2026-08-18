@@ -68,6 +68,7 @@ function NavItem({ item, collapsed, active }: { item: NavItemDef; collapsed: boo
 export function AppSidebarShell() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem(SIDEBAR_KEY) === 'true') setCollapsed(true)
@@ -104,23 +105,24 @@ export function AppSidebarShell() {
             return <NavItem key={item.href} item={item} collapsed={collapsed} active={active} />
           })}
           {!collapsed && <p className="px-3 pt-7 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">System</p>}
-          <button type="button" className={cn('group flex items-center gap-3 rounded-xl text-[13px] transition-all duration-200 text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'justify-center w-9 h-9 mx-auto' : 'px-3 h-10 w-full')}>
+          <button type="button" onClick={() => setSettingsOpen(value => !value)} aria-expanded={settingsOpen} className={cn('group flex items-center gap-3 rounded-xl text-[13px] transition-all duration-200 text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'justify-center w-9 h-9 mx-auto' : 'px-3 h-10 w-full')}>
             <Settings2 className="h-4 w-4 shrink-0 text-slate-600 group-hover:text-slate-300" />
             {!collapsed && <span className="font-medium">Settings</span>}
           </button>
+          {settingsOpen && !collapsed && <div className="mx-1 mt-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-[11px] text-slate-400"><p className="font-semibold text-slate-200">Admin preferences</p><p className="mt-1 leading-4">Sidebar state is saved automatically on this device.</p><button type="button" onClick={() => { localStorage.removeItem(SIDEBAR_KEY); setCollapsed(false); setSettingsOpen(false) }} className="mt-2 text-cyan-300 hover:text-cyan-200">Reset sidebar layout</button></div>}
         </div>
 
         <div className={cn('shrink-0 border-t border-white/[0.06]', collapsed ? 'flex flex-col items-center gap-2 p-3' : 'p-4 space-y-3')}>
           {collapsed ? (
             <Tooltip><TooltipTrigger asChild><button type="button" className="flex items-center justify-center h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors"><Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar></button></TooltipTrigger><TooltipContent side="right">Agency workspace</TooltipContent></Tooltip>
           ) : (
-            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+            <a href="/app" className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 transition-colors hover:border-cyan-300/20 hover:bg-cyan-300/[0.05]">
               <Avatar className="h-8 w-8"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar>
               <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-200">Agency workspace</p><p className="truncate text-[10px] text-slate-500">Admin CRM</p></div>
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </div>
+            </a>
           )}
-          <Button type="button" variant="ghost" size="sm" className={cn('text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'h-8 w-8 p-0' : 'w-full justify-start px-2 gap-2')}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { localStorage.removeItem(SIDEBAR_KEY); window.location.href = '/' }} className={cn('text-slate-500 hover:bg-white/[0.05] hover:text-slate-200', collapsed ? 'h-8 w-8 p-0' : 'w-full justify-start px-2 gap-2')}>
             <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && 'Sign out'}
           </Button>

@@ -14,17 +14,17 @@ export const Route = createFileRoute('/app/models')({
   validateSearch: (search: Record<string, unknown>) => ({
     edit: typeof search.edit === 'string' ? search.edit : undefined,
     new: normalizeNewFlag(search.new),
+    search: typeof search.search === 'string' ? search.search : undefined,
   }),
   component: AdminModelsPage,
 })
 
 function AdminModelsPage() {
   const [models, setModels] = useState<Creator[]>([])
-  const [query, setQuery] = useState('')
+  const { edit: editId, new: newMode, search: searchParam } = Route.useSearch()
+  const [query, setQuery] = useState(searchParam ?? '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { edit: editId, new: newMode } = Route.useSearch()
-
   const load = async () => {
     setLoading(true)
     setError('')
@@ -38,6 +38,7 @@ function AdminModelsPage() {
   }
 
   useEffect(() => { void load() }, [])
+  useEffect(() => { setQuery(searchParam ?? '') }, [searchParam])
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -81,7 +82,7 @@ function AdminModelsPage() {
               <h1 className="text-2xl font-semibold tracking-tight">Edit profile</h1>
               <p className="mt-1 text-sm text-muted-foreground">Update {editingCreator.name} and manage the complete creator workspace.</p>
             </div>
-            <Link to="/app/models" search={{ edit: undefined, new: undefined }} className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-muted">Back to creators</Link>
+            <Link to="/app/models" search={{ edit: undefined, new: undefined, search: undefined }} className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-muted">Back to creators</Link>
           </header>
           <CreatorForm creator={editingCreator} />
           <CreatorVault creatorId={editingCreator.id} creatorName={editingCreator.name} />
@@ -101,7 +102,7 @@ function AdminModelsPage() {
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => void load()} className="inline-flex h-10 items-center gap-2 rounded-md border bg-background px-3 text-sm hover:bg-muted"><RefreshCw className="h-4 w-4" />Refresh</button>
-            <Link to="/app/models" search={{ edit: undefined, new: '1' }} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm"><Plus className="h-4 w-4" />New creator</Link>
+            <Link to="/app/models" search={{ edit: undefined, new: '1', search: undefined }} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm"><Plus className="h-4 w-4" />New creator</Link>
           </div>
         </header>
 
@@ -125,7 +126,7 @@ function AdminModelsPage() {
               const handle = model.handle.replace(/^@+/, '')
               return (
                 <article key={model.id} className="group overflow-hidden rounded-2xl border bg-background shadow-sm transition-shadow hover:shadow-md">
-                  <Link to="/app/models" search={{ edit: model.id, new: undefined }} className="block">
+                  <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined }} className="block">
                     <div className="relative aspect-[16/8] overflow-hidden bg-muted">
                       <img src={cover} alt={`${model.name} cover`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                       <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur ${model.published ? 'bg-emerald-100/90 text-emerald-700' : 'bg-background/90 text-muted-foreground'}`}>{model.published ? 'Published' : 'Draft'}</span>
@@ -139,7 +140,7 @@ function AdminModelsPage() {
                   </Link>
                   <div className="flex flex-wrap gap-2 border-t px-5 py-4">
                     <Link to="/creator/$slug" params={{ slug: model.slug }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Eye className="h-3.5 w-3.5" />View profile</Link>
-                    <Link to="/app/models" search={{ edit: model.id, new: undefined }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Pencil className="h-3.5 w-3.5" />Open workspace</Link>
+                    <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Pencil className="h-3.5 w-3.5" />Open workspace</Link>
                     <button type="button" onClick={() => void togglePublished(model)} className={`ml-auto inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium ${model.published ? 'border-emerald-500/30 text-emerald-700 hover:bg-emerald-50' : 'hover:bg-muted'}`}>{model.published ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}{model.published ? 'Unpublish' : 'Publish'}</button>
                   </div>
                 </article>
