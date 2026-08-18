@@ -114,7 +114,7 @@ export function AppSidebarShell() {
 
         <div className={cn('shrink-0 border-t border-white/[0.06]', collapsed ? 'flex flex-col items-center gap-2 p-3' : 'p-4 space-y-3')}>
           {collapsed ? (
-            <Tooltip><TooltipTrigger asChild><button type="button" className="flex items-center justify-center h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors"><Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar></button></TooltipTrigger><TooltipContent side="right">Agency workspace</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><button type="button" onClick={() => { window.location.href = '/app' }} aria-label="Open Agency workspace" className="flex items-center justify-center h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors"><Avatar className="h-7 w-7"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar></button></TooltipTrigger><TooltipContent side="right">Agency workspace</TooltipContent></Tooltip>
           ) : (
             <a href="/app" className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 transition-colors hover:border-cyan-300/20 hover:bg-cyan-300/[0.05]">
               <Avatar className="h-8 w-8"><AvatarFallback className="text-[10px] bg-cyan-400/15 text-cyan-200">A</AvatarFallback></Avatar>

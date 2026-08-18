@@ -36,10 +36,10 @@ function ActivityChart({ daily }: { daily: AdminAnalytics['daily'] }) {
 
 function ActionQueue({ actions }: { actions: AdminAnalytics['actions'] }) {
   const items = [
-    { label: 'Creators without published content', value: actions.creatorsWithoutContent, href: '/app/models', icon: Users, tone: 'warning' },
-    { label: 'Published content with no views', value: actions.contentWithoutViews, href: '/app/models', icon: Eye, tone: 'neutral' },
-    { label: 'Drafts waiting for review', value: actions.drafts, href: '/app/models', icon: FileImage, tone: 'neutral' },
-    { label: 'Scheduled posts', value: actions.scheduled, href: '/app/models', icon: Clock3, tone: 'blue' },
+    { label: 'Creators without published content', value: actions.creatorsWithoutContent, href: '/app/models?queue=no-content', icon: Users, tone: 'warning' },
+    { label: 'Published content with no views', value: actions.contentWithoutViews, href: '/app/models?queue=no-views', icon: Eye, tone: 'neutral' },
+    { label: 'Drafts waiting for review', value: actions.drafts, href: '/app/models?status=draft', icon: FileImage, tone: 'neutral' },
+    { label: 'Scheduled posts', value: actions.scheduled, href: '/app/models?queue=scheduled', icon: Clock3, tone: 'blue' },
   ] as const
   return <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Today’s action queue</h2><p>Operational items that need attention.</p></div><AlertTriangle /></div><div className="admin-action-grid">{items.map(item => <a href={item.href} className={`admin-action-card ${item.tone}`} key={item.label}><item.icon /><span>{item.label}</span><strong>{item.value}</strong><small>Open queue →</small></a>)}</div></section>
 }

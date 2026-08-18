@@ -45,12 +45,12 @@ export function Shell({ sidebar, appName = 'App', children }: ShellProps) {
               <input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Search creators" aria-label="Search creators" className="h-8 w-32 bg-transparent text-xs text-slate-100 outline-none placeholder:text-slate-500 sm:w-44" />
               <button type="button" aria-label="Close search" onClick={() => { setSearchOpen(false); setQuery('') }} className="text-slate-500 hover:text-white"><X className="h-3.5 w-3.5" /></button>
             </form>}
-            {!searchOpen && <button type="button" aria-label="Search" onClick={() => setSearchOpen(true)} className="crm-topbar-icon hidden sm:grid"><Search className="h-4 w-4" /></button>}
+            {!searchOpen && <button type="button" aria-label="Search" onClick={() => setSearchOpen(true)} className="crm-topbar-icon grid"><Search className="h-4 w-4" /></button>}
             <div className="relative">
               <button type="button" aria-label="Notifications" onClick={() => setNotificationsOpen(value => !value)} className="crm-topbar-icon"><Bell className="h-4 w-4" /><span className="crm-notification-dot" /></button>
               {notificationsOpen && <div className="absolute right-0 top-11 z-50 w-72 rounded-xl border border-white/[0.1] bg-[#111722] p-3 shadow-2xl">
                 <div className="mb-2 flex items-center justify-between"><strong className="text-xs text-slate-100">Notifications</strong><button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications" className="text-slate-500 hover:text-white"><X className="h-3.5 w-3.5" /></button></div>
-                <p className="text-xs leading-5 text-slate-400">Your CRM workspace is live. Operational alerts will appear here when action events are connected.</p>
+                <p className="text-xs leading-5 text-slate-400">Your CRM workspace is live. Use these shortcuts to review the areas that require attention.</p><div className="mt-3 space-y-1"><a href="/app/fans" onClick={() => setNotificationsOpen(false)} className="block rounded-lg px-2.5 py-2 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white">Open Fan Metrics <span className="float-right text-slate-500">→</span></a><a href="/app/models?status=draft" onClick={() => setNotificationsOpen(false)} className="block rounded-lg px-2.5 py-2 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white">Review creator drafts <span className="float-right text-slate-500">→</span></a><a href="/app/models" onClick={() => setNotificationsOpen(false)} className="block rounded-lg px-2.5 py-2 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white">Open Creators <span className="float-right text-slate-500">→</span></a></div>
               </div>}
             </div>
             <div className="hidden h-7 w-px bg-white/[0.08] sm:block" />

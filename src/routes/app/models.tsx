@@ -3,7 +3,7 @@ import { Eye, Pencil, Plus, RefreshCw, Search, ToggleLeft, ToggleRight } from 'l
 import { useEffect, useMemo, useState } from 'react'
 import { CreatorForm } from '@/components/admin/CreatorForm'
 import { CreatorVault } from '@/components/admin/CreatorVault'
-import { listAdminCreators, setCreatorPublished, type Creator } from '@/lib/admin-repository'
+import { getCreatorQueueMetrics, listAdminCreators, setCreatorPublished, type Creator, type CreatorQueueMetrics } from '@/lib/admin-repository'
 
 const normalizeNewFlag = (value: unknown) => {
   const normalized = String(value ?? '').replace(/^"|"$/g, '')
@@ -15,13 +15,16 @@ export const Route = createFileRoute('/app/models')({
     edit: typeof search.edit === 'string' ? search.edit : undefined,
     new: normalizeNewFlag(search.new),
     search: typeof search.search === 'string' ? search.search : undefined,
+    status: search.status === 'draft' || search.status === 'published' ? search.status : undefined,
+    queue: search.queue === 'no-content' || search.queue === 'no-views' || search.queue === 'scheduled' ? search.queue : undefined,
   }),
   component: AdminModelsPage,
 })
 
 function AdminModelsPage() {
   const [models, setModels] = useState<Creator[]>([])
-  const { edit: editId, new: newMode, search: searchParam } = Route.useSearch()
+  const [queueMetrics, setQueueMetrics] = useState<Map<string, CreatorQueueMetrics>>(new Map())
+  const { edit: editId, new: newMode, search: searchParam, status, queue } = Route.useSearch()
   const [query, setQuery] = useState(searchParam ?? '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,7 +32,9 @@ function AdminModelsPage() {
     setLoading(true)
     setError('')
     try {
-      setModels(await listAdminCreators())
+      const [creators, metrics] = await Promise.all([listAdminCreators(), getCreatorQueueMetrics()])
+      setModels(creators)
+      setQueueMetrics(metrics)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load creators.')
     } finally {
@@ -42,9 +47,11 @@ function AdminModelsPage() {
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    if (!normalized) return models
-    return models.filter(model => `${model.name} ${model.handle} ${model.slug}`.toLowerCase().includes(normalized))
-  }, [models, query])
+    const statusFiltered = status ? models.filter(model => status === 'published' ? model.published : !model.published) : models
+    const queueFiltered = queue === 'no-content' ? statusFiltered.filter(model => (queueMetrics.get(model.id)?.posts ?? 0) === 0) : queue === 'no-views' ? statusFiltered.filter(model => (queueMetrics.get(model.id)?.views ?? 0) === 0) : queue === 'scheduled' ? statusFiltered.filter(model => (queueMetrics.get(model.id)?.scheduled ?? 0) > 0) : statusFiltered
+    if (!normalized) return queueFiltered
+    return queueFiltered.filter(model => `${model.name} ${model.handle} ${model.slug}`.toLowerCase().includes(normalized))
+  }, [models, queueMetrics, query, status, queue])
 
   const togglePublished = async (model: Creator) => {
     try {
@@ -82,7 +89,7 @@ function AdminModelsPage() {
               <h1 className="text-2xl font-semibold tracking-tight">Edit profile</h1>
               <p className="mt-1 text-sm text-muted-foreground">Update {editingCreator.name} and manage the complete creator workspace.</p>
             </div>
-            <Link to="/app/models" search={{ edit: undefined, new: undefined, search: undefined }} className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-muted">Back to creators</Link>
+            <Link to="/app/models" search={{ edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined }} className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-muted">Back to creators</Link>
           </header>
           <CreatorForm creator={editingCreator} />
           <CreatorVault creatorId={editingCreator.id} creatorName={editingCreator.name} />
@@ -102,7 +109,7 @@ function AdminModelsPage() {
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => void load()} className="inline-flex h-10 items-center gap-2 rounded-md border bg-background px-3 text-sm hover:bg-muted"><RefreshCw className="h-4 w-4" />Refresh</button>
-            <Link to="/app/models" search={{ edit: undefined, new: '1', search: undefined }} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm"><Plus className="h-4 w-4" />New creator</Link>
+            <Link to="/app/models" search={{ edit: undefined, new: '1', search: undefined, status: undefined, queue: undefined }} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm"><Plus className="h-4 w-4" />New creator</Link>
           </div>
         </header>
 
@@ -113,7 +120,7 @@ function AdminModelsPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search by name, handle, or slug" className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Showing {filtered.length} of {models.length} creators</p>
+          <p className="mt-2 text-xs text-muted-foreground">Showing {filtered.length} of {models.length} creators{queue ? ` · ${queue === 'no-content' ? 'without published content' : queue === 'no-views' ? 'with no views' : 'scheduled queue'}` : ''}</p>
         </section>
 
         {loading && <section className="rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">Loading creators…</section>}
@@ -126,7 +133,7 @@ function AdminModelsPage() {
               const handle = model.handle.replace(/^@+/, '')
               return (
                 <article key={model.id} className="group overflow-hidden rounded-2xl border bg-background shadow-sm transition-shadow hover:shadow-md">
-                  <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined }} className="block">
+                  <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined, status: undefined, queue: undefined }} className="block">
                     <div className="relative aspect-[16/8] overflow-hidden bg-muted">
                       <img src={cover} alt={`${model.name} cover`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                       <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur ${model.published ? 'bg-emerald-100/90 text-emerald-700' : 'bg-background/90 text-muted-foreground'}`}>{model.published ? 'Published' : 'Draft'}</span>
@@ -140,7 +147,7 @@ function AdminModelsPage() {
                   </Link>
                   <div className="flex flex-wrap gap-2 border-t px-5 py-4">
                     <Link to="/creator/$slug" params={{ slug: model.slug }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Eye className="h-3.5 w-3.5" />View profile</Link>
-                    <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Pencil className="h-3.5 w-3.5" />Open workspace</Link>
+                    <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined, status: undefined, queue: undefined }} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Pencil className="h-3.5 w-3.5" />Open workspace</Link>
                     <button type="button" onClick={() => void togglePublished(model)} className={`ml-auto inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium ${model.published ? 'border-emerald-500/30 text-emerald-700 hover:bg-emerald-50' : 'hover:bg-muted'}`}>{model.published ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}{model.published ? 'Unpublish' : 'Publish'}</button>
                   </div>
                 </article>
@@ -149,7 +156,7 @@ function AdminModelsPage() {
           </section>
         )}
 
-        {!loading && filtered.length === 0 && <section className="rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">No creators found.</section>}
+        {!loading && filtered.length === 0 && <section className="rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">No creators found for this queue.</section>}
       </div>
     </main>
   )

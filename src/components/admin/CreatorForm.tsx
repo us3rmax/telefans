@@ -65,7 +65,7 @@ export function CreatorForm({ creator }: Props) {
         if (Object.keys(uploaded).length) await updateAdminCreator(created.id, uploaded)
         setSuccess('Creator created as a draft. Media was added to the creator Vault.')
       }
-      window.setTimeout(() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined } }), 500)
+      window.setTimeout(() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined } }), 500)
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not save the creator.') } finally { setSaving(false) }
   }
 
@@ -79,6 +79,6 @@ export function CreatorForm({ creator }: Props) {
       <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Cover photo</span><div className="flex gap-2"><input type="text" readOnly value={form.cover_image} placeholder="Upload an image" className="h-10 min-w-0 flex-1 rounded-md border bg-muted/30 px-3 text-sm" /><label className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">{uploadingField === 'cover_image' ? 'Uploading…' : 'Upload'}<input type="file" accept="image/*" className="sr-only" disabled={uploadingField !== null || saving} onChange={event => { void chooseImage('cover_image', event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div>{coverPreview && <img src={coverPreview} alt="Cover preview" className="mt-2 h-24 w-full rounded-md object-cover" />}</label>
     </div>
     <label className="block space-y-1 text-sm"><span className="font-medium">Bio *</span><textarea required value={form.bio} onChange={event => set('bio', event.target.value)} placeholder="Write the complete creator bio. Long bios automatically show a More info button on the public profile." className="min-h-32 w-full rounded-md border bg-background p-3 outline-none focus:ring-2 focus:ring-primary/30" /></label>
-    <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined } })} className="h-10 rounded-md border px-4 text-sm">Cancel</button><button disabled={saving || uploadingField !== null} className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : creator ? 'Save changes' : 'Create draft creator'}</button></div>
+    <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined } })} className="h-10 rounded-md border px-4 text-sm">Cancel</button><button disabled={saving || uploadingField !== null} className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : creator ? 'Save changes' : 'Create draft creator'}</button></div>
   </form>
 }

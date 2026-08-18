@@ -51,6 +51,34 @@ export async function setCreatorPublished(id: string, published: boolean) {
   return updateAdminCreator(id, { published, status: published ? 'published' : 'draft' })
 }
 
+export type CreatorQueueMetrics = { posts: number; views: number; scheduled: number }
+
+export async function getCreatorQueueMetrics() {
+  const [{ data: posts, error: postsError }, { data: views, error: viewsError }] = await Promise.all([
+    supabase.from('creator_posts').select('id, creator_id, status').limit(5000),
+    supabase.from('post_views').select('post_id').limit(10000),
+  ])
+  assertNoError(postsError)
+  assertNoError(viewsError)
+  const creatorByPost = new Map((posts ?? []).map(post => [post.id, post.creator_id]))
+  const metrics = new Map<string, CreatorQueueMetrics>()
+  for (const post of posts ?? []) {
+    if (!post.creator_id) continue
+    const current = metrics.get(post.creator_id) ?? { posts: 0, views: 0, scheduled: 0 }
+    if (post.status === 'published') current.posts += 1
+    if (post.status === 'scheduled') current.scheduled += 1
+    metrics.set(post.creator_id, current)
+  }
+  for (const view of views ?? []) {
+    const creatorId = creatorByPost.get(view.post_id)
+    if (!creatorId) continue
+    const current = metrics.get(creatorId) ?? { posts: 0, views: 0, scheduled: 0 }
+    current.views += 1
+    metrics.set(creatorId, current)
+  }
+  return metrics
+}
+
 export async function listAdminPosts(filters?: { creatorId?: string; type?: string; status?: string }) {
   let query = supabase.from('creator_posts').select('*, creators(name, slug, avatar_image)').order('created_at', { ascending: false })
   if (filters?.creatorId) query = query.eq('creator_id', filters.creatorId)
