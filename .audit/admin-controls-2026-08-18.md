@@ -37,3 +37,15 @@ Deployment: https://4161d4ae.telefans.pages.dev/app
 - Visible controls pending direct verification: Search, Notifications, Refresh data, queue links, Creator workspaces, sidebar navigation and sign out/agency controls.
 - Page title remains Telescope although visible shell branding is TeleFans CRM.
 - No native confirmation popup observed during this check.
+
+## Final deployment verification
+
+The validated deployment is https://045069ef.telefans.pages.dev/app.
+
+The document title now renders as `TeleFans`, the CRM loads Supabase data, and Creator workspaces cards render single-prefix handles such as `@pleasantmorenaa`. The production custom domain https://telefans.pages.dev/app still served the previous deployment at the time of checking, so the new preview URL is the reliable verification link for this commit until the custom-domain alias is promoted.
+
+The new deployment exposes Overview, Creators, Fan metrics, Settings, Search, Notifications, Refresh data, account/time-range/earning filters, Agency workspace and Sign out. Finance panels remain empty because purchase events are not yet connected.
+
+## Creators and New creator verification
+
+On https://045069ef.telefans.pages.dev/app/models, the CRM shows the real Creators list and single-prefix handles. The New creator action opens `?new=%221%22` and renders the complete draft form with display name, Telegram handle, slug preview, profile and cover uploads, bio, cancel and Create draft creator controls.
