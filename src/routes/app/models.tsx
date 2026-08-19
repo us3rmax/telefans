@@ -134,8 +134,8 @@ function AdminModelsPage() {
               return (
                 <article key={model.id} className="group overflow-hidden rounded-2xl border bg-background shadow-sm transition-shadow hover:shadow-md">
                   <Link to="/app/models" search={{ edit: model.id, new: undefined, search: undefined, status: undefined, queue: undefined }} className="block">
-                    <div className="relative aspect-[16/8] overflow-hidden bg-muted">
-                      <img src={cover} alt={`${model.name} cover`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                    <div className="relative aspect-[16/8] bg-muted">
+                      <img src={cover} alt={`${model.name} cover`} className="h-full w-full rounded-t-2xl object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                       <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur ${model.published ? 'bg-emerald-100/90 text-emerald-700' : 'bg-background/90 text-muted-foreground'}`}>{model.published ? 'Published' : 'Draft'}</span>
                       <img src={avatar} alt="" className="absolute -bottom-7 left-5 h-14 w-14 rounded-full border-4 border-background bg-muted object-cover" />
                     </div>
