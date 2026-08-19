@@ -47,9 +47,14 @@ export function ExplorePage() {
   }, [])
 
   const allCreators = useMemo(() => {
-    const bySlug = new Map(exploreCreators.map((creator) => [creator.slug, creator]))
-    for (const creator of publishedCreators) bySlug.set(creator.slug, creator)
-    return [...bySlug.values()]
+    // Seeded catalogue entries use legacy hyphenated slugs while Supabase
+    // stores canonical slugs without separators. Use the same identity token
+    // for both sources so a creator is rendered only once in Explore.
+    const slugToken = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const byCreator = new Map<string, ExploreCreator>()
+    for (const creator of exploreCreators) byCreator.set(slugToken(creator.slug), creator)
+    for (const creator of publishedCreators) byCreator.set(slugToken(creator.slug), creator)
+    return [...byCreator.values()]
   }, [publishedCreators])
 
   const visibleCreators = useMemo(() => rankExploreCreators(filter, allCreators).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [allCreators, filter, query])
