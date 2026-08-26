@@ -106,8 +106,8 @@ export function CreatorProfilePage() {
         if (active) setPublicPosts(posts.map(post => ({
           id: post.id,
           type: post.type,
-          // Paid originals are sanitized by listCreatorPosts and never used as a public preview.
-          mediaUrl: post.is_paid ? '' : post.media_url,
+          // Paid media_url is already a transformed, low-resolution preview from listCreatorPosts.
+          mediaUrl: post.media_url,
           thumbnailUrl: post.thumbnail_url,
           title: post.title,
           caption: post.caption,
@@ -128,11 +128,7 @@ export function CreatorProfilePage() {
     window.setTimeout(() => setOfferOpened(false), 1800)
   }
 
-  const previewUrl = (post: PublicCreatorPost) => {
-    if (unlockedMedia[post.id]) return unlockedMedia[post.id]
-    if (post.isPaid) return post.thumbnailUrl || creator.coverImage
-    return post.mediaUrl
-  }
+  const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
   const openPost = (post: PublicCreatorPost) => {
     setUnlockError('')

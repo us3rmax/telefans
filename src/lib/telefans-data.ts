@@ -103,6 +103,25 @@ export async function getPublishedCreator(slug: string): Promise<CreatorRow | nu
 
 export type PublicCreatorPostRow = Pick<PostRow, 'id' | 'creator_id' | 'type' | 'media_url' | 'thumbnail_url' | 'title' | 'caption' | 'is_paid' | 'unlock_price'>
 
+function buildPaidPreviewUrl(mediaUrl: string, thumbnailUrl: string | null) {
+  if (thumbnailUrl) return thumbnailUrl
+  try {
+    const url = new URL(mediaUrl)
+    if (url.pathname.includes('/storage/v1/object/public/')) {
+      url.pathname = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+      url.search = ''
+      url.searchParams.set('width', '420')
+      url.searchParams.set('height', '520')
+      url.searchParams.set('resize', 'cover')
+      url.searchParams.set('quality', '72')
+      return url.toString()
+    }
+  } catch {
+    // Keep the original value as a last-resort preview for legacy external assets.
+  }
+  return mediaUrl
+}
+
 export async function listCreatorPosts(creatorId: string): Promise<PublicCreatorPostRow[]> {
   const { data, error } = await supabase
     .from('creator_posts')
@@ -113,7 +132,11 @@ export async function listCreatorPosts(creatorId: string): Promise<PublicCreator
   if (error) throw error
 
   // Paid originals must never be sent to the public profile before an unlock.
-  return (data ?? []).map((post) => post.is_paid ? { ...post, media_url: post.thumbnail_url ?? '' } : post) as PublicCreatorPostRow[]
+  // When the ingest did not create a thumbnail, use Supabase Image Transformations
+  // so every card still gets its own sharp, low-resolution preview.
+  return (data ?? []).map((post) => post.is_paid
+    ? { ...post, media_url: buildPaidPreviewUrl(post.media_url, post.thumbnail_url), thumbnail_url: null }
+    : post) as PublicCreatorPostRow[]
 }
 
 export type PaidMediaUnlock = {
