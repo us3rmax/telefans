@@ -199,7 +199,7 @@ export function CreatorProfilePage() {
             <button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>Paid Media</button>
           </div>
           <div className="creator-grid-preview creator-paid-grid">
-            {activeTab === 'media' ? (paidMedia.length ? paidMedia.map(post => <button type="button" className="paid-media-card" key={post.id} onClick={() => openPost(post)} aria-label={`Unlock paid media from ${creator.name} for ${post.unlockPrice} coins`}>
+            {activeTab === 'media' ? (paidMedia.length ? paidMedia.map(post => <button type="button" className={`paid-media-card ${unlockedMedia[post.id] ? 'is-unlocked' : 'is-locked'}`} key={post.id} onClick={() => openPost(post)} aria-label={`Unlock paid media from ${creator.name} for ${post.unlockPrice} coins`}>
               <img src={previewUrl(post)} alt={post.title || `Paid media from ${creator.name}`} />
               {!unlockedMedia[post.id] && <div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div>}
             </button>) : <div className="creator-media-empty">There is no Paid Media available for this creator yet.</div>) : (posts.length ? posts.map(post => <button type="button" className="creator-post-card" key={post.id} onClick={() => openPost(post)} aria-label={`Open post from ${creator.name}`}><img src={previewUrl(post)} alt={post.title || `${creator.name} post`} /></button>) : <div className="creator-media-empty">There are no posts available for this creator yet.</div>)}
