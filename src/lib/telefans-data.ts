@@ -1,3 +1,4 @@
+import { getTelegramInitData } from './telegram-auth'
 import { supabase } from './supabase'
 import type { Database, Json } from './supabase-types'
 
@@ -100,10 +101,42 @@ export async function getPublishedCreator(slug: string): Promise<CreatorRow | nu
   return (published ?? []).find((creator) => slugToken(creator.slug) === requested) ?? null
 }
 
-export async function listCreatorPosts(creatorId: string): Promise<PostRow[]> {
-  const { data, error } = await supabase.from('creator_posts').select('*').eq('creator_id', creatorId).eq('published', true).order('created_at', { ascending: false })
+export type PublicCreatorPostRow = Pick<PostRow, 'id' | 'creator_id' | 'type' | 'media_url' | 'thumbnail_url' | 'title' | 'caption' | 'is_paid' | 'unlock_price'>
+
+export async function listCreatorPosts(creatorId: string): Promise<PublicCreatorPostRow[]> {
+  const { data, error } = await supabase
+    .from('creator_posts')
+    .select('id, creator_id, type, media_url, thumbnail_url, title, caption, is_paid, unlock_price')
+    .eq('creator_id', creatorId)
+    .eq('published', true)
+    .order('created_at', { ascending: false })
   if (error) throw error
-  return data ?? []
+
+  // Paid originals must never be sent to the public profile before an unlock.
+  return (data ?? []).map((post) => post.is_paid ? { ...post, media_url: post.thumbnail_url ?? '' } : post) as PublicCreatorPostRow[]
+}
+
+export type PaidMediaUnlock = {
+  mediaUrl: string
+  coinsBalance: number
+  alreadyUnlocked: boolean
+}
+
+export async function unlockPaidMedia(postId: string): Promise<PaidMediaUnlock> {
+  const initData = getTelegramInitData()
+  if (!initData) throw new Error('Open TeleFans in Telegram to unlock Paid Media.')
+
+  const { data, error } = await supabase.functions.invoke<{ ok: boolean; mediaUrl?: string; coinsBalance?: number; alreadyUnlocked?: boolean; error?: string }>('paid-media-unlock', {
+    body: { initData, postId },
+  })
+  if (error) throw new Error(data?.error ?? error.message)
+  if (!data?.ok || !data.mediaUrl) throw new Error(data?.error ?? 'Paid Media could not be unlocked.')
+
+  return {
+    mediaUrl: data.mediaUrl,
+    coinsBalance: data.coinsBalance ?? 0,
+    alreadyUnlocked: data.alreadyUnlocked ?? false,
+  }
 }
 
 export type ReelMetrics = {

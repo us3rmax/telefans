@@ -400,7 +400,7 @@ export type Database = {
           id: string
           telegram_id: number
           amount: number
-          transaction_type: 'referral_signup'
+          transaction_type: 'referral_signup' | 'paid_unlock'
           referred_telegram_id: number | null
           metadata: Json
           created_at: string
@@ -409,7 +409,7 @@ export type Database = {
           id?: string
           telegram_id: number
           amount: number
-          transaction_type: 'referral_signup'
+          transaction_type: 'referral_signup' | 'paid_unlock'
           referred_telegram_id?: number | null
           metadata?: Json
           created_at?: string
@@ -418,7 +418,7 @@ export type Database = {
           id?: string
           telegram_id?: number
           amount?: number
-          transaction_type?: 'referral_signup'
+          transaction_type?: 'referral_signup' | 'paid_unlock'
           referred_telegram_id?: number | null
           metadata?: Json
           created_at?: string
@@ -485,6 +485,10 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      unlock_paid_media: {
+        Args: { p_post_id: string; p_telegram_id: number }
+        Returns: { media_url: string; remaining_coins: number; already_unlocked: boolean }[]
+      }
     }
     Enums: {
       [_ in never]: never

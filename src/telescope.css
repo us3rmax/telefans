@@ -908,6 +908,25 @@ button { cursor: pointer; }
 @media (max-width: 420px) { .creator-media-lightbox { padding-inline: 10px; } .creator-media-lightbox-content img { max-height: calc(100dvh - 92px); border-radius: 4px; } }
 @media (prefers-reduced-motion: reduce) { .creator-media-lightbox-content img { transition: none; } }
 
+.creator-unlock-backdrop { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 20px; background: rgba(20,22,25,.38); backdrop-filter: blur(12px); }
+.creator-unlock-modal { position: relative; width: min(100%, 360px); padding: 27px 22px 20px; border: 1px solid #e2e5e7; border-radius: 20px; background: #fff; color: #282828; box-shadow: 0 18px 55px rgba(0,0,0,.24); text-align: center; }
+.creator-unlock-close { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #7f8488; }
+.creator-unlock-close:hover { background: #f2f3f4; color: #2f3336; }
+.creator-unlock-close svg { width: 18px; height: 18px; }
+.creator-unlock-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 15px; border-radius: 50%; background: #eefaff; color: #0ca9dc; }
+.creator-unlock-icon svg { width: 25px; height: 25px; }
+.creator-unlock-modal h2 { margin: 0; font-family: 'Roboto', sans-serif; font-size: 20px; }
+.creator-unlock-modal p { margin: 12px 0 0; color: #60666a; font-size: 14px; line-height: 1.45; }
+.creator-unlock-modal p strong { color: #25292c; }
+.creator-unlock-balance { margin-top: 9px !important; font-size: 13px !important; }
+.creator-unlock-error { margin-top: 12px !important; color: #c13749 !important; font-size: 13px !important; }
+.creator-unlock-confirm { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 19px; padding: 0 18px; border: 0; border-radius: 999px; background: #10abe3; color: #fff; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 700; transition: transform .16s, background .16s; }
+.creator-unlock-confirm:hover:not(:disabled) { background: #0797ca; transform: translateY(-1px); }
+.creator-unlock-confirm:disabled, .creator-unlock-cancel:disabled, .creator-unlock-close:disabled { cursor: wait; opacity: .6; }
+.creator-unlock-cancel { min-height: 35px; margin-top: 4px; padding: 0 16px; border: 0; background: transparent; color: #858a8e; font-family: 'Roboto', sans-serif; font-size: 13px; }
+.creator-unlock-toast { position: fixed; right: 20px; bottom: 20px; z-index: 120; max-width: min(340px, calc(100vw - 40px)); padding: 11px 14px; border-radius: 10px; background: #282c30; color: #fff; font: 13px/1.35 'Roboto', sans-serif; box-shadow: 0 7px 22px rgba(0,0,0,.22); }
+@media (max-width: 420px) { .creator-unlock-backdrop { padding: 14px; } .creator-unlock-modal { border-radius: 18px; } }
+
 
 
 /* TeleFans CRM visual system — original dark SaaS layer */

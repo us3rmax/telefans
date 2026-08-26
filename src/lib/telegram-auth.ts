@@ -114,6 +114,11 @@ async function authenticateOnce(): Promise<TelegramUser | null> {
   return data.user
 }
 
+export function getTelegramInitData() {
+  if (typeof window === 'undefined') return null
+  return window.Telegram?.WebApp?.initData ?? null
+}
+
 export function authenticateTelegramMiniApp() {
   if (!authPromise) authPromise = authenticateOnce().catch((error) => { authPromise = null; throw error })
   return authPromise
