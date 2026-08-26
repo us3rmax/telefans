@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { House, PlaySquare, Search, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { exploreCreators, rankExploreCreators, type ExploreCategory, type ExploreCreator } from '@/data/explore'
-import { listPublishedCreatorExploreStats } from '@/lib/telefans-data'
+import { listPublishedCreatorExploreStats, listPublishedCreators } from '@/lib/telefans-data'
 import '../telescope.css'
 
 function BottomNav() {
@@ -26,36 +26,40 @@ function FilterBar({ query, setQuery, filter, setFilter }: { query: string; setQ
 export function ExplorePage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ExploreCategory>('Trending')
-  const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[]>([])
+  const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[] | null>(null)
+  const [remoteCatalogUnavailable, setRemoteCatalogUnavailable] = useState(false)
 
   useEffect(() => {
     let active = true
+    const toExploreCreator = (creator: { name: string; avatar_image?: string | null; cover_image?: string | null; slug: string; created_at?: string; updated_at?: string; trendingScore?: number; popularScore?: number }): ExploreCreator => ({
+      name: creator.name,
+      image: creator.avatar_image || creator.cover_image || '/placeholder-avatar.svg',
+      slug: creator.slug,
+      trendingScore: creator.trendingScore ?? 0,
+      popularScore: creator.popularScore ?? 0,
+      createdAt: creator.created_at || creator.updated_at || new Date(0).toISOString(),
+    })
     void listPublishedCreatorExploreStats().then((rows) => {
       if (!active) return
-      setPublishedCreators(rows.map((creator) => ({
-        name: creator.name,
-        image: creator.avatar_image || creator.cover_image || '/placeholder-avatar.svg',
-        slug: creator.slug,
-        trendingScore: creator.trendingScore,
-        popularScore: creator.popularScore,
-        createdAt: creator.created_at || creator.updated_at || new Date(0).toISOString(),
-      })))
-    }).catch(() => {
-      // Keep the seeded Explore catalogue available if the public query is unavailable.
+      setPublishedCreators(rows.map(toExploreCreator))
+    }).catch(async () => {
+      // Stats are optional for Explore. A metrics/RLS failure must not hide published creators.
+      try {
+        const rows = await listPublishedCreators()
+        if (active) setPublishedCreators(rows.map(toExploreCreator))
+      } catch {
+        if (active) setRemoteCatalogUnavailable(true)
+      }
     })
     return () => { active = false }
   }, [])
 
   const allCreators = useMemo(() => {
-    // Seeded catalogue entries use legacy hyphenated slugs while Supabase
-    // stores canonical slugs without separators. Use the same identity token
-    // for both sources so a creator is rendered only once in Explore.
-    const slugToken = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const byCreator = new Map<string, ExploreCreator>()
-    for (const creator of exploreCreators) byCreator.set(slugToken(creator.slug), creator)
-    for (const creator of publishedCreators) byCreator.set(slugToken(creator.slug), creator)
-    return [...byCreator.values()]
-  }, [publishedCreators])
+    // The database is the source of truth once it responds. The 20-item local
+    // catalogue is only a temporary fallback while Supabase is unavailable.
+    if (publishedCreators !== null) return publishedCreators
+    return remoteCatalogUnavailable ? exploreCreators : []
+  }, [publishedCreators, remoteCatalogUnavailable])
 
   const visibleCreators = useMemo(() => rankExploreCreators(filter, allCreators).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [allCreators, filter, query])
   return <main className="telescope-shell">
