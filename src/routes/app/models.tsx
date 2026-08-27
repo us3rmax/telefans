@@ -92,7 +92,7 @@ function AdminModelsPage() {
             <Link to="/app/models" search={{ edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined }} className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-muted">Back to creators</Link>
           </header>
           <CreatorForm creator={editingCreator} />
-          <CreatorVault creatorId={editingCreator.id} creatorName={editingCreator.name} />
+          <CreatorVault creatorId={editingCreator.id} creatorName={editingCreator.name} onCreatorUpdated={updated => setModels(current => current.map(item => item.id === updated.id ? updated : item))} />
         </div>
       </main>
     )

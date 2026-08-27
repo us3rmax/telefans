@@ -93,6 +93,11 @@ export function CreatorForm({ creator }: Props) {
     return () => { active = false }
   }, [creator])
 
+  useEffect(() => {
+    if (!creator) return
+    setForm(current => current.avatar_image === creator.avatar_image && current.cover_image === creator.cover_image ? current : { ...current, avatar_image: creator.avatar_image, cover_image: creator.cover_image })
+  }, [creator?.id, creator?.avatar_image, creator?.cover_image])
+
   const chooseImage = async (field: ImageField, file?: File) => {
     if (!file) return
     if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return }

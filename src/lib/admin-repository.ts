@@ -56,6 +56,20 @@ export async function setCreatorPublished(id: string, published: boolean) {
   return updateAdminCreator(id, { published, status: published ? 'published' : 'draft' })
 }
 
+export type CreatorImageField = 'avatar_image' | 'cover_image'
+
+export async function setCreatorImageFromMediaAsset(creatorId: string, assetId: string, field: CreatorImageField) {
+  const { data: asset, error: assetError } = await supabase.from('media_assets').select('id, kind, public_url').eq('id', assetId).eq('creator_id', creatorId).maybeSingle()
+  assertNoError(assetError)
+  if (!asset || asset.kind !== 'image' || !asset.public_url) throw new Error('Select one image from this creator to use as the profile or cover photo.')
+  const update: CreatorUpdate = field === 'avatar_image' ? { avatar_image: asset.public_url } : { cover_image: asset.public_url }
+  const { data, error } = await supabase.from('creators').update(update).eq('id', creatorId).select('*').single()
+  assertNoError(error)
+  if (!data) throw new Error('The creator image was not updated.')
+  await writeAudit('creator.image_set', 'creator', creatorId, { field, media_asset_id: asset.id })
+  return data
+}
+
 export async function getAdminSubscriptionSettings(creatorId: string) {
   const { data, error } = await supabase.from('creator_subscription_settings').select('*').eq('creator_id', creatorId).maybeSingle()
   assertNoError(error)
