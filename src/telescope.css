@@ -264,7 +264,8 @@ button { cursor: pointer; }
 .creator-about { position: relative; padding: 12px 24px 24px; }
 .creator-identity { min-height: 86px; margin-left: 129px; display: flex; flex-direction: column; justify-content: flex-start; }
 .creator-identity h1 { margin: 0 0 6px; }
-.creator-identity .creator-handle { margin-bottom: 0; white-space: nowrap; }
+.creator-identity .creator-handle { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 0; white-space: normal; overflow-wrap: anywhere; }
+.creator-identity .creator-availability { min-width: 0; max-width: 100%; flex-wrap: wrap; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
 .creator-about .creator-bio { margin-top: 25px; }
 .creator-subscription { padding: 26px 24px 28px; }
 .creator-content { padding-top: 0; }
