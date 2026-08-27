@@ -19,6 +19,27 @@ function slugify(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+
 function Verified() { return <span className="verified-mark" aria-label="Verified"><Check /></span> }
 function CreatorBadges({ badges }: { badges: CreatorBadge[] }) { return <span className="creator-badges">{badges.map((badge) => <CreatorBadgeIcon key={badge} badge={badge} />)}</span> }
 
+function createEmptyCreatorProfile(slug: string): CreatorProfile {
+  return {
+    slug,
+    name: '',
+    handle: '',
+    coverImage: '',
+    avatarImage: '',
+    badges: [],
+    status: '',
+    bio: '',
+    expandedBio: '',
+    stats: { posts: '', media: '', live: '', likes: '' },
+    subscription: { title: '', message: '' },
+    tabs: { postsLabel: 'Posts', mediaLabel: 'Media' },
+  }
+}
+
+function CreatorProfileLoading() {
+  return <main className="creator-profile-page creator-profile-loading" aria-busy="true" aria-label="Loading creator profile"><div className="creator-profile-frame"><div className="creator-profile-scroll"><section className="creator-hero"><span className="creator-loading-block" /></section><section className="creator-about"><div className="creator-loading-line creator-loading-name" /><div className="creator-loading-line creator-loading-handle" /><div className="creator-loading-line creator-loading-bio" /><div className="creator-loading-line creator-loading-bio short" /></section><section className="creator-subscription"><div className="creator-loading-line creator-loading-section" /><div className="creator-loading-line creator-loading-offer" /></section><section className="creator-content"><div className="creator-tabs"><span /><span /></div><div className="creator-grid-preview creator-loading-grid">{Array.from({ length: 6 }, (_, index) => <span key={index} />)}</div></section></div></div></main>
+}
+
 function getCreatorAvailability(slug: string) {
   const now = new Date()
   const period = Math.floor(now.getHours() / 6)
@@ -51,8 +72,10 @@ type CreatorPostGroup = {
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
   const navigate = useNavigate({ from: '/creator/$slug' })
-  const [creator, setCreator] = useState<CreatorProfile>(() => getCreatorProfile(slug))
+  const [creator, setCreator] = useState<CreatorProfile>(() => createEmptyCreatorProfile(slug))
+  const [creatorFound, setCreatorFound] = useState(false)
   const [creatorMediaLoaded, setCreatorMediaLoaded] = useState(false)
+  const [publicPostsLoaded, setPublicPostsLoaded] = useState(false)
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
@@ -151,8 +174,10 @@ export function CreatorProfilePage() {
 
   useEffect(() => {
     let active = true
-    setCreator(getCreatorProfile(slug))
+    setCreator(createEmptyCreatorProfile(slug))
+    setCreatorFound(false)
     setCreatorMediaLoaded(false)
+    setPublicPostsLoaded(false)
     setPublicPosts([])
     setExpanded(false)
     setExpandedPost(null)
@@ -165,22 +190,28 @@ export function CreatorProfilePage() {
       try {
         const remote = await getPublishedCreator(slug)
         if (!remote || !active) {
-          if (active) setCreatorMediaLoaded(true)
+          if (active) {
+            setCreatorFound(false)
+            setCreatorMediaLoaded(true)
+            setPublicPostsLoaded(true)
+          }
           return
         }
-        const fallback = getCreatorProfile(slug)
+        const fallback = createEmptyCreatorProfile(slug)
         setCreator({
           ...fallback,
           slug: remote.slug,
           name: remote.name,
           handle: normalizeCreatorHandle(remote.handle),
-          coverImage: remote.cover_image || fallback.coverImage,
-          avatarImage: remote.avatar_image || fallback.avatarImage,
-          bio: remote.bio || fallback.bio,
-          status: remote.status || fallback.status,
+          coverImage: remote.cover_image || '',
+          avatarImage: remote.avatar_image || '',
+          bio: remote.bio || '',
+          expandedBio: remote.expanded_bio || remote.bio || '',
+          status: remote.status || 'Available now',
         })
+        setCreatorFound(true)
         setCreatorMediaLoaded(true)
-        const posts = await listCreatorPosts(remote.id)
+        const posts = await listCreatorPosts(remote.id).catch(() => [])
         if (active) setPublicPosts(posts.map(post => ({
           id: post.id,
           type: post.type,
@@ -194,9 +225,12 @@ export function CreatorProfilePage() {
           carouselId: post.carousel_id,
           carouselPosition: post.carousel_position,
         })))
+        if (active) setPublicPostsLoaded(true)
       } catch {
         if (active) {
+          setCreatorFound(false)
           setCreatorMediaLoaded(true)
+          setPublicPostsLoaded(true)
           setPublicPosts([])
         }
       }
@@ -239,6 +273,9 @@ export function CreatorProfilePage() {
       setUnlockingPostId(null)
     }
   }
+
+  if (!creatorMediaLoaded || !publicPostsLoaded) return <CreatorProfileLoading />
+  if (!creatorFound) return <main className="creator-profile-page"><div className="creator-profile-frame"><div className="creator-profile-unavailable"><button type="button" className="creator-cover-back" aria-label="Back" onClick={goBack}><ArrowLeft /></button><strong>Creator unavailable</strong><span>This profile could not be loaded right now.</span></div></div></main>
 
   const posts = publicPosts.filter(post => post.type === 'image' && !post.isPaid)
   const paidMedia = publicPosts.filter(post => post.type === 'image' && post.isPaid)

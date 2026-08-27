@@ -29,7 +29,7 @@ export function ExplorePage() {
   const scrollContentRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState(initialRestore?.query ?? '')
   const [filter, setFilter] = useState<ExploreCategory>(initialRestore?.filter ?? 'Trending')
-  const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[]>(exploreCreators)
+  const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[]>([])
   const [remoteCatalogLoaded, setRemoteCatalogLoaded] = useState(false)
 
   useEffect(() => {
@@ -53,7 +53,9 @@ export function ExplorePage() {
         if (active && stats.length) setPublishedCreators(stats.map(toExploreCreator))
       }).catch(() => undefined)
     }).catch(() => {
-      if (active) setRemoteCatalogLoaded(true)
+      if (!active) return
+      setPublishedCreators(exploreCreators)
+      setRemoteCatalogLoaded(true)
     })
     return () => { active = false }
   }, [])
@@ -85,13 +87,14 @@ export function ExplorePage() {
       <div ref={scrollContentRef} className="scroll-content">
         <section className="explore-heading" aria-hidden="true" />
         <FilterBar query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />
-        <div className="creator-grid">
+        {!remoteCatalogLoaded && <div className="creator-grid creator-grid-skeleton" aria-busy="true" aria-label="Loading creators">{Array.from({ length: 8 }, (_, index) => <div className="creator-card-skeleton" key={index}><span /><i /><strong /></div>)}</div>}
+        {remoteCatalogLoaded && <div className="creator-grid">
           {visibleCreators.map(({ name, image, slug }, index) => <Link to="/creator/$slug" params={{ slug }} onClick={() => { rememberCreatorOrigin(slug) }} className="creator-card" key={`${slug}-${index}`} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }} aria-label={`Open ${name}`}>
-            <img src={image} alt={name} loading={index < 4 ? 'eager' : 'lazy'} />
+            <img src={image} alt={name} loading={index < 4 ? 'eager' : 'lazy'} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/placeholder-avatar.svg' }} />
             <span className="card-shade" />
             <span className="creator-name">{name}</span>
           </Link>)}
-        </div>
+        </div>}
         {visibleCreators.length === 0 && remoteCatalogLoaded && <p className="empty-copy">No creators found. Try another name.</p>}
         <footer className="site-footer"><Link to="/terms">TeleFans Terms &amp; Conditions</Link><Link to="/privacy">TeleFans Privacy Policy</Link></footer>
       </div>

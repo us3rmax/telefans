@@ -1,9 +1,9 @@
 import { ChevronDown, ChevronLeft, Heart, MessageCircle, MoreHorizontal, Pause, Play, Send, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, createFileRoute, useSearch } from '@tanstack/react-router'
 import { readAdminPosts } from '@/data/content'
-import { addPostComment, hasPostLike, listPostComments, listPublishedCreators, listPublishedReels, recordPostView, togglePostLike } from '@/lib/telefans-data'
+import { addPostComment, getLikedPostIds, listPostComments, listPublishedCreators, listPublishedReels, recordPostView, togglePostLike } from '@/lib/telefans-data'
 import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import { readReelsPosition, saveProfileReturnState, saveReelsPosition } from '@/lib/navigation-state'
 import { PrimaryBottomNav } from '@/components/PrimaryBottomNav'
@@ -162,6 +162,11 @@ export function ReelsPage() {
   const viewedReels = useRef(new Set<string>())
   const reelsFeedRef = useRef<HTMLDivElement>(null)
   const restoringPosition = useRef(false)
+  const feedRef = useRef<ReelItem[]>([])
+  const currentTelegramIdRef = useRef<number | null>(null)
+
+  useEffect(() => { feedRef.current = feed }, [feed])
+  useEffect(() => { currentTelegramIdRef.current = currentTelegramId }, [currentTelegramId])
 
   useEffect(() => {
     let attempts = 0
@@ -240,7 +245,12 @@ export function ReelsPage() {
 
   useEffect(() => {
     let mounted = true
-    void Promise.all(feed.filter((reel) => reel.persisted).map(async (reel) => { try { return [reel.id, await hasPostLike(reel.id, currentTelegramId)] as const } catch { return [reel.id, false] as const } })).then((entries) => { if (mounted) setLikedByPost(Object.fromEntries(entries)) })
+    const postIds = feed.filter((reel) => reel.persisted).map((reel) => reel.id)
+    void getLikedPostIds(postIds, currentTelegramId).then((likedIds) => {
+      if (!mounted) return
+      const likedSet = new Set(likedIds)
+      setLikedByPost(Object.fromEntries(postIds.map((id) => [id, likedSet.has(id)])))
+    }).catch(() => { if (mounted) setLikedByPost({}) })
     return () => { mounted = false }
   }, [feed, currentTelegramId])
 
@@ -250,9 +260,9 @@ export function ReelsPage() {
     saveReelsPosition({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })
     if (viewedReels.current.has(id)) return
     viewedReels.current.add(id)
-    const reel = feed.find((item) => item.id === id)
-    if (reel?.persisted) void recordPostView(id, currentTelegramId).catch(() => undefined)
-  }, [feed, activeTab, currentTelegramId])
+    const reel = feedRef.current.find((item) => item.id === id)
+    if (reel?.persisted) void recordPostView(id, currentTelegramIdRef.current).catch(() => undefined)
+  }, [activeTab])
 
   const openComments = async (reel: ReelItem) => {
     if (!reel.commentsEnabled) return
@@ -292,7 +302,7 @@ export function ReelsPage() {
   }
 
   const activeIndex = Math.max(0, feed.findIndex((reel) => reel.id === activeReelId))
-  const visibleFeed = useMemo(() => feed, [feed])
+  const visibleFeed = feed
   const commentRows = commentReel ? comments[commentReel.id] ?? [] : []
 
   return <main className={`reels-shell${commentReel ? ' comments-open' : ''}`}>
@@ -305,7 +315,7 @@ export function ReelsPage() {
       {!insideTelegram && <button type="button" className="reels-menu-button" aria-label="Options"><ChevronDown /><MoreHorizontal /></button>}
     </header>
     <div ref={reelsFeedRef} className="reels-feed">
-      {loading && <div className="reels-state">Loading Reels…</div>}
+      {loading && <div className="reels-state reels-loading" aria-busy="true" aria-label="Loading Reels"><div className="reels-loading-card"><span /><i /><b /></div></div>}
       {!loading && error && <div className="reels-state reels-state-error">{error}</div>}
       {!loading && !error && !feed.length && <div className="reels-state">No Reels have been published yet.</div>}
       {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { const scrollTop = reelsFeedRef.current?.scrollTop ?? 0; saveReelsPosition({ id, tab: activeTab, scrollTop }); saveProfileReturnState({ source: 'reels', slug: reel.slug, id, tab: activeTab, scrollTop }) }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { const resolvedUser = currentTelegramId == null ? await getTelegramUser().catch(() => null) : null; const telegramId = resolvedUser?.id ?? currentTelegramId; if (resolvedUser) { setCurrentTelegramId(resolvedUser.id); setCurrentUserName([resolvedUser.first_name, resolvedUser.last_name].filter(Boolean).join(' ')) } const result = await togglePostLike(reel.id, liked, telegramId); if (result.applied) { setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + result.delta) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } return result } : undefined} />)}

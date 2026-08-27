@@ -9,6 +9,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import type { ReactNode } from 'react'
 import { TelegramAuthBootstrap } from '@/components/TelegramAuthBootstrap'
+import { RouteTransitionIndicator } from '@/components/RouteTransitionIndicator'
 import indexCss from '../index.css?url'
 
 /**
@@ -106,6 +107,7 @@ function RootDocument({ children }: { children: ReactNode }) {
           <TooltipProvider delayDuration={0}>
             <Toaster />
             <TelegramAuthBootstrap />
+            <RouteTransitionIndicator />
             {/*
               Full-bleed by default — NO app chrome. Child routes render directly.
               SaaS / dashboard app? The sidebar shell already exists at

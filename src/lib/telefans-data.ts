@@ -6,6 +6,15 @@ type CreatorRow = Database['public']['Tables']['creators']['Row']
 type PostRow = Database['public']['Tables']['creator_posts']['Row']
 
 const VISITOR_KEY = 'telefans_visitor_key'
+const PUBLIC_CACHE_TTL = 20_000
+
+type TimedCache<T> = { data: T; expiresAt: number }
+let publishedCreatorsCache: TimedCache<CreatorRow[]> | null = null
+let publishedCreatorsRequest: Promise<CreatorRow[]> | null = null
+let exploreStatsCache: TimedCache<PublishedCreatorExploreStats[]> | null = null
+let reelsCache = new Map<number, TimedCache<PublishedReel[]>>()
+const creatorPostsCache = new Map<string, TimedCache<PublicCreatorPostRow[]>>()
+const creatorPostsRequests = new Map<string, Promise<PublicCreatorPostRow[]>>()
 
 function getVisitorKey() {
   if (typeof window === 'undefined') return null
@@ -21,9 +30,22 @@ export function jsonObject(value: Json) {
 }
 
 export async function listPublishedCreators(): Promise<CreatorRow[]> {
-  const { data, error } = await supabase.from('creators').select('*').eq('published', true).order('name')
-  if (error) throw error
-  return data ?? []
+  const now = Date.now()
+  if (publishedCreatorsCache && publishedCreatorsCache.expiresAt > now) return publishedCreatorsCache.data
+  if (publishedCreatorsRequest) return publishedCreatorsRequest
+
+  publishedCreatorsRequest = (async () => {
+    const { data, error } = await supabase.from('creators').select('*').eq('published', true).order('name')
+    if (error) throw error
+    const rows = data ?? []
+    publishedCreatorsCache = { data: rows, expiresAt: Date.now() + PUBLIC_CACHE_TTL }
+    return rows
+  })()
+  try {
+    return await publishedCreatorsRequest
+  } finally {
+    publishedCreatorsRequest = null
+  }
 }
 
 export type PublishedCreatorExploreStats = CreatorRow & {
@@ -32,6 +54,7 @@ export type PublishedCreatorExploreStats = CreatorRow & {
 }
 
 export async function listPublishedCreatorExploreStats(): Promise<PublishedCreatorExploreStats[]> {
+  if (exploreStatsCache && exploreStatsCache.expiresAt > Date.now()) return exploreStatsCache.data
   const creators = await listPublishedCreators()
   if (!creators.length) return []
   const creatorIds = creators.map((creator) => creator.id)
@@ -77,11 +100,13 @@ export async function listPublishedCreatorExploreStats(): Promise<PublishedCreat
     creatorStats.total += 2
     if (new Date(post.created_at).getTime() >= cutoff) creatorStats.recent += 4
   }
-  return creators.map((creator) => {
+  const result = creators.map((creator) => {
     const creatorStats = stats.get(creator.id) ?? { recent: 0, total: 0 }
     const followers = followerCounts.get(creator.id) ?? 0
     return { ...creator, trendingScore: Math.round((creatorStats.recent + followers * 0.5) * 10) / 10, popularScore: Math.round((creatorStats.total + followers * 5) * 10) / 10 }
   })
+  exploreStatsCache = { data: result, expiresAt: Date.now() + PUBLIC_CACHE_TTL }
+  return result
 }
 
 function slugToken(value: string) {
@@ -95,10 +120,9 @@ export async function getPublishedCreator(slug: string): Promise<CreatorRow | nu
 
   // Preserve compatibility with legacy links such as /creator/pleasantmorenaa
   // while the CRM stores canonical slugs with or without separators.
-  const { data: published, error } = await supabase.from('creators').select('*').eq('published', true).limit(500)
-  if (error) throw error
+  const published = await listPublishedCreators()
   const requested = slugToken(slug)
-  return (published ?? []).find((creator) => slugToken(creator.slug) === requested) ?? null
+  return published.find((creator) => slugToken(creator.slug) === requested) ?? null
 }
 
 export type PublicCreatorPostRow = Pick<PostRow, 'id' | 'creator_id' | 'type' | 'media_url' | 'thumbnail_url' | 'title' | 'caption' | 'is_paid' | 'unlock_price' | 'carousel_id' | 'carousel_position'>
@@ -123,20 +147,35 @@ function buildPaidPreviewUrl(mediaUrl: string, thumbnailUrl: string | null) {
 }
 
 export async function listCreatorPosts(creatorId: string): Promise<PublicCreatorPostRow[]> {
-  const { data, error } = await supabase
-    .from('creator_posts')
-    .select('id, creator_id, type, media_url, thumbnail_url, title, caption, is_paid, unlock_price, carousel_id, carousel_position')
-    .eq('creator_id', creatorId)
-    .eq('published', true)
-    .order('created_at', { ascending: false })
-  if (error) throw error
+  const cached = creatorPostsCache.get(creatorId)
+  if (cached && cached.expiresAt > Date.now()) return cached.data
+  const pending = creatorPostsRequests.get(creatorId)
+  if (pending) return pending
 
-  // Paid originals must never be sent to the public profile before an unlock.
-  // When the ingest did not create a thumbnail, use Supabase Image Transformations
-  // so every card still gets its own sharp, low-resolution preview.
-  return (data ?? []).map((post) => post.is_paid
-    ? { ...post, media_url: buildPaidPreviewUrl(post.media_url, post.thumbnail_url), thumbnail_url: null }
-    : post) as PublicCreatorPostRow[]
+  const request = (async () => {
+    const { data, error } = await supabase
+      .from('creator_posts')
+      .select('id, creator_id, type, media_url, thumbnail_url, title, caption, is_paid, unlock_price, carousel_id, carousel_position')
+      .eq('creator_id', creatorId)
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+
+    // Paid originals must never be sent to the public profile before an unlock.
+    // When the ingest did not create a thumbnail, use Supabase Image Transformations
+    // so every card still gets its own sharp, low-resolution preview.
+    const rows = (data ?? []).map((post) => post.is_paid
+      ? { ...post, media_url: buildPaidPreviewUrl(post.media_url, post.thumbnail_url), thumbnail_url: null }
+      : post) as PublicCreatorPostRow[]
+    creatorPostsCache.set(creatorId, { data: rows, expiresAt: Date.now() + PUBLIC_CACHE_TTL })
+    return rows
+  })()
+  creatorPostsRequests.set(creatorId, request)
+  try {
+    return await request
+  } finally {
+    creatorPostsRequests.delete(creatorId)
+  }
 }
 
 export type PaidMediaUnlock = {
@@ -188,11 +227,15 @@ async function loadReelMetrics(postIds: string[]) {
 }
 
 export async function listPublishedReels(limit = 40): Promise<PublishedReel[]> {
+  const cached = reelsCache.get(limit)
+  if (cached && cached.expiresAt > Date.now()) return cached.data
   const { data, error } = await supabase.from('creator_posts').select('*').eq('published', true).eq('reels_enabled', true).eq('type', 'video').order('created_at', { ascending: false }).limit(limit)
   if (error) throw error
   const posts = data ?? []
   const metrics = await loadReelMetrics(posts.map((post) => post.id))
-  return posts.map((post) => ({ ...post, metrics: metrics.get(post.id)! }))
+  const result = posts.map((post) => ({ ...post, metrics: metrics.get(post.id)! }))
+  reelsCache.set(limit, { data: result, expiresAt: Date.now() + PUBLIC_CACHE_TTL })
+  return result
 }
 
 export type PostLikeResult = { applied: boolean; delta: -1 | 0 | 1 }
@@ -217,16 +260,22 @@ export async function togglePostLike(postId: string, liked: boolean, telegramId?
   return { applied: true, delta: error ? 0 : 1 }
 }
 
-export async function hasPostLike(postId: string, telegramId?: number | null) {
+export async function getLikedPostIds(postIds: string[], telegramId?: number | null): Promise<string[]> {
   const visitorKey = getVisitorKey()
-  if (!visitorKey) return false
-  const { data: byVisitor, error: visitorError } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('visitor_key', visitorKey).maybeSingle()
+  if (!visitorKey || !postIds.length) return []
+  const visitorQuery = supabase.from('post_likes').select('post_id').in('post_id', postIds).eq('visitor_key', visitorKey)
+  const telegramQuery = telegramId == null
+    ? Promise.resolve({ data: [], error: null })
+    : supabase.from('post_likes').select('post_id').in('post_id', postIds).eq('telegram_id', telegramId)
+  const [{ data: visitorRows, error: visitorError }, { data: telegramRows, error: telegramError }] = await Promise.all([visitorQuery, telegramQuery])
   if (visitorError) throw visitorError
-  if (byVisitor) return true
-  if (telegramId == null) return false
-  const { data: byTelegram, error: telegramError } = await supabase.from('post_likes').select('post_id').eq('post_id', postId).eq('telegram_id', telegramId).maybeSingle()
   if (telegramError) throw telegramError
-  return Boolean(byTelegram)
+  return [...new Set([...(visitorRows ?? []).map(row => row.post_id), ...(telegramRows ?? []).map(row => row.post_id)])]
+}
+
+export async function hasPostLike(postId: string, telegramId?: number | null) {
+  const liked = await getLikedPostIds([postId], telegramId)
+  return liked.includes(postId)
 }
 
 export type PostCommentWithAuthor = {
