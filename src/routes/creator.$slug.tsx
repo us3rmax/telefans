@@ -139,6 +139,7 @@ export function CreatorProfilePage() {
   const [expanded, setExpanded] = useState(false)
   const [remoteCreatorId, setRemoteCreatorId] = useState<string | null>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({ subscribed: false, offer: null, subscription: null, telegramUsername: null, vipChannelUrl: null })
+  const [subscriptionOfferState, setSubscriptionOfferState] = useState<'pending' | 'ready' | 'not-telegram' | 'error'>('pending')
   const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(false)
   const [subscriptionError, setSubscriptionError] = useState('')
@@ -244,6 +245,7 @@ export function CreatorProfilePage() {
     setCreatorFound(false)
     setRemoteCreatorId(null)
     setSubscriptionStatus({ subscribed: false, offer: null, subscription: null, telegramUsername: null, vipChannelUrl: null })
+    setSubscriptionOfferState('pending')
     setSubscriptionLoading(true)
     setSubscriptionError('')
     setSubscriptionFeedback('')
@@ -321,13 +323,42 @@ export function CreatorProfilePage() {
     if (!remoteCreatorId) return
     let active = true
     setSubscriptionLoading(true)
-    void getCreatorSubscriptionStatus(remoteCreatorId).then(response => {
-      if (!active) return
-      setSubscriptionStatus({ subscribed: response.subscribed, offer: response.offer ?? null, subscription: response.subscription ?? null, telegramUsername: response.telegramUsername ?? null, vipChannelUrl: response.vipChannelUrl ?? null })
-      setSubscriptionError('')
-    }).catch(error => {
-      if (active && getTelegramInitData()) setSubscriptionError(error instanceof Error ? error.message : 'Could not load subscription status.')
-    }).finally(() => { if (active) setSubscriptionLoading(false) })
+    setSubscriptionOfferState('pending')
+
+    const loadSubscriptionOffer = async () => {
+      // Ordinary browser visitors do not have a country-aware Telegram offer.
+      // Keep the public creator offer for them, but never use it as a placeholder
+      // while a Telegram user's server-side offer is still being resolved.
+      if (!getTelegramInitData()) {
+        if (active) {
+          setSubscriptionOfferState('not-telegram')
+          setSubscriptionError('')
+          setSubscriptionLoading(false)
+        }
+        return
+      }
+
+      try {
+        // The Telegram auth request persists the first-login location before the
+        // subscription status request reads it, preventing a visible tier swap.
+        const user = await getTelegramUser()
+        if (!active) return
+        if (!user || !getTelegramInitData()) throw new Error('Could not authenticate with Telegram.')
+        const response = await getCreatorSubscriptionStatus(remoteCreatorId)
+        if (!active) return
+        setSubscriptionStatus({ subscribed: response.subscribed, offer: response.offer ?? null, subscription: response.subscription ?? null, telegramUsername: response.telegramUsername ?? null, vipChannelUrl: response.vipChannelUrl ?? null })
+        setSubscriptionError('')
+        setSubscriptionOfferState('ready')
+      } catch (error) {
+        if (!active) return
+        setSubscriptionOfferState('error')
+        setSubscriptionError(error instanceof Error ? error.message : 'Could not load subscription status.')
+      } finally {
+        if (active) setSubscriptionLoading(false)
+      }
+    }
+
+    void loadSubscriptionOffer()
     return () => { active = false }
   }, [remoteCreatorId])
 
@@ -442,7 +473,7 @@ export function CreatorProfilePage() {
   const promoCountdown = promoSecondsLeft === null ? '' : `${String(Math.floor(promoSecondsLeft / 60)).padStart(2, '0')}:${String(promoSecondsLeft % 60).padStart(2, '0')}`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
-  if (!creatorMediaLoaded || !publicPostsLoaded) return <CreatorProfileLoading />
+  if (!creatorMediaLoaded || !publicPostsLoaded || subscriptionOfferState === 'pending') return <CreatorProfileLoading />
   if (!creatorFound) return <main className="creator-profile-page"><div className="creator-profile-frame"><div className="creator-profile-unavailable"><button type="button" className="creator-cover-back" aria-label="Back" onClick={goBack}><ArrowLeft /></button><strong>Creator unavailable</strong><span>This profile could not be loaded right now.</span></div></div></main>
 
   const posts = publicPosts.filter(post => post.type === 'image' && !post.isPaid)
@@ -506,13 +537,15 @@ export function CreatorProfilePage() {
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
           <p className="creator-subscription-cta-message">Unlock all content and direct messages by subscribing.</p>
-          {promotionActive && <p className="creator-promo-countdown" role="timer" aria-live="polite"><span>Limited-time offer</span><strong>Ends in {promoCountdown}</strong></p>}
-          <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Subscribe to ${creator.name}`} aria-busy={subscriptionActionLoading}>
-            <span>SUBSCRIBE</span>
-            <span>{subscriptionActionLoading ? 'OPENING…' : subscriptionDisplayPrice}</span>
-          </button>
-          {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
-          {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
+          {subscriptionOfferState === 'error' ? <p className="creator-subscription-error" role="alert">{subscriptionError || 'Could not load the subscription offer.'}</p> : <>
+            {promotionActive && <p className="creator-promo-countdown" role="timer" aria-live="polite"><span>Limited-time offer</span><strong>Ends in {promoCountdown}</strong></p>}
+            <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Subscribe to ${creator.name}`} aria-busy={subscriptionActionLoading}>
+              <span>SUBSCRIBE</span>
+              <span>{subscriptionActionLoading ? 'OPENING…' : subscriptionDisplayPrice}</span>
+            </button>
+            {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
+            {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
+          </>}
         </section>}
 
         <section className="creator-content">
