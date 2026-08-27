@@ -10,6 +10,18 @@ export type CreatorPostUpdate = TablesUpdate<'creator_posts'>
 export type MediaAsset = Tables<'media_assets'>
 export type MediaAssetInsert = TablesInsert<'media_assets'>
 
+export type MediaBatchUploadProgress = {
+  currentFileIndex: number
+  totalFiles: number
+  currentFileName: string
+  currentFileProgress: number
+  totalProgress: number
+  completedFiles: number
+  totalBytes: number
+  uploadedBytes: number
+  phase: 'uploading' | 'saving'
+}
+
 export type SubscriptionPlanMode = 'free' | 'paid' | 'promo'
 export type CreatorSubscriptionSettings = Tables<'creator_subscription_settings'>
 export type CreatorSubscriptionSettingsInsert = TablesInsert<'creator_subscription_settings'>
@@ -221,11 +233,44 @@ export async function createCarouselFromMediaAssets(assetIds: string[], creatorI
   return grouped
 }
 
-export async function uploadMediaAsset(file: File, creatorId?: string) {
+const browserSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gtvzvvtnhmjtcgvjnfrr.supabase.co'
+const browserSupabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_LUJ_76DaAYq13fwtOUlpCA_rDyd9odx'
+
+async function uploadStorageObjectWithProgress(path: string, file: File, onProgress?: (progress: number) => void) {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const accessToken = sessionData.session?.access_token ?? browserSupabasePublishableKey
+  const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/')
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${browserSupabaseUrl}/storage/v1/object/media/${encodedPath}`)
+    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`)
+    xhr.setRequestHeader('apikey', browserSupabasePublishableKey)
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+    xhr.setRequestHeader('x-upsert', 'false')
+    xhr.upload.addEventListener('progress', event => {
+      const percent = event.lengthComputable ? (event.loaded / event.total) * 100 : file.size ? (event.loaded / file.size) * 100 : 0
+      onProgress?.(Math.max(0, Math.min(100, Math.round(percent))))
+    })
+    xhr.addEventListener('error', () => reject(new Error('The media upload failed.')))
+    xhr.addEventListener('abort', () => reject(new Error('The media upload was canceled.')))
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100)
+        resolve()
+        return
+      }
+      let message = xhr.responseText || `The media upload failed with status ${xhr.status}.`
+      try { const parsed = JSON.parse(xhr.responseText) as { message?: string; error?: string }; message = parsed.message || parsed.error || message } catch { /* keep the raw response */ }
+      reject(new Error(message))
+    })
+    xhr.send(file)
+  })
+}
+
+export async function uploadMediaAsset(file: File, creatorId?: string, onProgress?: (progress: number) => void) {
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-')
   const path = `${crypto.randomUUID()}-${safeName}`
-  const { error: uploadError } = await supabase.storage.from('media').upload(path, file, { upsert: false, contentType: file.type })
-  assertNoError(uploadError)
+  await uploadStorageObjectWithProgress(path, file, onProgress)
   const { data: urlData } = supabase.storage.from('media').getPublicUrl(path)
   const kind = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image'
   const insert: MediaAssetInsert = { creator_id: creatorId ?? null, kind, storage_path: path, public_url: urlData.publicUrl, original_name: file.name, mime_type: file.type, byte_size: file.size, status: 'ready' }
@@ -269,10 +314,20 @@ async function writeAudit(action: string, entityType: string, entityId: string, 
   assertNoError(error)
 }
 
-export async function uploadCreatorMediaBatch(files: File[], creatorId: string, unlockPrice = 10, paidImages = false) {
+export async function uploadCreatorMediaBatch(files: File[], creatorId: string, unlockPrice = 10, paidImages = false, onProgress?: (progress: MediaBatchUploadProgress) => void) {
   const results: Array<{ asset: MediaAsset; post: CreatorPost }> = []
-  for (const file of files) {
-    const asset = await uploadMediaAsset(file, creatorId)
+  const totalFiles = files.length
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
+  let uploadedBytes = 0
+  for (const [currentFileIndex, file] of files.entries()) {
+    const report = (currentFileProgress: number, phase: MediaBatchUploadProgress['phase'], completedFiles = currentFileIndex) => {
+      const fileBytes = Math.round(file.size * (currentFileProgress / 100))
+      const nextUploadedBytes = Math.min(totalBytes, uploadedBytes + fileBytes)
+      onProgress?.({ currentFileIndex, totalFiles, currentFileName: file.name, currentFileProgress, totalProgress: totalBytes ? Math.round((nextUploadedBytes / totalBytes) * 100) : Math.round(((currentFileIndex + currentFileProgress / 100) / totalFiles) * 100), completedFiles, totalBytes, uploadedBytes: nextUploadedBytes, phase })
+    }
+    report(0, 'uploading')
+    const asset = await uploadMediaAsset(file, creatorId, progress => report(progress, 'uploading'))
+    report(100, 'saving')
     const isVideo = asset.kind === 'video'
     const post = await createAdminPost({
       creator_id: creatorId,
@@ -289,6 +344,8 @@ export async function uploadCreatorMediaBatch(files: File[], creatorId: string, 
       comments_enabled: true,
       sort_order: 0,
     })
+    uploadedBytes += file.size
+    report(100, 'saving', currentFileIndex + 1)
     results.push({ asset, post })
   }
   return results
