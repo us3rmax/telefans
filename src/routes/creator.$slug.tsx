@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Check, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts, unlockPaidMedia } from '@/lib/telefans-data'
@@ -39,6 +39,13 @@ type PublicCreatorPost = {
   caption: string
   isPaid: boolean
   unlockPrice: number
+  carouselId: string | null
+  carouselPosition: number
+}
+
+type CreatorPostGroup = {
+  id: string
+  posts: PublicCreatorPost[]
 }
 
 export function CreatorProfilePage() {
@@ -49,6 +56,7 @@ export function CreatorProfilePage() {
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
+  const [activeSlideByGroup, setActiveSlideByGroup] = useState<Record<string, number>>({})
   const [offerOpened, setOfferOpened] = useState(false)
   const [expandedPost, setExpandedPost] = useState<PublicCreatorPost | null>(null)
   const [pendingUnlock, setPendingUnlock] = useState<PublicCreatorPost | null>(null)
@@ -111,6 +119,7 @@ export function CreatorProfilePage() {
     setCreatorMediaLoaded(false)
     setPublicPosts([])
     setExpanded(false)
+    setActiveSlideByGroup({})
     setExpandedPost(null)
     setPendingUnlock(null)
     setUnlockedMedia({})
@@ -145,6 +154,8 @@ export function CreatorProfilePage() {
           caption: post.caption,
           isPaid: post.is_paid,
           unlockPrice: post.unlock_price,
+          carouselId: post.carousel_id,
+          carouselPosition: post.carousel_position,
         })))
       } catch {
         if (active) {
@@ -195,6 +206,42 @@ export function CreatorProfilePage() {
   const posts = publicPosts.filter(post => post.type === 'image' && !post.isPaid)
   const paidMedia = publicPosts.filter(post => post.type === 'image' && post.isPaid)
 
+  const groupPosts = (items: PublicCreatorPost[]): CreatorPostGroup[] => {
+    const grouped = new Map<string, PublicCreatorPost[]>()
+    for (const post of items) {
+      const groupId = post.carouselId ?? post.id
+      const current = grouped.get(groupId) ?? []
+      current.push(post)
+      grouped.set(groupId, current)
+    }
+    return [...grouped.entries()].map(([id, group]) => ({ id, posts: [...group].sort((a, b) => a.carouselPosition - b.carouselPosition) }))
+  }
+
+  const postGroups = groupPosts(posts)
+  const paidMediaGroups = groupPosts(paidMedia)
+
+  const moveSlide = (groupId: string, slideCount: number, delta: number) => {
+    setActiveSlideByGroup(current => ({ ...current, [groupId]: ((current[groupId] ?? 0) + delta + slideCount) % slideCount }))
+  }
+
+  const renderPostGroup = (group: CreatorPostGroup, isPaid: boolean) => {
+    const slideIndex = Math.min(activeSlideByGroup[group.id] ?? 0, group.posts.length - 1)
+    const post = group.posts[slideIndex]
+    const unlocked = Boolean(unlockedMedia[post.id])
+    const cardClass = isPaid ? `paid-media-card ${unlocked ? 'is-unlocked' : 'is-locked'}` : 'creator-post-card'
+    return <div className={`creator-carousel-card ${cardClass}`} key={group.id}>
+      <button type="button" className="creator-carousel-media" onClick={() => openPost(post)} aria-label={`${isPaid && !unlocked ? 'Unlock' : 'Open'} ${group.posts.length > 1 ? `slide ${slideIndex + 1} of ${group.posts.length} from ` : ''}post from ${creator.name}`}>
+        <img src={previewUrl(post)} alt={post.title || `${creator.name} post`} />
+        {isPaid && !unlocked && <div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div>}
+      </button>
+      {group.posts.length > 1 && <>
+        <button type="button" className="creator-carousel-arrow creator-carousel-arrow-left" onClick={event => { event.stopPropagation(); moveSlide(group.id, group.posts.length, -1) }} aria-label="Previous slide"><ChevronLeft /></button>
+        <button type="button" className="creator-carousel-arrow creator-carousel-arrow-right" onClick={event => { event.stopPropagation(); moveSlide(group.id, group.posts.length, 1) }} aria-label="Next slide"><ChevronRight /></button>
+        <span className="creator-carousel-counter" aria-live="polite">{slideIndex + 1} / {group.posts.length}</span>
+      </>}
+    </div>
+  }
+
   return <main className="creator-profile-page">
     <div className="creator-profile-frame">
       <div className="creator-profile-scroll">
@@ -234,10 +281,7 @@ export function CreatorProfilePage() {
             <button type="button" className={activeTab === 'media' ? 'active' : ''} onClick={() => setActiveTab('media')}>Paid Media</button>
           </div>
           <div className="creator-grid-preview creator-paid-grid">
-            {activeTab === 'media' ? (paidMedia.length ? paidMedia.map(post => <button type="button" className={`paid-media-card ${unlockedMedia[post.id] ? 'is-unlocked' : 'is-locked'}`} key={post.id} onClick={() => openPost(post)} aria-label={`Unlock paid media from ${creator.name} for ${post.unlockPrice} coins`}>
-              <img src={previewUrl(post)} alt={post.title || `Paid media from ${creator.name}`} />
-              {!unlockedMedia[post.id] && <div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div>}
-            </button>) : <div className="creator-media-empty">There is no Paid Media available for this creator yet.</div>) : (posts.length ? posts.map(post => <button type="button" className="creator-post-card" key={post.id} onClick={() => openPost(post)} aria-label={`Open post from ${creator.name}`}><img src={previewUrl(post)} alt={post.title || `${creator.name} post`} /></button>) : <div className="creator-media-empty">There are no posts available for this creator yet.</div>)}
+            {activeTab === 'media' ? (paidMediaGroups.length ? paidMediaGroups.map(group => renderPostGroup(group, true)) : <div className="creator-media-empty">There is no Paid Media available for this creator yet.</div>) : (postGroups.length ? postGroups.map(group => renderPostGroup(group, false)) : <div className="creator-media-empty">There are no posts available for this creator yet.</div>)}
           </div>
         </section>
       </div>

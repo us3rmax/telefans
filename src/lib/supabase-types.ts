@@ -94,6 +94,8 @@ export type Database = {
       creator_posts: {
         Row: {
           caption: string
+          carousel_id: string | null
+          carousel_position: number
           comments_enabled: boolean
           created_at: string
           is_paid: boolean
@@ -115,6 +117,8 @@ export type Database = {
         }
         Insert: {
           caption?: string
+          carousel_id?: string | null
+          carousel_position?: number
           comments_enabled?: boolean
           created_at?: string
           is_paid?: boolean
@@ -136,6 +140,8 @@ export type Database = {
         }
         Update: {
           caption?: string
+          carousel_id?: string | null
+          carousel_position?: number
           comments_enabled?: boolean
           created_at?: string
           is_paid?: boolean
@@ -484,6 +490,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_creator_carousel: {
+        Args: { p_creator_id: string; p_post_ids: string[] }
+        Returns: Database['public']['Tables']['creator_posts']['Row'][]
+      }
       is_admin: { Args: never; Returns: boolean }
       unlock_paid_media: {
         Args: { p_post_id: string; p_telegram_id: number }

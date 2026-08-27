@@ -143,6 +143,45 @@ export async function listMediaAssets(creatorId?: string) {
   return data ?? []
 }
 
+export async function createCarouselFromMediaAssets(assetIds: string[], creatorId: string) {
+  if (assetIds.length < 2) throw new Error('Select at least two images to create a carousel.')
+
+  const { data: assets, error: assetsError } = await supabase
+    .from('media_assets')
+    .select('id, public_url, kind')
+    .eq('creator_id', creatorId)
+    .in('id', assetIds)
+  assertNoError(assetsError)
+
+  const assetById = new Map((assets ?? []).map(asset => [asset.id, asset]))
+  const selectedAssets = assetIds.map(id => assetById.get(id)).filter((asset): asset is NonNullable<typeof asset> => Boolean(asset))
+  if (selectedAssets.length !== assetIds.length || selectedAssets.some(asset => asset.kind !== 'image' || !asset.public_url)) {
+    throw new Error('Only image posts from this creator can be grouped into a carousel.')
+  }
+
+  const imageUrls = selectedAssets.map(asset => asset.public_url as string)
+  const { data: posts, error: postsError } = await supabase
+    .from('creator_posts')
+    .select('id, media_url, is_paid')
+    .eq('creator_id', creatorId)
+    .eq('type', 'image')
+    .in('media_url', imageUrls)
+  assertNoError(postsError)
+
+  const postByUrl = new Map((posts ?? []).map(post => [post.media_url, post]))
+  const selectedPosts = selectedAssets.map(asset => postByUrl.get(asset.public_url as string)).filter((post): post is NonNullable<typeof post> => Boolean(post))
+  if (selectedPosts.length !== assetIds.length) throw new Error('Some selected images do not have a profile post yet.')
+  if (new Set(selectedPosts.map(post => post.is_paid)).size > 1) throw new Error('Select either Feed images or Paid Media images, not both, for one carousel.')
+  const postIds = selectedPosts.map(post => post.id)
+
+  const { data, error } = await supabase.rpc('create_creator_carousel', { p_creator_id: creatorId, p_post_ids: postIds })
+  assertNoError(error)
+  const grouped = data ?? []
+  if (!grouped.length) throw new Error('The carousel could not be created.')
+  await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: grouped[0].carousel_id, post_ids: postIds })
+  return grouped
+}
+
 export async function uploadMediaAsset(file: File, creatorId?: string) {
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-')
   const path = `${crypto.randomUUID()}-${safeName}`

@@ -101,7 +101,7 @@ export async function getPublishedCreator(slug: string): Promise<CreatorRow | nu
   return (published ?? []).find((creator) => slugToken(creator.slug) === requested) ?? null
 }
 
-export type PublicCreatorPostRow = Pick<PostRow, 'id' | 'creator_id' | 'type' | 'media_url' | 'thumbnail_url' | 'title' | 'caption' | 'is_paid' | 'unlock_price'>
+export type PublicCreatorPostRow = Pick<PostRow, 'id' | 'creator_id' | 'type' | 'media_url' | 'thumbnail_url' | 'title' | 'caption' | 'is_paid' | 'unlock_price' | 'carousel_id' | 'carousel_position'>
 
 function buildPaidPreviewUrl(mediaUrl: string, thumbnailUrl: string | null) {
   if (thumbnailUrl) return thumbnailUrl
@@ -125,7 +125,7 @@ function buildPaidPreviewUrl(mediaUrl: string, thumbnailUrl: string | null) {
 export async function listCreatorPosts(creatorId: string): Promise<PublicCreatorPostRow[]> {
   const { data, error } = await supabase
     .from('creator_posts')
-    .select('id, creator_id, type, media_url, thumbnail_url, title, caption, is_paid, unlock_price')
+    .select('id, creator_id, type, media_url, thumbnail_url, title, caption, is_paid, unlock_price, carousel_id, carousel_position')
     .eq('creator_id', creatorId)
     .eq('published', true)
     .order('created_at', { ascending: false })
