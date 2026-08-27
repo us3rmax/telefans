@@ -379,6 +379,7 @@ export function CreatorProfilePage() {
   }
 
   const offer = subscriptionStatus.offer ?? toSubscriptionOffer(creator.subscription)
+  const subscriptionDisplayPrice = offer.mode === 'free' ? 'GRATUITO' : `${formatUsdFromStars(offer.stars)} por mês`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
   const openPost = (post: PublicCreatorPost, group: CreatorPostGroup, index: number) => {
@@ -470,13 +471,11 @@ export function CreatorProfilePage() {
         </section>
 
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
-          <span className="creator-section-label">SUBSCRIPTION</span>
-          <div className="creator-subscription-title-row"><h2>{offer.title === 'Subscription' ? `Subscribe to ${creator.name}` : offer.title}</h2><span className={`creator-subscription-badge ${offer.mode}`}>{offer.mode === 'free' ? 'FREE' : offer.mode === 'promo' ? 'PROMO' : 'PAID'}</span></div>
-          <p className="creator-subscription-message">{offer.message || 'Join this creator on TeleFans.'}</p>
-          <div className="creator-subscription-identity"><div className="creator-subscription-avatar">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}</div><div><strong>{creator.name}</strong><span>{creator.handle}</span></div></div>
-          {offer.mode === 'promo' && <p className="creator-subscription-detail">{formatUsdFromStars(offer.stars)} for the promotion{offer.days ? ` · ${offer.days} days` : ''}{offer.promoExpiresAt ? ` · ends ${new Date(offer.promoExpiresAt).toLocaleDateString()}` : ''}</p>}
-          {offer.mode === 'paid' && <p className="creator-subscription-detail">{formatUsdFromStars(offer.stars)} / month</p>}
-          {subscriptionStatus.subscribed ? <div className="creator-subscription-active"><p><strong>Subscription active.</strong> Your private actions are shown below the bio.</p></div> : <button type="button" className="creator-offer-row" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label="Subscribe to this creator">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}<span>{subscriptionLoading ? 'Checking subscription…' : subscriptionActionLoading ? 'Opening secure checkout…' : offer.mode === 'free' ? 'Subscribe for free' : `Subscribe for ${formatUsdFromStars(offer.stars)}`}</span><span className="offer-arrow">›</span></button>}
+          <span className="creator-section-label">ASSINATURA</span>
+          <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Assinar ${creator.name}`} aria-busy={subscriptionActionLoading}>
+            <span>ASSINAR</span>
+            <span>{subscriptionActionLoading ? 'ABRINDO…' : subscriptionDisplayPrice}</span>
+          </button>
           {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
           {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
         </section>}
