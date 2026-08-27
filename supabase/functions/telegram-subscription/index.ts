@@ -6,6 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 const SUBSCRIPTION_PERIOD_SECONDS = 2_592_000
+const DEFAULT_PROMO_MINUTES = 10
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type TelegramUser = { id: number; username?: string; first_name: string; last_name?: string; photo_url?: string }
@@ -18,6 +19,7 @@ type Settings = {
   promo_price_stars: number
   promo_days: number
   promo_expires_at: string | null
+  updated_at: string
   telegram_username: string
   vip_channel_url: string
   is_active: boolean
@@ -68,9 +70,17 @@ async function telegramApi(botToken: string, method: string, body: Record<string
   return payload.result
 }
 
+function effectivePromoExpiresAt(settings: Settings) {
+  if (settings.plan_mode !== 'promo') return settings.promo_expires_at
+  if (settings.promo_expires_at) return settings.promo_expires_at
+  const updatedAt = new Date(settings.updated_at).getTime()
+  return Number.isFinite(updatedAt) ? new Date(updatedAt + DEFAULT_PROMO_MINUTES * 60_000).toISOString() : null
+}
+
 function activeOffer(settings: Settings, now = Date.now()): Offer {
   if (!settings.is_active || settings.plan_mode === 'free') return { mode: 'free', stars: 0, days: null, autoRenew: false }
-  const promoValid = settings.plan_mode === 'promo' && settings.promo_price_stars > 0 && (!settings.promo_expires_at || new Date(settings.promo_expires_at).getTime() > now)
+  const promoExpiresAt = effectivePromoExpiresAt(settings)
+  const promoValid = settings.plan_mode === 'promo' && settings.promo_price_stars > 0 && (!promoExpiresAt || new Date(promoExpiresAt).getTime() > now)
   if (promoValid) return { mode: 'promo', stars: settings.promo_price_stars, days: Math.max(1, settings.promo_days), autoRenew: false }
   return { mode: 'paid', stars: Math.max(1, settings.normal_price_stars), days: 30, autoRenew: true }
 }
@@ -83,12 +93,12 @@ function publicOffer(settings: Settings, offer: Offer) {
     autoRenew: offer.autoRenew,
     title: settings.title,
     message: settings.message,
-    promoExpiresAt: settings.promo_expires_at,
+    promoExpiresAt: effectivePromoExpiresAt(settings),
   }
 }
 
 async function loadSettings(db: ReturnType<typeof createClient>, creatorId: string) {
-  const { data, error } = await db.from('creator_subscription_settings').select('creator_id, plan_mode, title, message, normal_price_stars, promo_price_stars, promo_days, promo_expires_at, telegram_username, vip_channel_url, is_active').eq('creator_id', creatorId).maybeSingle()
+  const { data, error } = await db.from('creator_subscription_settings').select('creator_id, plan_mode, title, message, normal_price_stars, promo_price_stars, promo_days, promo_expires_at, updated_at, telegram_username, vip_channel_url, is_active').eq('creator_id', creatorId).maybeSingle()
   if (error) throw error
   return data as Settings | null
 }
@@ -105,7 +115,7 @@ function normalizeTelegramUsername(value: unknown) {
 }
 
 function defaultFreeSettings(creatorId: string, creatorName: string, creatorHandle: string): Settings {
-  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, telegram_username: normalizeTelegramUsername(creatorHandle), vip_channel_url: '', is_active: true }
+  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, updated_at: new Date().toISOString(), telegram_username: normalizeTelegramUsername(creatorHandle), vip_channel_url: '', is_active: true }
 }
 
 function withCreatorDefaults(settings: Settings, creatorHandle: string) {

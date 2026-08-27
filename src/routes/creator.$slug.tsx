@@ -70,6 +70,8 @@ type CreatorPostGroup = {
   posts: PublicCreatorPost[]
 }
 
+const DEFAULT_PROMO_MINUTES = 10
+
 type SubscriptionOffer = {
   mode: 'free' | 'paid' | 'promo'
   stars: number
@@ -128,6 +130,8 @@ export function CreatorProfilePage() {
   const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(false)
   const [subscriptionError, setSubscriptionError] = useState('')
   const [subscriptionFeedback, setSubscriptionFeedback] = useState('')
+  const [promoDeadline, setPromoDeadline] = useState<number | null>(null)
+  const [promoClock, setPromoClock] = useState(() => Date.now())
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
   const [expandedPost, setExpandedPost] = useState<PublicCreatorPost | null>(null)
   const [expandedPostGroup, setExpandedPostGroup] = useState<CreatorPostGroup | null>(null)
@@ -230,6 +234,8 @@ export function CreatorProfilePage() {
     setSubscriptionLoading(true)
     setSubscriptionError('')
     setSubscriptionFeedback('')
+    setPromoDeadline(null)
+    setPromoClock(Date.now())
     setCreatorMediaLoaded(false)
     setPublicPostsLoaded(false)
     setPublicPosts([])
@@ -378,10 +384,6 @@ export function CreatorProfilePage() {
     else window.open(target, '_blank', 'noopener,noreferrer')
   }
 
-  const offer = subscriptionStatus.offer ?? toSubscriptionOffer(creator.subscription)
-  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdFromStars(offer.stars)} per month`
-  const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
-
   const openPost = (post: PublicCreatorPost, group: CreatorPostGroup, index: number) => {
     setUnlockError('')
     setExpandedPostGroup(group)
@@ -408,6 +410,25 @@ export function CreatorProfilePage() {
       setUnlockingPostId(null)
     }
   }
+
+  const offer = subscriptionStatus.offer ?? toSubscriptionOffer(creator.subscription)
+  useEffect(() => {
+    if (offer.mode !== 'promo') { setPromoDeadline(null); return }
+    const configuredDeadline = offer.promoExpiresAt ? new Date(offer.promoExpiresAt).getTime() : Number.NaN
+    setPromoDeadline(Number.isFinite(configuredDeadline) ? configuredDeadline : Date.now() + DEFAULT_PROMO_MINUTES * 60_000)
+  }, [offer.mode, offer.promoExpiresAt])
+  useEffect(() => {
+    if (!promoDeadline) return
+    const interval = window.setInterval(() => setPromoClock(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [promoDeadline])
+  const promoSecondsLeft = promoDeadline ? Math.max(0, Math.ceil((promoDeadline - promoClock) / 1000)) : null
+  const promotionActive = offer.mode === 'promo' && promoSecondsLeft !== null && promoSecondsLeft > 0
+  const normalSubscriptionStars = creator.subscription.normalPriceStars ?? offer.stars
+  const displayStars = promotionActive ? offer.stars : normalSubscriptionStars
+  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdFromStars(displayStars)} per month`
+  const promoCountdown = promoSecondsLeft === null ? '' : `${String(Math.floor(promoSecondsLeft / 60)).padStart(2, '0')}:${String(promoSecondsLeft % 60).padStart(2, '0')}`
+  const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
   if (!creatorMediaLoaded || !publicPostsLoaded) return <CreatorProfileLoading />
   if (!creatorFound) return <main className="creator-profile-page"><div className="creator-profile-frame"><div className="creator-profile-unavailable"><button type="button" className="creator-cover-back" aria-label="Back" onClick={goBack}><ArrowLeft /></button><strong>Creator unavailable</strong><span>This profile could not be loaded right now.</span></div></div></main>
@@ -472,6 +493,8 @@ export function CreatorProfilePage() {
 
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
+          <p className="creator-subscription-cta-message">Unlock all content and direct messages by subscribing.</p>
+          {promotionActive && <p className="creator-promo-countdown" role="timer" aria-live="polite"><span>Limited-time offer</span><strong>Ends in {promoCountdown}</strong></p>}
           <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Subscribe to ${creator.name}`} aria-busy={subscriptionActionLoading}>
             <span>SUBSCRIBE</span>
             <span>{subscriptionActionLoading ? 'OPENING…' : subscriptionDisplayPrice}</span>

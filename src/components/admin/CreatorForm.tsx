@@ -25,6 +25,7 @@ type NormalizedSubscription = SubscriptionFormState & { normal_price_stars: numb
 const slugify = (value: string) => value.trim().replace(/^\/+|\/+$/g, '').replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').toLowerCase()
 const normalizeHandle = (value: string) => value.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()
 const defaultSubscription: SubscriptionFormState = { plan_mode: 'free', title: 'Subscription', message: '', normal_price_usd: '0.00', promo_price_usd: '0.00', promo_days: 30, promo_expires_at: '', telegram_username: '', vip_channel_url: '', is_active: true }
+const DEFAULT_PROMO_MINUTES = 10
 
 function toNumber(value: unknown, fallback: number) {
   const number = Number(value)
@@ -37,6 +38,10 @@ function toDateTimeLocal(value: unknown) {
   if (Number.isNaN(date.getTime())) return ''
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16)
+}
+
+function getDefaultPromoExpiresAtLocal() {
+  return toDateTimeLocal(new Date(Date.now() + DEFAULT_PROMO_MINUTES * 60_000).toISOString())
 }
 
 function readSubscription(value: unknown): SubscriptionFormState {
@@ -81,7 +86,10 @@ export function CreatorForm({ creator }: Props) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const set = (key: keyof FormState, value: string) => setForm(current => ({ ...current, [key]: value }))
-  const setSubscriptionValue = (key: keyof SubscriptionFormState, value: string | number | boolean) => setSubscription(current => ({ ...current, [key]: value }))
+  const setSubscriptionValue = (key: keyof SubscriptionFormState, value: string | number | boolean) => setSubscription(current => {
+    if (key === 'plan_mode' && value === 'promo') return { ...current, plan_mode: 'promo', promo_expires_at: current.promo_expires_at && new Date(current.promo_expires_at).getTime() > Date.now() ? current.promo_expires_at : getDefaultPromoExpiresAtLocal() }
+    return { ...current, [key]: value }
+  })
   const suggestedSlug = useMemo(() => slugify(form.handle || form.name), [form.handle, form.name])
 
   useEffect(() => () => Object.values(previews).forEach(url => url && URL.revokeObjectURL(url)), [previews])
@@ -135,6 +143,7 @@ export function CreatorForm({ creator }: Props) {
     try {
       const normalizedSubscription: NormalizedSubscription = {
         ...subscription,
+        promo_expires_at: subscription.plan_mode === 'promo' && (!subscription.promo_expires_at || new Date(subscription.promo_expires_at).getTime() <= Date.now()) ? getDefaultPromoExpiresAtLocal() : subscription.promo_expires_at,
         title: subscription.title.trim() || 'Subscription',
         message: subscription.message.trim(),
         telegram_username: normalizeHandle(subscription.telegram_username),
@@ -191,7 +200,7 @@ export function CreatorForm({ creator }: Props) {
         <label className="space-y-1 text-sm"><span className="font-medium">Offer title</span><input value={subscription.title} onChange={event => setSubscriptionValue('title', event.target.value)} maxLength={80} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Subscription" /></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Offer message</span><input value={subscription.message} onChange={event => setSubscriptionValue('message', event.target.value)} maxLength={255} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Exclusive content every week" /></label>
         {isPaidOffer && <label className="space-y-1 text-sm"><span className="font-medium">Normal price (USD)</span><input type="number" min="0.01" step="0.01" value={subscription.normal_price_usd} onChange={event => setSubscriptionValue('normal_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label>}
-        {subscription.plan_mode === 'promo' && <><label className="space-y-1 text-sm"><span className="font-medium">Promotional price (USD)</span><input type="number" min="0.01" step="0.01" value={subscription.promo_price_usd} onChange={event => setSubscriptionValue('promo_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion duration (days)</span><input type="number" min="1" max="3650" step="1" value={subscription.promo_days} onChange={event => setSubscriptionValue('promo_days', Number(event.target.value))} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion ends (optional)</span><input type="datetime-local" value={subscription.promo_expires_at} onChange={event => setSubscriptionValue('promo_expires_at', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label></>}
+        {subscription.plan_mode === 'promo' && <><label className="space-y-1 text-sm"><span className="font-medium">Promotional price (USD)</span><input type="number" min="0.01" step="0.01" value={subscription.promo_price_usd} onChange={event => setSubscriptionValue('promo_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion duration (days)</span><input type="number" min="1" max="3650" step="1" value={subscription.promo_days} onChange={event => setSubscriptionValue('promo_days', Number(event.target.value))} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion ends (defaults to 10 minutes)</span><input type="datetime-local" value={subscription.promo_expires_at} onChange={event => setSubscriptionValue('promo_expires_at', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label></>}
         <label className="space-y-1 text-sm"><span className="font-medium">Creator Telegram username</span><input value={subscription.telegram_username} onChange={event => setSubscriptionValue('telegram_username', event.target.value)} onBlur={() => setSubscriptionValue('telegram_username', normalizeHandle(subscription.telegram_username))} placeholder="creator_username" className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /><small className="text-muted-foreground">Used by the unlocked Message button.</small></label>
         <label className="space-y-1 text-sm"><span className="font-medium">VIP channel link</span><input value={subscription.vip_channel_url} onChange={event => setSubscriptionValue('vip_channel_url', event.target.value)} placeholder="https://t.me/your_channel" className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /><small className="text-muted-foreground">Private destination; returned only after subscription.</small></label>
       </div>
