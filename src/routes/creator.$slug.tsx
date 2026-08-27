@@ -469,7 +469,7 @@ export function CreatorProfilePage() {
           {subscriptionStatus.subscribed && <div className="creator-profile-private-actions" aria-label="Private creator actions"><button type="button" onClick={() => openSubscriptionDestination('message')} disabled={!subscriptionStatus.telegramUsername}>Message</button><button type="button" onClick={() => openSubscriptionDestination('vip')} disabled={!subscriptionStatus.vipChannelUrl}>Access VIP</button></div>}
         </section>
 
-        <section className="creator-subscription">
+        {!subscriptionStatus.subscribed && <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
           <div className="creator-subscription-title-row"><h2>{offer.title === 'Subscription' ? `Subscribe to ${creator.name}` : offer.title}</h2><span className={`creator-subscription-badge ${offer.mode}`}>{offer.mode === 'free' ? 'FREE' : offer.mode === 'promo' ? 'PROMO' : 'PAID'}</span></div>
           <p className="creator-subscription-message">{offer.message || 'Join this creator on TeleFans.'}</p>
@@ -479,7 +479,7 @@ export function CreatorProfilePage() {
           {subscriptionStatus.subscribed ? <div className="creator-subscription-active"><p><strong>Subscription active.</strong> Your private actions are shown below the bio.</p></div> : <button type="button" className="creator-offer-row" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label="Subscribe to this creator">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}<span>{subscriptionLoading ? 'Checking subscription…' : subscriptionActionLoading ? 'Opening secure checkout…' : offer.mode === 'free' ? 'Subscribe for free' : `Subscribe for ${formatUsdFromStars(offer.stars)}`}</span><span className="offer-arrow">›</span></button>}
           {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
           {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
-        </section>
+        </section>}
 
         <section className="creator-content">
           <div className="creator-tabs">
