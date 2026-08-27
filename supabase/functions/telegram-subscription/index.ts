@@ -94,13 +94,25 @@ async function loadSettings(db: ReturnType<typeof createClient>, creatorId: stri
 }
 
 async function loadCreator(db: ReturnType<typeof createClient>, creatorId: string) {
-  const { data, error } = await db.from('creators').select('id, name, published').eq('id', creatorId).eq('published', true).maybeSingle()
+  const { data, error } = await db.from('creators').select('id, name, handle, published').eq('id', creatorId).eq('published', true).maybeSingle()
   if (error) throw error
-  return data as { id: string; name: string; published: boolean } | null
+  return data as { id: string; name: string; handle: string; published: boolean } | null
 }
 
-function defaultFreeSettings(creatorId: string, creatorName: string): Settings {
-  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, telegram_username: '', vip_channel_url: '', is_active: true }
+function normalizeTelegramUsername(value: unknown) {
+  const username = typeof value === 'string' ? value.trim().replace(/^@+/, '') : ''
+  return /^[A-Za-z0-9_]{5,32}$/.test(username) ? username : ''
+}
+
+function defaultFreeSettings(creatorId: string, creatorName: string, creatorHandle: string): Settings {
+  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, telegram_username: normalizeTelegramUsername(creatorHandle), vip_channel_url: '', is_active: true }
+}
+
+function withCreatorDefaults(settings: Settings, creatorHandle: string) {
+  const configuredUsername = normalizeTelegramUsername(settings.telegram_username)
+  if (configuredUsername) return configuredUsername === settings.telegram_username ? settings : { ...settings, telegram_username: configuredUsername }
+  const fallbackUsername = normalizeTelegramUsername(creatorHandle)
+  return fallbackUsername ? { ...settings, telegram_username: fallbackUsername } : settings
 }
 
 async function ensureTelegramUser(db: ReturnType<typeof createClient>, user: TelegramUser) {
@@ -131,7 +143,7 @@ function resourceResponse(settings: Settings, subscription: Record<string, unkno
       currentPeriodEnd: subscription.current_period_end,
       autoRenew: subscription.auto_renew,
     } : null,
-    telegramUsername: active ? settings.telegram_username : null,
+    telegramUsername: active ? normalizeTelegramUsername(settings.telegram_username) || null : null,
     vipChannelUrl: active ? settings.vip_channel_url : null,
   }
 }
@@ -142,7 +154,7 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
   const creator = await loadCreator(db, creatorId)
   const storedSettings = await loadSettings(db, creatorId)
   if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
-  const settings = storedSettings ?? defaultFreeSettings(creatorId, creator.name)
+  const settings = withCreatorDefaults(storedSettings ?? defaultFreeSettings(creatorId, creator.name, creator.handle), creator.handle)
   if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
   const offer = activeOffer(settings)
   const existing = await currentSubscription(db, creatorId, user.id)
@@ -178,7 +190,7 @@ async function handleStatus(db: ReturnType<typeof createClient>, user: TelegramU
   const creator = await loadCreator(db, creatorId)
   const storedSettings = await loadSettings(db, creatorId)
   if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
-  const settings = storedSettings ?? defaultFreeSettings(creatorId, creator.name)
+  const settings = withCreatorDefaults(storedSettings ?? defaultFreeSettings(creatorId, creator.name, creator.handle), creator.handle)
   if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
   const offer = activeOffer(settings)
   const subscription = await currentSubscription(db, creatorId, user.id)

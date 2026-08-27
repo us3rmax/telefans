@@ -1085,3 +1085,11 @@ button { cursor: pointer; }
 .creator-subscription-error { color: #b93636; }
 .creator-subscription-feedback { color: #43728a; }
 @media (max-width: 420px) { .creator-subscription-title-row { align-items: flex-start; } .creator-subscription-title-row h2 { max-width: 70%; } .creator-subscription-actions button { flex: 1 1 120px; } }
+
+.creator-profile-private-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.creator-profile-private-actions button { flex: 1 1 140px; min-height: 42px; padding: 0 16px; border: 0; border-radius: 9px; background: #0ca9dc; color: #fff; font: 600 14px 'Roboto', sans-serif; cursor: pointer; transition: transform .18s, filter .18s, opacity .18s; }
+.creator-profile-private-actions button:last-child { background: #1a9d64; }
+.creator-profile-private-actions button:hover:not(:disabled) { filter: brightness(.95); transform: translateY(-1px); }
+.creator-profile-private-actions button:active:not(:disabled) { transform: scale(.98); }
+.creator-profile-private-actions button:disabled { cursor: not-allowed; opacity: .46; }
+@media (prefers-reduced-motion: reduce) { .creator-profile-private-actions button { transition: none; } }
