@@ -191,21 +191,26 @@ export async function createCarouselFromMediaAssets(assetIds: string[], creatorI
   }
 
   const carouselId = crypto.randomUUID()
-  const grouped: CreatorPost[] = []
   for (const [carouselPosition, postId] of postIds.entries()) {
-    const { data: updatedPosts, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('creator_posts')
       .update({ carousel_id: carouselId, carousel_position: carouselPosition })
       .eq('id', postId)
       .eq('creator_id', creatorId)
       .eq('type', 'image')
-      .select('*')
     assertNoError(updateError)
-    if (!updatedPosts?.length) throw new Error('The carousel could not be created.')
-    grouped.push(...updatedPosts)
   }
-  if (grouped.length !== postIds.length) throw new Error('The carousel could not be created.')
-  grouped.sort((left, right) => left.carousel_position - right.carousel_position)
+
+  const { data: groupedRows, error: groupedError } = await supabase
+    .from('creator_posts')
+    .select('*')
+    .eq('creator_id', creatorId)
+    .eq('carousel_id', carouselId)
+    .in('id', postIds)
+    .order('carousel_position', { ascending: true })
+  assertNoError(groupedError)
+  const grouped = groupedRows ?? []
+  if (grouped.length !== postIds.length) throw new Error('The carousel could not be verified after updating the selected posts.')
   await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: carouselId, post_ids: postIds, fallback: true })
   return grouped
 }
