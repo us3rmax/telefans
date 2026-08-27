@@ -112,17 +112,18 @@ export function ImageCropDialog({ file, field, onCancel, onConfirm }: Props) {
   const isAvatar = field === 'avatar_image'
   const title = isAvatar ? 'Adjust profile photo' : 'Adjust cover photo'
   const hint = isAvatar ? 'Drag to center the face, then adjust the zoom.' : 'Drag to choose the visible area of the cover, then adjust the zoom.'
+  const frameStyle = isAvatar ? { width: 'min(100%, 62vh, 620px)', aspectRatio: '1' } : { width: 'min(100%, 620px, calc(55vh * 2.0667))', aspectRatio: '620 / 300' }
 
   return <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-4" role="dialog" aria-modal="true" aria-labelledby="image-crop-title">
-    <section className="w-full max-w-2xl overflow-hidden rounded-xl border bg-background shadow-2xl">
+    <section className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border bg-background shadow-2xl">
       <header className="flex items-start justify-between gap-4 border-b px-5 py-4">
         <div><h2 id="image-crop-title" className="text-lg font-semibold">{title}</h2><p className="mt-1 text-sm text-muted-foreground">{hint}</p></div>
         <button type="button" onClick={onCancel} disabled={processing} className="rounded-md p-1 text-muted-foreground hover:bg-muted" aria-label="Close image editor">×</button>
       </header>
       <div className="space-y-5 p-5">
         <div
-          className="relative mx-auto w-full max-w-[620px] cursor-grab touch-none overflow-hidden rounded-lg border bg-black active:cursor-grabbing"
-          style={{ aspectRatio: `${getOutputSize(field).width} / ${getOutputSize(field).height}` }}
+          className="relative mx-auto max-w-full cursor-grab touch-none overflow-hidden rounded-lg border bg-black active:cursor-grabbing"
+          style={frameStyle}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={stopDragging}
