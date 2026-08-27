@@ -128,7 +128,7 @@ function AdminModelsPage() {
         {!loading && filtered.length > 0 && (
           <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map(model => {
-              const cover = model.cover_image || model.avatar_image || '/placeholder-cover.svg'
+              const cover = model.cover_image || '/placeholder-cover.svg'
               const avatar = model.avatar_image || '/placeholder-avatar.svg'
               const handle = model.handle.replace(/^@+/, '')
               return (
