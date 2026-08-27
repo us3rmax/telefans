@@ -16,6 +16,12 @@ export type CreatorSubscription = {
   message: string
   priceLabel?: string
   isFree?: boolean
+  planMode?: 'free' | 'paid' | 'promo'
+  normalPriceStars?: number
+  promoPriceStars?: number
+  promoDays?: number
+  promoExpiresAt?: string | null
+  autoRenew?: boolean
 }
 
 export type CreatorProfile = {

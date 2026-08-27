@@ -17,6 +17,7 @@ type TelegramWebApp = {
   isVersionAtLeast?: (version: string) => boolean
   close?: () => void
   openTelegramLink?: (url: string) => void
+  openInvoice?: (url: string, callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending') => void) => void
   disableVerticalSwipes?: () => void
   enableVerticalSwipes?: () => void
   disableClosingConfirmation?: () => void

@@ -1062,3 +1062,26 @@ button { cursor: pointer; }
 @media (min-width: 768px) and (max-width: 1100px) {
   .admin-dashboard-inner { padding-inline: 22px; }
 }
+
+
+/* Per-creator subscriptions */
+.creator-subscription-title-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.creator-subscription-title-row h2 { margin-bottom: 12px; }
+.creator-subscription-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; font: 700 10px/1 'Roboto', sans-serif; letter-spacing: .08em; }
+.creator-subscription-badge.free { background: #e7f8ee; color: #197642; }
+.creator-subscription-badge.paid { background: #e4f5fc; color: #08749d; }
+.creator-subscription-badge.promo { background: #fff1d8; color: #a25d00; }
+.creator-subscription-message { margin: 0 0 8px; color: #444; font-size: 14px; line-height: 1.45; }
+.creator-subscription-detail { margin: 0 0 13px; color: #777; font-size: 12px; }
+.creator-offer-row:disabled { cursor: wait; opacity: .72; }
+.creator-subscription-active { padding: 13px; border: 1px solid #cdebd8; border-radius: 10px; background: #f3fcf6; color: #2c6542; font-size: 14px; line-height: 1.4; }
+.creator-subscription-active p { margin: 0 0 11px; }
+.creator-subscription-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.creator-subscription-actions button { min-height: 36px; padding: 0 13px; border: 0; border-radius: 8px; background: #0ca9dc; color: #fff; font: 600 13px 'Roboto', sans-serif; cursor: pointer; }
+.creator-subscription-actions button:last-child { background: #1a9d64; }
+.creator-subscription-actions button:hover:not(:disabled) { filter: brightness(.95); transform: translateY(-1px); }
+.creator-subscription-actions button:disabled { cursor: not-allowed; opacity: .46; }
+.creator-subscription-error, .creator-subscription-feedback { margin: 10px 0 0; font-size: 12px; line-height: 1.4; }
+.creator-subscription-error { color: #b93636; }
+.creator-subscription-feedback { color: #43728a; }
+@media (max-width: 420px) { .creator-subscription-title-row { align-items: flex-start; } .creator-subscription-title-row h2 { max-width: 70%; } .creator-subscription-actions button { flex: 1 1 120px; } }

@@ -10,6 +10,11 @@ export type CreatorPostUpdate = TablesUpdate<'creator_posts'>
 export type MediaAsset = Tables<'media_assets'>
 export type MediaAssetInsert = TablesInsert<'media_assets'>
 
+export type SubscriptionPlanMode = 'free' | 'paid' | 'promo'
+export type CreatorSubscriptionSettings = Tables<'creator_subscription_settings'>
+export type CreatorSubscriptionSettingsInsert = TablesInsert<'creator_subscription_settings'>
+export type CreatorSubscriptionSettingsUpdate = TablesUpdate<'creator_subscription_settings'>
+
 function assertNoError(error: { message: string } | null) {
   if (error) throw new Error(error.message)
 }
@@ -49,6 +54,20 @@ export async function updateAdminCreator(id: string, input: CreatorUpdate) {
 
 export async function setCreatorPublished(id: string, published: boolean) {
   return updateAdminCreator(id, { published, status: published ? 'published' : 'draft' })
+}
+
+export async function getAdminSubscriptionSettings(creatorId: string) {
+  const { data, error } = await supabase.from('creator_subscription_settings').select('*').eq('creator_id', creatorId).maybeSingle()
+  assertNoError(error)
+  return data
+}
+
+export async function upsertAdminSubscriptionSettings(creatorId: string, input: Omit<CreatorSubscriptionSettingsInsert, 'creator_id'>) {
+  const { data, error } = await supabase.from('creator_subscription_settings').upsert({ creator_id: creatorId, ...input }, { onConflict: 'creator_id' }).select('*').single()
+  assertNoError(error)
+  if (!data) throw new Error('Subscription settings were not saved')
+  await writeAudit('creator.subscription.updated', 'creator', creatorId, { plan_mode: input.plan_mode, is_active: input.is_active })
+  return data
 }
 
 export type CreatorQueueMetrics = { posts: number; views: number; scheduled: number }

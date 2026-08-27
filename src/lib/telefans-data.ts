@@ -178,6 +178,47 @@ export async function listCreatorPosts(creatorId: string): Promise<PublicCreator
   }
 }
 
+export type CreatorSubscriptionResponse = {
+  ok: boolean
+  subscribed: boolean
+  invoiceUrl?: string
+  offer?: {
+    mode: 'free' | 'paid' | 'promo'
+    stars: number
+    days: number | null
+    autoRenew: boolean
+    title: string
+    message: string
+    promoExpiresAt: string | null
+  }
+  subscription?: {
+    status: string
+    type: string
+    currentPeriodEnd: string | null
+    autoRenew: boolean
+  } | null
+  telegramUsername?: string | null
+  vipChannelUrl?: string | null
+  error?: string
+}
+
+async function invokeCreatorSubscription(action: 'start' | 'status', creatorId: string) {
+  const initData = getTelegramInitData()
+  if (!initData) throw new Error('Open TeleFans in Telegram to manage this subscription.')
+  const { data, error } = await supabase.functions.invoke<CreatorSubscriptionResponse>('telegram-subscription', { body: { action, creatorId, initData } })
+  if (error) throw new Error(data?.error ?? error.message)
+  if (!data?.ok) throw new Error(data?.error ?? 'Subscription request failed.')
+  return data
+}
+
+export function startCreatorSubscription(creatorId: string) {
+  return invokeCreatorSubscription('start', creatorId)
+}
+
+export function getCreatorSubscriptionStatus(creatorId: string) {
+  return invokeCreatorSubscription('status', creatorId)
+}
+
 export type PaidMediaUnlock = {
   mediaUrl: string
   coinsBalance: number

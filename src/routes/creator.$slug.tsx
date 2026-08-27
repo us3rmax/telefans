@@ -2,8 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
-import { getPublishedCreator, listCreatorPosts, unlockPaidMedia } from '@/lib/telefans-data'
-import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
+import { getCreatorSubscriptionStatus, getPublishedCreator, listCreatorPosts, startCreatorSubscription, unlockPaidMedia } from '@/lib/telefans-data'
+import { getTelegramInitData, getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
 import { clearProfileReturnState, saveExploreRestoreState, saveReelsPosition, readProfileReturnState } from '@/lib/navigation-state'
 import '../telescope.css'
 
@@ -69,6 +69,49 @@ type CreatorPostGroup = {
   posts: PublicCreatorPost[]
 }
 
+type SubscriptionOffer = {
+  mode: 'free' | 'paid' | 'promo'
+  stars: number
+  days: number | null
+  autoRenew: boolean
+  title: string
+  message: string
+  promoExpiresAt: string | null
+}
+type SubscriptionStatus = {
+  subscribed: boolean
+  offer: SubscriptionOffer | null
+  subscription: { status: string; type: string; currentPeriodEnd: string | null; autoRenew: boolean } | null
+  telegramUsername: string | null
+  vipChannelUrl: string | null
+}
+
+function readPublicSubscription(value: unknown): CreatorProfile['subscription'] {
+  const raw = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+  const mode = raw.plan_mode === 'paid' || raw.plan_mode === 'promo' ? raw.plan_mode : 'free'
+  const normal = Number(raw.normal_price_stars) || 0
+  const promo = Number(raw.promo_price_stars) || 0
+  const stars = mode === 'promo' && promo > 0 ? promo : normal
+  return {
+    title: typeof raw.title === 'string' && raw.title ? raw.title : 'Subscription',
+    message: typeof raw.message === 'string' ? raw.message : 'Join this creator on TeleFans.',
+    priceLabel: mode === 'free' ? 'Free' : `${stars} Stars / month`,
+    isFree: mode === 'free',
+    planMode: mode,
+    normalPriceStars: normal,
+    promoPriceStars: promo,
+    promoDays: Number(raw.promo_days) || 30,
+    promoExpiresAt: typeof raw.promo_expires_at === 'string' ? raw.promo_expires_at : null,
+  }
+}
+
+function toSubscriptionOffer(subscription: CreatorProfile['subscription']): SubscriptionOffer {
+  const mode = subscription.planMode ?? (subscription.isFree ? 'free' : 'paid')
+  const normal = subscription.normalPriceStars ?? 0
+  const promo = subscription.promoPriceStars ?? 0
+  return { mode, stars: mode === 'promo' && promo > 0 ? promo : normal, days: mode === 'free' ? null : (subscription.promoDays ?? 30), autoRenew: mode !== 'free', title: subscription.title, message: subscription.message, promoExpiresAt: subscription.promoExpiresAt ?? null }
+}
+
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
   const navigate = useNavigate({ from: '/creator/$slug' })
@@ -78,8 +121,13 @@ export function CreatorProfilePage() {
   const [publicPostsLoaded, setPublicPostsLoaded] = useState(false)
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [expanded, setExpanded] = useState(false)
+  const [remoteCreatorId, setRemoteCreatorId] = useState<string | null>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({ subscribed: false, offer: null, subscription: null, telegramUsername: null, vipChannelUrl: null })
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true)
+  const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(false)
+  const [subscriptionError, setSubscriptionError] = useState('')
+  const [subscriptionFeedback, setSubscriptionFeedback] = useState('')
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
-  const [offerOpened, setOfferOpened] = useState(false)
   const [expandedPost, setExpandedPost] = useState<PublicCreatorPost | null>(null)
   const [expandedPostGroup, setExpandedPostGroup] = useState<CreatorPostGroup | null>(null)
   const [expandedPostIndex, setExpandedPostIndex] = useState(0)
@@ -176,6 +224,11 @@ export function CreatorProfilePage() {
     let active = true
     setCreator(createEmptyCreatorProfile(slug))
     setCreatorFound(false)
+    setRemoteCreatorId(null)
+    setSubscriptionStatus({ subscribed: false, offer: null, subscription: null, telegramUsername: null, vipChannelUrl: null })
+    setSubscriptionLoading(true)
+    setSubscriptionError('')
+    setSubscriptionFeedback('')
     setCreatorMediaLoaded(false)
     setPublicPostsLoaded(false)
     setPublicPosts([])
@@ -208,7 +261,11 @@ export function CreatorProfilePage() {
           bio: remote.bio || '',
           expandedBio: remote.expanded_bio || remote.bio || '',
           status: remote.status || 'Available now',
+          subscription: readPublicSubscription(remote.subscription),
         })
+        const publicOffer = readPublicSubscription(remote.subscription)
+        setSubscriptionStatus(current => ({ ...current, offer: toSubscriptionOffer(publicOffer) }))
+        setRemoteCreatorId(remote.id)
         setCreatorFound(true)
         setCreatorMediaLoaded(true)
         const posts = await listCreatorPosts(remote.id).catch(() => [])
@@ -240,11 +297,87 @@ export function CreatorProfilePage() {
     return () => { active = false }
   }, [slug])
 
-  const openOffer = () => {
-    setOfferOpened(true)
-    window.setTimeout(() => setOfferOpened(false), 1800)
+  useEffect(() => {
+    if (!remoteCreatorId) return
+    let active = true
+    setSubscriptionLoading(true)
+    void getCreatorSubscriptionStatus(remoteCreatorId).then(response => {
+      if (!active) return
+      setSubscriptionStatus({ subscribed: response.subscribed, offer: response.offer ?? null, subscription: response.subscription ?? null, telegramUsername: response.telegramUsername ?? null, vipChannelUrl: response.vipChannelUrl ?? null })
+      setSubscriptionError('')
+    }).catch(error => {
+      if (active && getTelegramInitData()) setSubscriptionError(error instanceof Error ? error.message : 'Could not load subscription status.')
+    }).finally(() => { if (active) setSubscriptionLoading(false) })
+    return () => { active = false }
+  }, [remoteCreatorId])
+
+  const applySubscriptionResponse = (response: Awaited<ReturnType<typeof getCreatorSubscriptionStatus>>) => {
+    setSubscriptionStatus({ subscribed: response.subscribed, offer: response.offer ?? subscriptionStatus.offer, subscription: response.subscription ?? null, telegramUsername: response.telegramUsername ?? null, vipChannelUrl: response.vipChannelUrl ?? null })
   }
 
+  const pollSubscriptionStatus = async () => {
+    if (!remoteCreatorId) return false
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const response = await getCreatorSubscriptionStatus(remoteCreatorId)
+      applySubscriptionResponse(response)
+      if (response.subscribed) return true
+      if (attempt < 5) await new Promise(resolve => window.setTimeout(resolve, 1000))
+    }
+    return false
+  }
+
+  const subscribe = async () => {
+    if (!remoteCreatorId || subscriptionActionLoading) return
+    if (!getTelegramInitData()) { setSubscriptionError('Open this profile inside Telegram to subscribe with Telegram Stars.'); return }
+    setSubscriptionActionLoading(true); setSubscriptionError(''); setSubscriptionFeedback('')
+    try {
+      const response = await startCreatorSubscription(remoteCreatorId)
+      applySubscriptionResponse(response)
+      if (response.subscribed) {
+        setSubscriptionFeedback('Subscription active. Your Telegram and VIP buttons are now available.')
+        setSubscriptionActionLoading(false)
+        return
+      }
+      if (!response.invoiceUrl) throw new Error('The Telegram Stars invoice was not created.')
+      const webApp = window.Telegram?.WebApp
+      if (!webApp?.openInvoice) throw new Error('Open the TeleFans Mini App in Telegram to complete this payment.')
+      setSubscriptionFeedback('Complete the Telegram Stars payment in the Telegram window.')
+      webApp.openInvoice(response.invoiceUrl, status => {
+        if (status === 'paid') {
+          setSubscriptionFeedback('Payment received. Confirming your subscription…')
+          void pollSubscriptionStatus().then(active => {
+            if (active) setSubscriptionFeedback('Subscription active. Your Telegram and VIP buttons are now available.')
+            else setSubscriptionError('Payment is pending confirmation. Please check again in a moment.')
+          }).catch(error => setSubscriptionError(error instanceof Error ? error.message : 'Could not confirm the subscription.')).finally(() => setSubscriptionActionLoading(false))
+        } else if (status === 'pending') {
+          setSubscriptionFeedback('Payment is pending confirmation. Your private access will appear after confirmation.')
+          setSubscriptionActionLoading(false)
+        } else if (status === 'cancelled') {
+          setSubscriptionFeedback('Payment cancelled.')
+          setSubscriptionActionLoading(false)
+        } else {
+          setSubscriptionError('Telegram could not complete the payment.')
+          setSubscriptionActionLoading(false)
+        }
+      })
+    } catch (error) {
+      setSubscriptionError(error instanceof Error ? error.message : 'Could not start the subscription.')
+      setSubscriptionActionLoading(false)
+    }
+  }
+
+  const openSubscriptionDestination = (destination: 'message' | 'vip') => {
+    if (!subscriptionStatus.subscribed) return
+    const target = destination === 'message'
+      ? (subscriptionStatus.telegramUsername ? `https://t.me/${subscriptionStatus.telegramUsername}` : '')
+      : (subscriptionStatus.vipChannelUrl ?? '')
+    if (!target) { setSubscriptionError(destination === 'message' ? 'This creator has not configured a Telegram username yet.' : 'This creator has not configured a VIP channel yet.'); return }
+    const webApp = window.Telegram?.WebApp
+    if (webApp?.openTelegramLink) webApp.openTelegramLink(target)
+    else window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
+  const offer = subscriptionStatus.offer ?? toSubscriptionOffer(creator.subscription)
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
   const openPost = (post: PublicCreatorPost, group: CreatorPostGroup, index: number) => {
@@ -336,12 +469,13 @@ export function CreatorProfilePage() {
 
         <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
-          <h2>{creator.subscription.title}</h2>
-          <button type="button" className="creator-offer-row" onClick={openOffer} aria-label="View subscription offer">
-            {creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}
-            <span>{creator.subscription.message}</span>
-            <span className="offer-arrow">›</span>
-          </button>
+          <div className="creator-subscription-title-row"><h2>{offer.title}</h2><span className={`creator-subscription-badge ${offer.mode}`}>{offer.mode === 'free' ? 'FREE' : offer.mode === 'promo' ? 'PROMO' : 'PAID'}</span></div>
+          <p className="creator-subscription-message">{offer.message || 'Join this creator on TeleFans.'}</p>
+          {offer.mode === 'promo' && <p className="creator-subscription-detail">{offer.stars} Stars for the promotion{offer.days ? ` · ${offer.days} days` : ''}{offer.promoExpiresAt ? ` · ends ${new Date(offer.promoExpiresAt).toLocaleDateString()}` : ''}</p>}
+          {offer.mode === 'paid' && <p className="creator-subscription-detail">{offer.stars} Stars / month · Telegram Stars</p>}
+          {subscriptionStatus.subscribed ? <div className="creator-subscription-active"><p><strong>Subscription active.</strong> Private actions are available.</p><div className="creator-subscription-actions"><button type="button" onClick={() => openSubscriptionDestination('message')} disabled={!subscriptionStatus.telegramUsername}>Message</button><button type="button" onClick={() => openSubscriptionDestination('vip')} disabled={!subscriptionStatus.vipChannelUrl}>Access VIP</button></div></div> : <button type="button" className="creator-offer-row" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label="Subscribe to this creator">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}<span>{subscriptionLoading ? 'Checking subscription…' : subscriptionActionLoading ? 'Waiting for Telegram…' : offer.mode === 'free' ? 'Subscribe for free' : `Subscribe for ${offer.stars} Stars`}</span><span className="offer-arrow">›</span></button>}
+          {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
+          {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
         </section>
 
         <section className="creator-content">
@@ -354,7 +488,7 @@ export function CreatorProfilePage() {
           </div>
         </section>
       </div>
-      {offerOpened && <div className="creator-offer-toast" role="status">Subscription offer selected</div>}
+
       {unlockError && !pendingUnlock && <div className="creator-unlock-toast" role="alert">{unlockError}</div>}
 
       {pendingUnlock && <div className="creator-unlock-backdrop" role="presentation" onClick={() => { if (!unlockingPostId) setPendingUnlock(null) }}>

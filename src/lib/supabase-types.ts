@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -62,6 +62,51 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          metadata: Json
+          referred_telegram_id: number | null
+          telegram_id: number
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          referred_telegram_id?: number | null
+          telegram_id: number
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          referred_telegram_id?: number | null
+          telegram_id?: number
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_transactions_referred_telegram_id_fkey"
+            columns: ["referred_telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+          {
+            foreignKeyName: "coin_transactions_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
       creator_following: {
         Row: {
           created_at: string
@@ -95,70 +140,82 @@ export type Database = {
         Row: {
           caption: string
           carousel_id: string | null
+          carousel_index: number
           carousel_position: number
+          carousel_total: number | null
           comments_enabled: boolean
           created_at: string
-          is_paid: boolean
           created_by: string | null
           creator_id: string
           id: string
+          is_paid: boolean
           media_url: string
           published: boolean
           published_at: string | null
           reels_enabled: boolean
           scheduled_at: string | null
           sort_order: number
+          source_external_id: string | null
+          source_site: string | null
           status: string
           thumbnail_url: string | null
-          unlock_price: number
           title: string
           type: string
+          unlock_price: number
           updated_at: string
         }
         Insert: {
           caption?: string
           carousel_id?: string | null
+          carousel_index?: number
           carousel_position?: number
+          carousel_total?: number | null
           comments_enabled?: boolean
           created_at?: string
-          is_paid?: boolean
           created_by?: string | null
           creator_id: string
           id?: string
+          is_paid?: boolean
           media_url: string
           published?: boolean
           published_at?: string | null
           reels_enabled?: boolean
           scheduled_at?: string | null
           sort_order?: number
+          source_external_id?: string | null
+          source_site?: string | null
           status?: string
           thumbnail_url?: string | null
-          unlock_price?: number
           title: string
           type: string
+          unlock_price?: number
           updated_at?: string
         }
         Update: {
           caption?: string
           carousel_id?: string | null
+          carousel_index?: number
           carousel_position?: number
+          carousel_total?: number | null
           comments_enabled?: boolean
           created_at?: string
-          is_paid?: boolean
           created_by?: string | null
           creator_id?: string
           id?: string
+          is_paid?: boolean
           media_url?: string
           published?: boolean
           published_at?: string | null
           reels_enabled?: boolean
           scheduled_at?: string | null
           sort_order?: number
+          source_external_id?: string | null
+          source_site?: string | null
           status?: string
           thumbnail_url?: string | null
-          unlock_price?: number
           title?: string
           type?: string
+          unlock_price?: number
           updated_at?: string
         }
         Relationships: [
@@ -168,6 +225,125 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "creators"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_subscription_settings: {
+        Row: {
+          created_at: string
+          creator_id: string
+          is_active: boolean
+          message: string
+          normal_price_stars: number
+          plan_mode: string
+          promo_days: number
+          promo_expires_at: string | null
+          promo_price_stars: number
+          telegram_username: string
+          title: string
+          updated_at: string
+          vip_channel_url: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          is_active?: boolean
+          message?: string
+          normal_price_stars?: number
+          plan_mode?: string
+          promo_days?: number
+          promo_expires_at?: string | null
+          promo_price_stars?: number
+          telegram_username?: string
+          title?: string
+          updated_at?: string
+          vip_channel_url?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          is_active?: boolean
+          message?: string
+          normal_price_stars?: number
+          plan_mode?: string
+          promo_days?: number
+          promo_expires_at?: string | null
+          promo_price_stars?: number
+          telegram_username?: string
+          title?: string
+          updated_at?: string
+          vip_channel_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_subscription_settings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_subscriptions: {
+        Row: {
+          auto_renew: boolean
+          created_at: string
+          creator_id: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          payment_status: string
+          stars_amount: number
+          subscription_type: string
+          telegram_id: number
+          telegram_invoice_payload: string | null
+          telegram_payment_charge_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          created_at?: string
+          creator_id: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_status?: string
+          stars_amount?: number
+          subscription_type: string
+          telegram_id: number
+          telegram_invoice_payload?: string | null
+          telegram_payment_charge_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_renew?: boolean
+          created_at?: string
+          creator_id?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          payment_status?: string
+          stars_amount?: number
+          subscription_type?: string
+          telegram_id?: number
+          telegram_invoice_payload?: string | null
+          telegram_payment_charge_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_subscriptions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_subscriptions_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
           },
         ]
       }
@@ -184,6 +360,9 @@ export type Database = {
           name: string
           published: boolean
           slug: string
+          source_external_id: string | null
+          source_profile_url: string | null
+          source_site: string | null
           stats: Json
           status: string
           subscription: Json
@@ -202,6 +381,9 @@ export type Database = {
           name: string
           published?: boolean
           slug: string
+          source_external_id?: string | null
+          source_profile_url?: string | null
+          source_site?: string | null
           stats?: Json
           status?: string
           subscription?: Json
@@ -220,11 +402,466 @@ export type Database = {
           name?: string
           published?: boolean
           slug?: string
+          source_external_id?: string | null
+          source_profile_url?: string | null
+          source_site?: string | null
           stats?: Json
           status?: string
           subscription?: Json
           tabs?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_campaigns: {
+        Row: {
+          budget: number
+          channel: string
+          created_at: string
+          creator_id: string | null
+          ends_at: string | null
+          id: string
+          metadata: Json
+          name: string
+          starts_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number
+          channel: string
+          created_at?: string
+          creator_id?: string | null
+          ends_at?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number
+          channel?: string
+          created_at?: string
+          creator_id?: string | null
+          ends_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaigns_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_commission_rules: {
+        Row: {
+          active: boolean
+          agency_percent: number
+          created_at: string
+          creator_id: string | null
+          creator_percent: number
+          id: string
+          operating_cost_percent: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          agency_percent?: number
+          created_at?: string
+          creator_id?: string | null
+          creator_percent?: number
+          id?: string
+          operating_cost_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          agency_percent?: number
+          created_at?: string
+          creator_id?: string | null
+          creator_percent?: number
+          id?: string
+          operating_cost_percent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_commission_rules_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_fan_events: {
+        Row: {
+          amount: number | null
+          created_at: string
+          creator_id: string | null
+          currency: string
+          event_type: string
+          id: string
+          idempotency_key: string | null
+          metadata: Json
+          occurred_at: string
+          post_id: string | null
+          telegram_id: number | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          creator_id?: string | null
+          currency?: string
+          event_type: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          occurred_at?: string
+          post_id?: string | null
+          telegram_id?: number | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          creator_id?: string | null
+          currency?: string
+          event_type?: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          occurred_at?: string
+          post_id?: string | null
+          telegram_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_fan_events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_fan_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "creator_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_fan_events_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
+      crm_fan_transactions: {
+        Row: {
+          agency_amount: number
+          created_at: string
+          creator_amount: number
+          creator_id: string | null
+          currency: string
+          external_reference: string | null
+          gross_amount: number
+          id: string
+          idempotency_key: string | null
+          metadata: Json
+          occurred_at: string
+          operating_cost: number
+          post_id: string | null
+          telegram_id: number | null
+          transaction_type: string
+        }
+        Insert: {
+          agency_amount?: number
+          created_at?: string
+          creator_amount?: number
+          creator_id?: string | null
+          currency?: string
+          external_reference?: string | null
+          gross_amount: number
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          occurred_at?: string
+          operating_cost?: number
+          post_id?: string | null
+          telegram_id?: number | null
+          transaction_type: string
+        }
+        Update: {
+          agency_amount?: number
+          created_at?: string
+          creator_amount?: number
+          creator_id?: string | null
+          currency?: string
+          external_reference?: string | null
+          gross_amount?: number
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          occurred_at?: string
+          operating_cost?: number
+          post_id?: string | null
+          telegram_id?: number | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_fan_transactions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_fan_transactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "creator_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_fan_transactions_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
+      crm_media_events: {
+        Row: {
+          campaign_id: string | null
+          creator_id: string | null
+          event_type: string
+          id: string
+          media_asset_id: string | null
+          metadata: Json
+          occurred_at: string
+          telegram_id: number | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          creator_id?: string | null
+          event_type: string
+          id?: string
+          media_asset_id?: string | null
+          metadata?: Json
+          occurred_at?: string
+          telegram_id?: number | null
+        }
+        Update: {
+          campaign_id?: string | null
+          creator_id?: string | null
+          event_type?: string
+          id?: string
+          media_asset_id?: string | null
+          metadata?: Json
+          occurred_at?: string
+          telegram_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_media_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_media_events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_media_events_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_media_events_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
+      crm_media_tags: {
+        Row: {
+          created_at: string
+          media_asset_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          media_asset_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          media_asset_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_media_tags_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_media_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "crm_vault_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_scheduled_content: {
+        Row: {
+          content_type: string
+          created_at: string
+          creator_id: string
+          id: string
+          payload: Json
+          post_id: string | null
+          published_at: string | null
+          scheduled_for: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          payload?: Json
+          post_id?: string | null
+          published_at?: string | null
+          scheduled_for: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          payload?: Json
+          post_id?: string | null
+          published_at?: string | null
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_scheduled_content_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_scheduled_content_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "creator_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tracking_links: {
+        Row: {
+          campaign_id: string | null
+          clicks: number
+          code: string
+          conversions: number
+          created_at: string
+          creator_id: string | null
+          destination_path: string
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicks?: number
+          code: string
+          conversions?: number
+          created_at?: string
+          creator_id?: string | null
+          destination_path: string
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          campaign_id?: string | null
+          clicks?: number
+          code?: string
+          conversions?: number
+          created_at?: string
+          creator_id?: string | null
+          destination_path?: string
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tracking_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tracking_links_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_vault_tags: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -240,6 +877,8 @@ export type Database = {
           mime_type: string | null
           original_name: string | null
           public_url: string | null
+          source_external_id: string | null
+          source_site: string | null
           status: string
           storage_path: string
           thumbnail_url: string | null
@@ -258,6 +897,8 @@ export type Database = {
           mime_type?: string | null
           original_name?: string | null
           public_url?: string | null
+          source_external_id?: string | null
+          source_site?: string | null
           status?: string
           storage_path: string
           thumbnail_url?: string | null
@@ -276,6 +917,8 @@ export type Database = {
           mime_type?: string | null
           original_name?: string | null
           public_url?: string | null
+          source_external_id?: string | null
+          source_site?: string | null
           status?: string
           storage_path?: string
           thumbnail_url?: string | null
@@ -293,33 +936,123 @@ export type Database = {
           },
         ]
       }
+      media_unlocks: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          price_paid: number
+          telegram_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          price_paid: number
+          telegram_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          price_paid?: number
+          telegram_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_unlocks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "creator_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_unlocks_telegram_id_fkey"
+            columns: ["telegram_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
+      }
+      onlyfans_profiles: {
+        Row: {
+          bio: string | null
+          cover_pic_file: string | null
+          cover_pic_url: string | null
+          id: number
+          import_batch_id: string | null
+          is_active: boolean | null
+          last_updated: string | null
+          name: string | null
+          onlyfans_url: string | null
+          profile_pic_file: string | null
+          profile_pic_url: string | null
+          source_external_id: string | null
+          source_url: string | null
+          username: string | null
+        }
+        Insert: {
+          bio?: string | null
+          cover_pic_file?: string | null
+          cover_pic_url?: string | null
+          id?: number
+          import_batch_id?: string | null
+          is_active?: boolean | null
+          last_updated?: string | null
+          name?: string | null
+          onlyfans_url?: string | null
+          profile_pic_file?: string | null
+          profile_pic_url?: string | null
+          source_external_id?: string | null
+          source_url?: string | null
+          username?: string | null
+        }
+        Update: {
+          bio?: string | null
+          cover_pic_file?: string | null
+          cover_pic_url?: string | null
+          id?: number
+          import_batch_id?: string | null
+          is_active?: boolean | null
+          last_updated?: string | null
+          name?: string | null
+          onlyfans_url?: string | null
+          profile_pic_file?: string | null
+          profile_pic_url?: string | null
+          source_external_id?: string | null
+          source_url?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           body: string
           created_at: string
           id: string
           post_id: string
+          telegram_id: number | null
           user_id: string | null
           visitor_key: string | null
-          telegram_id: number | null
         }
         Insert: {
           body: string
           created_at?: string
           id?: string
           post_id: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key?: string | null
-          telegram_id?: number | null
         }
         Update: {
           body?: string
           created_at?: string
           id?: string
           post_id?: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key?: string | null
-          telegram_id?: number | null
         }
         Relationships: [
           {
@@ -333,28 +1066,28 @@ export type Database = {
       }
       post_likes: {
         Row: {
-          id: string
           created_at: string
+          id: string
           post_id: string
+          telegram_id: number | null
           user_id: string | null
           visitor_key: string
-          telegram_id: number | null
         }
         Insert: {
-          id?: string
           created_at?: string
+          id?: string
           post_id: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key: string
-          telegram_id?: number | null
         }
         Update: {
-          id?: string
           created_at?: string
+          id?: string
           post_id?: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key?: string
-          telegram_id?: number | null
         }
         Relationships: [
           {
@@ -371,25 +1104,25 @@ export type Database = {
           created_at: string
           id: string
           post_id: string
+          telegram_id: number | null
           user_id: string | null
           visitor_key: string | null
-          telegram_id: number | null
         }
         Insert: {
           created_at?: string
           id?: string
           post_id: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key?: string | null
-          telegram_id?: number | null
         }
         Update: {
           created_at?: string
           id?: string
           post_id?: string
+          telegram_id?: number | null
           user_id?: string | null
           visitor_key?: string | null
-          telegram_id?: number | null
         }
         Relationships: [
           {
@@ -401,103 +1134,130 @@ export type Database = {
           },
         ]
       }
-      coin_transactions: {
-        Row: {
-          id: string
-          telegram_id: number
-          amount: number
-          transaction_type: 'referral_signup' | 'paid_unlock'
-          referred_telegram_id: number | null
-          metadata: Json
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          telegram_id: number
-          amount: number
-          transaction_type: 'referral_signup' | 'paid_unlock'
-          referred_telegram_id?: number | null
-          metadata?: Json
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          telegram_id?: number
-          amount?: number
-          transaction_type?: 'referral_signup' | 'paid_unlock'
-          referred_telegram_id?: number | null
-          metadata?: Json
-          created_at?: string
-        }
-        Relationships: []
-      }
       telegram_users: {
         Row: {
           auth_date: string
-          coins_balance: number
-          referral_count: number
-          referred_by: number | null
           bio: string
+          coins_balance: number
           created_at: string
           date_of_birth: string | null
           first_name: string
+          gender: string
           last_name: string | null
           photo_url: string | null
+          profile_photo_url: string | null
+          referral_count: number
+          referred_by: number | null
           telegram_id: number
           updated_at: string
           username: string | null
-          gender: string
-          profile_photo_url: string | null
         }
         Insert: {
           auth_date: string
-          coins_balance?: number
-          referral_count?: number
-          referred_by?: number | null
           bio?: string
+          coins_balance?: number
           created_at?: string
           date_of_birth?: string | null
           first_name: string
+          gender?: string
           last_name?: string | null
           photo_url?: string | null
+          profile_photo_url?: string | null
+          referral_count?: number
+          referred_by?: number | null
           telegram_id: number
           updated_at?: string
           username?: string | null
-          gender?: string
-          profile_photo_url?: string | null
         }
         Update: {
           auth_date?: string
-          coins_balance?: number
-          referral_count?: number
-          referred_by?: number | null
           bio?: string
+          coins_balance?: number
           created_at?: string
           date_of_birth?: string | null
           first_name?: string
+          gender?: string
           last_name?: string | null
           photo_url?: string | null
+          profile_photo_url?: string | null
+          referral_count?: number
+          referred_by?: number | null
           telegram_id?: number
           updated_at?: string
           username?: string | null
-          gender?: string
-          profile_photo_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "telegram_users_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "telegram_users"
+            referencedColumns: ["telegram_id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      claim_referral_reward: {
+        Args: { p_referred_telegram_id: number; p_referrer_telegram_id: number }
+        Returns: boolean
+      }
       create_creator_carousel: {
         Args: { p_creator_id: string; p_post_ids: string[] }
-        Returns: Database['public']['Tables']['creator_posts']['Row'][]
+        Returns: {
+          caption: string
+          carousel_id: string | null
+          carousel_index: number
+          carousel_position: number
+          carousel_total: number | null
+          comments_enabled: boolean
+          created_at: string
+          created_by: string | null
+          creator_id: string
+          id: string
+          is_paid: boolean
+          media_url: string
+          published: boolean
+          published_at: string | null
+          reels_enabled: boolean
+          scheduled_at: string | null
+          sort_order: number
+          source_external_id: string | null
+          source_site: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string
+          type: string
+          unlock_price: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "creator_posts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
+      ingest_telescope_creators: { Args: { p_payload: Json }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
+      is_paid_media_unlocked: {
+        Args: { p_post_id: string; p_telegram_id: number }
+        Returns: boolean
+      }
+      purchase_paid_media: {
+        Args: { p_post_id: string; p_telegram_id: number }
+        Returns: Json
+      }
       unlock_paid_media: {
         Args: { p_post_id: string; p_telegram_id: number }
-        Returns: { media_url: string; remaining_coins: number; already_unlocked: boolean }[]
+        Returns: {
+          already_unlocked: boolean
+          media_url: string
+          remaining_coins: number
+        }[]
       }
     }
     Enums: {
@@ -631,4 +1391,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
