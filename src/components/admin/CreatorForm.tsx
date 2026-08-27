@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createAdminCreator, getAdminSubscriptionSettings, updateAdminCreator, uploadMediaAsset, upsertAdminSubscriptionSettings, type Creator, type SubscriptionPlanMode } from '@/lib/admin-repository'
 import { formatUsdFromStars, formatUsdInputFromStars, usdToStars } from '@/lib/telegram-stars'
+import { ImageCropDialog } from './ImageCropDialog'
 
 type Props = { creator?: Creator }
 type ImageField = 'avatar_image' | 'cover_image'
@@ -76,6 +77,7 @@ export function CreatorForm({ creator }: Props) {
   const [previews, setPreviews] = useState<Partial<Record<ImageField, string>>>({})
   const [saving, setSaving] = useState(false)
   const [uploadingField, setUploadingField] = useState<ImageField | null>(null)
+  const [cropRequest, setCropRequest] = useState<{ field: ImageField; file: File } | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const set = (key: keyof FormState, value: string) => setForm(current => ({ ...current, [key]: value }))
@@ -98,15 +100,23 @@ export function CreatorForm({ creator }: Props) {
     setForm(current => current.avatar_image === creator.avatar_image && current.cover_image === creator.cover_image ? current : { ...current, avatar_image: creator.avatar_image, cover_image: creator.cover_image })
   }, [creator?.id, creator?.avatar_image, creator?.cover_image])
 
-  const chooseImage = async (field: ImageField, file?: File) => {
+  const chooseImage = (field: ImageField, file?: File) => {
     if (!file) return
     if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return }
+    setError('')
+    setSuccess('')
+    setCropRequest({ field, file })
+  }
+
+  const confirmCroppedImage = async (file: File) => {
+    if (!cropRequest) return
+    const { field } = cropRequest
     const preview = URL.createObjectURL(file)
     setPreviews(current => ({ ...current, [field]: preview }))
     setSelectedImages(current => ({ ...current, [field]: file }))
-    setError('')
+    setCropRequest(null)
     if (!creator) return
-    setUploadingField(field); setSuccess('')
+    setUploadingField(field)
     try {
       const asset = await uploadMediaAsset(file, creator.id)
       const url = asset.public_url ?? ''
@@ -168,8 +178,8 @@ export function CreatorForm({ creator }: Props) {
     <div className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-[auto_1fr] sm:items-center"><div className="h-20 w-20 overflow-hidden rounded-full border bg-muted">{avatarPreview ? <img src={avatarPreview} alt="Avatar preview" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-2xl text-muted-foreground">{form.name.slice(0, 1).toUpperCase() || '?'}</div>}</div><div><p className="font-medium">{form.name || 'New creator'}</p><p className="text-sm text-muted-foreground">{form.handle ? `@${normalizeHandle(form.handle)}` : 'Add a handle to preview the profile identity.'}</p><p className="mt-1 text-xs text-muted-foreground">Creators are saved as drafts until published from the Creators list.</p></div></div>
     {error && <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}{success && <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700">{success}</div>}
     <div className="grid gap-4 md:grid-cols-2"><label className="space-y-1 text-sm"><span className="font-medium">Display name *</span><input required value={form.name} onChange={event => set('name', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Telegram handle *</span><input required value={form.handle} onChange={event => set('handle', event.target.value)} onBlur={() => set('handle', normalizeHandle(form.handle))} placeholder="alexmucci" className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Profile slug *</span><input required value={form.slug} onChange={event => set('slug', event.target.value)} onBlur={() => set('slug', slugify(form.slug || suggestedSlug))} placeholder={suggestedSlug || 'creator-slug'} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /><small className="text-muted-foreground">Public URL: /creator/{slugify(form.slug || suggestedSlug) || 'creator-slug'}</small></label>
-      <label className="space-y-1 text-sm"><span className="font-medium">Profile photo</span><div className="flex gap-2"><input type="text" readOnly value={form.avatar_image} placeholder="Upload an image" className="h-10 min-w-0 flex-1 rounded-md border bg-muted/30 px-3 text-sm" /><label className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">{uploadingField === 'avatar_image' ? 'Uploading…' : 'Upload'}<input type="file" accept="image/*" className="sr-only" disabled={uploadingField !== null || saving} onChange={event => { void chooseImage('avatar_image', event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div></label>
-      <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Cover photo</span><div className="flex gap-2"><input type="text" readOnly value={form.cover_image} placeholder="Upload an image" className="h-10 min-w-0 flex-1 rounded-md border bg-muted/30 px-3 text-sm" /><label className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">{uploadingField === 'cover_image' ? 'Uploading…' : 'Upload'}<input type="file" accept="image/*" className="sr-only" disabled={uploadingField !== null || saving} onChange={event => { void chooseImage('cover_image', event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div>{coverPreview && <img src={coverPreview} alt="Cover preview" className="mt-2 h-24 w-full rounded-md object-cover" />}</label>
+      <label className="space-y-1 text-sm"><span className="font-medium">Profile photo</span><div className="flex gap-2"><input type="text" readOnly value={form.avatar_image} placeholder="Upload an image" className="h-10 min-w-0 flex-1 rounded-md border bg-muted/30 px-3 text-sm" /><label className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">{uploadingField === 'avatar_image' ? 'Uploading…' : 'Upload'}<input type="file" accept="image/*" className="sr-only" disabled={uploadingField !== null || saving} onChange={event => { chooseImage('avatar_image', event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div></label>
+      <label className="space-y-1 text-sm md:col-span-2"><span className="font-medium">Cover photo</span><div className="flex gap-2"><input type="text" readOnly value={form.cover_image} placeholder="Upload an image" className="h-10 min-w-0 flex-1 rounded-md border bg-muted/30 px-3 text-sm" /><label className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">{uploadingField === 'cover_image' ? 'Uploading…' : 'Upload'}<input type="file" accept="image/*" className="sr-only" disabled={uploadingField !== null || saving} onChange={event => { chooseImage('cover_image', event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div>{coverPreview && <img src={coverPreview} alt="Cover preview" className="mt-2 h-24 w-full rounded-md object-cover" />}</label>
     </div>
     <label className="block space-y-1 text-sm"><span className="font-medium">Bio *</span><textarea required value={form.bio} onChange={event => set('bio', event.target.value)} placeholder="Write the complete creator bio. Long bios automatically show a More info button on the public profile." className="min-h-32 w-full rounded-md border bg-background p-3 outline-none focus:ring-2 focus:ring-primary/30" /></label>
 
@@ -187,6 +197,7 @@ export function CreatorForm({ creator }: Props) {
       </div>
     </section>
 
-    <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined } })} className="h-10 rounded-md border px-4 text-sm">Cancel</button><button disabled={saving || uploadingField !== null} className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : creator ? 'Save changes' : 'Create draft creator'}</button></div>
+    <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => void navigate({ to: '/app/models', search: { edit: undefined, new: undefined, search: undefined, status: undefined, queue: undefined } })} className="h-10 rounded-md border px-4 py-2 text-sm">Cancel</button><button disabled={saving || uploadingField !== null} className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60">{saving ? 'Saving…' : creator ? 'Save changes' : 'Create draft creator'}</button></div>
+    {cropRequest && <ImageCropDialog file={cropRequest.file} field={cropRequest.field} onCancel={() => setCropRequest(null)} onConfirm={confirmCroppedImage} />}
   </form>
 }
