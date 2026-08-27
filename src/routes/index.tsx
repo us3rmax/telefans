@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { House, PlaySquare, Search, UserRound } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { exploreCreators, rankExploreCreators, type ExploreCategory, type ExploreCreator } from '@/data/explore'
 import { listPublishedCreatorExploreStats, listPublishedCreators } from '@/lib/telefans-data'
+import { clearExploreRestoreState, readExploreRestoreState, saveExploreRestoreState, saveProfileReturnState } from '@/lib/navigation-state'
 import '../telescope.css'
 
 function BottomNav() {
@@ -24,8 +25,10 @@ function FilterBar({ query, setQuery, filter, setFilter }: { query: string; setQ
 }
 
 export function ExplorePage() {
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<ExploreCategory>('Trending')
+  const initialRestore = useRef(readExploreRestoreState()).current
+  const scrollContentRef = useRef<HTMLDivElement>(null)
+  const [query, setQuery] = useState(initialRestore?.query ?? '')
+  const [filter, setFilter] = useState<ExploreCategory>(initialRestore?.filter ?? 'Trending')
   const [publishedCreators, setPublishedCreators] = useState<ExploreCreator[]>(exploreCreators)
   const [remoteCatalogLoaded, setRemoteCatalogLoaded] = useState(false)
 
@@ -57,15 +60,33 @@ export function ExplorePage() {
 
   const allCreators = publishedCreators
 
+  useEffect(() => {
+    const restore = readExploreRestoreState()
+    if (!restore || restore.filter !== filter || restore.query !== query || !remoteCatalogLoaded) return
+    const frame = window.requestAnimationFrame(() => {
+      scrollContentRef.current?.scrollTo({ top: restore.scrollTop, behavior: 'auto' })
+      clearExploreRestoreState()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [filter, query, remoteCatalogLoaded])
+
+  const rememberCreatorOrigin = (slug: string) => {
+    const scrollTop = scrollContentRef.current?.scrollTop ?? 0
+    const state = { filter, query, scrollTop }
+    saveExploreRestoreState(state)
+    saveProfileReturnState({ source: 'explore', slug, ...state })
+    return slug
+  }
+
   const visibleCreators = useMemo(() => rankExploreCreators(filter, allCreators).filter(({ name }) => name.toLowerCase().includes(query.toLowerCase())), [allCreators, filter, query])
   return <main className="telescope-shell">
     <div className="content-column explore-content-column">
       <header className="brand-header"><img src="/assets/telefans-logo.png" alt="TeleFans" /></header>
-      <div className="scroll-content">
+      <div ref={scrollContentRef} className="scroll-content">
         <section className="explore-heading" aria-hidden="true" />
         <FilterBar query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />
         <div className="creator-grid">
-          {visibleCreators.map(({ name, image, slug }, index) => <Link to="/creator/$slug" params={{ slug }} className="creator-card" key={name} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }} aria-label={`Open ${name}`}>
+          {visibleCreators.map(({ name, image, slug }, index) => <Link to="/creator/$slug" params={{ slug }} onClick={() => { rememberCreatorOrigin(slug) }} className="creator-card" key={`${slug}-${index}`} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }} aria-label={`Open ${name}`}>
             <img src={image} alt={name} loading={index < 4 ? 'eager' : 'lazy'} />
             <span className="card-shade" />
             <span className="creator-name">{name}</span>

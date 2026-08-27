@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Check, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts, unlockPaidMedia } from '@/lib/telefans-data'
 import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
+import { clearProfileReturnState, saveExploreRestoreState, saveReelsPosition, readProfileReturnState } from '@/lib/navigation-state'
 import '../telescope.css'
 
 function CreatorBadgeIcon({ badge }: { badge: CreatorBadge }) {
@@ -42,6 +43,7 @@ type PublicCreatorPost = {
 
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
+  const navigate = useNavigate({ from: '/creator/$slug' })
   const [creator, setCreator] = useState<CreatorProfile>(() => getCreatorProfile(slug))
   const [creatorMediaLoaded, setCreatorMediaLoaded] = useState(false)
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
@@ -56,7 +58,7 @@ export function CreatorProfilePage() {
   const [coinBalance, setCoinBalance] = useState<number | null>(null)
   const availability = getCreatorAvailability(slug)
 
-  useEffect(() => useTelegramBackButton(() => {
+  const goBack = useCallback(() => {
     if (pendingUnlock) {
       setPendingUnlock(null)
       return
@@ -65,9 +67,26 @@ export function CreatorProfilePage() {
       setExpandedPost(null)
       return
     }
-    if (window.history.length > 1) window.history.back()
-    else window.location.assign('/')
-  }), [expandedPost, pendingUnlock])
+    const origin = readProfileReturnState()
+    clearProfileReturnState()
+    if (!origin || origin.slug !== slug) {
+      void navigate({ to: '/' })
+      return
+    }
+    if (origin.source === 'explore') {
+      saveExploreRestoreState(origin)
+      void navigate({ to: '/' })
+      return
+    }
+    if (origin?.source === 'reels') {
+      saveReelsPosition(origin)
+      void navigate({ to: '/reels', search: { tab: origin.tab } })
+      return
+    }
+    void navigate({ to: '/' })
+  }, [expandedPost, navigate, pendingUnlock])
+
+  useEffect(() => useTelegramBackButton(goBack), [goBack])
 
   useEffect(() => {
     if (!expandedPost && !pendingUnlock) return
@@ -185,7 +204,7 @@ export function CreatorProfilePage() {
             <div className="creator-hero-gradient" />
           </div>
           <div className="creator-cover-header">
-            <Link to="/" className="creator-cover-back" aria-label="Back" onClick={(event) => { if (window.history.length > 1) { event.preventDefault(); window.history.back() } }}><ArrowLeft /></Link>
+            <button type="button" className="creator-cover-back" aria-label="Back" onClick={goBack}><ArrowLeft /></button>
           </div>
           <div className="creator-avatar">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt={`${creator.name} avatar`} /> : <span className="creator-image-placeholder" aria-hidden="true" />}</div>
         </section>

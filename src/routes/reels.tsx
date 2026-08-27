@@ -5,6 +5,7 @@ import { Link, createFileRoute, useSearch } from '@tanstack/react-router'
 import { readAdminPosts } from '@/data/content'
 import { addPostComment, hasPostLike, listPostComments, listPublishedCreators, listPublishedReels, recordPostView, togglePostLike } from '@/lib/telefans-data'
 import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
+import { readReelsPosition, saveProfileReturnState, saveReelsPosition } from '@/lib/navigation-state'
 import { PrimaryBottomNav } from '@/components/PrimaryBottomNav'
 import '../telescope.css'
 
@@ -161,7 +162,6 @@ export function ReelsPage() {
   const viewedReels = useRef(new Set<string>())
   const reelsFeedRef = useRef<HTMLDivElement>(null)
   const restoringPosition = useRef(false)
-  const positionKey = 'telefans.reels.position'
 
   useEffect(() => {
     let attempts = 0
@@ -211,8 +211,8 @@ export function ReelsPage() {
         const sorted = activeTab === 'new' ? unique.sort((a, b) => b.id.localeCompare(a.id)) : unique.sort((a, b) => (b.likes * 3 + b.comments * 2 + b.views) - (a.likes * 3 + a.comments * 2 + a.views))
         if (mounted) {
           setFeed(sorted)
-          let restoredId: string | null = null
-          try { restoredId = JSON.parse(sessionStorage.getItem(positionKey) || 'null')?.id ?? null } catch { restoredId = null }
+          const savedPosition = readReelsPosition()
+          const restoredId = savedPosition?.tab === activeTab ? savedPosition.id : null
           setActiveReelId(restoredId && sorted.some((item) => item.id === restoredId) ? restoredId : sorted[0]?.id ?? null)
         }
       } catch (loadError) {
@@ -229,17 +229,14 @@ export function ReelsPage() {
       const container = reelsFeedRef.current
       const index = feed.findIndex((reel) => reel.id === activeReelId)
       if (!container || index < 0) return
-      let savedTop: number | null = null
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(positionKey) || 'null')
-        savedTop = typeof saved?.scrollTop === 'number' ? saved.scrollTop : null
-      } catch { savedTop = null }
+      const savedPosition = readReelsPosition()
+      const savedTop = savedPosition?.tab === activeTab ? savedPosition.scrollTop : null
       restoringPosition.current = true
       container.scrollTo({ top: savedTop ?? index * container.clientHeight, behavior: 'auto' })
       window.setTimeout(() => { restoringPosition.current = false }, 120)
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [activeReelId, feed])
+  }, [activeReelId, feed, activeTab])
 
   useEffect(() => {
     let mounted = true
@@ -250,7 +247,7 @@ export function ReelsPage() {
   const handleVisible = useCallback((id: string) => {
     if (restoringPosition.current) return
     setActiveReelId(id)
-    try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })) } catch { /* optional storage */ }
+    saveReelsPosition({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })
     if (viewedReels.current.has(id)) return
     viewedReels.current.add(id)
     const reel = feed.find((item) => item.id === id)
@@ -311,7 +308,7 @@ export function ReelsPage() {
       {loading && <div className="reels-state">Loading Reels…</div>}
       {!loading && error && <div className="reels-state reels-state-error">{error}</div>}
       {!loading && !error && !feed.length && <div className="reels-state">No Reels have been published yet.</div>}
-      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { try { sessionStorage.setItem(positionKey, JSON.stringify({ id, tab: activeTab, scrollTop: reelsFeedRef.current?.scrollTop ?? 0 })) } catch { /* optional storage */ } }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { const resolvedUser = currentTelegramId == null ? await getTelegramUser().catch(() => null) : null; const telegramId = resolvedUser?.id ?? currentTelegramId; if (resolvedUser) { setCurrentTelegramId(resolvedUser.id); setCurrentUserName([resolvedUser.first_name, resolvedUser.last_name].filter(Boolean).join(' ')) } const result = await togglePostLike(reel.id, liked, telegramId); if (result.applied) { setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + result.delta) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } return result } : undefined} />)}
+      {!loading && !error && visibleFeed.map((reel, index) => <Reel key={reel.id} reel={reel} active={activeReelId === reel.id || (!activeReelId && index === 0)} loadVideo={Math.abs(index - activeIndex) <= 1} onVisible={handleVisible} initialLiked={likedByPost[reel.id] ?? false} onOpenCreator={(id) => { const scrollTop = reelsFeedRef.current?.scrollTop ?? 0; saveReelsPosition({ id, tab: activeTab, scrollTop }); saveProfileReturnState({ source: 'reels', slug: reel.slug, id, tab: activeTab, scrollTop }) }} onComment={() => void openComments(reel)} onShare={() => void shareReel(reel)} onLike={reel.persisted ? async (liked) => { const resolvedUser = currentTelegramId == null ? await getTelegramUser().catch(() => null) : null; const telegramId = resolvedUser?.id ?? currentTelegramId; if (resolvedUser) { setCurrentTelegramId(resolvedUser.id); setCurrentUserName([resolvedUser.first_name, resolvedUser.last_name].filter(Boolean).join(' ')) } const result = await togglePostLike(reel.id, liked, telegramId); if (result.applied) { setFeed((current) => current.map((item) => item.id === reel.id ? { ...item, likes: Math.max(0, item.likes + result.delta) } : item)); setLikedByPost((current) => ({ ...current, [reel.id]: liked })) } return result } : undefined} />)}
     </div>
     <PrimaryBottomNav active="reels" />
     {notice && <div className="reels-notice" role="status">{notice}</div>}
