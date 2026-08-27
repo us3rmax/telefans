@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getCreatorSubscriptionStatus, getPublishedCreator, listCreatorPosts, startCreatorSubscription, unlockPaidMedia } from '@/lib/telefans-data'
 import { getTelegramInitData, getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
+import { formatUsdFromStars } from '@/lib/telegram-stars'
 import { clearProfileReturnState, saveExploreRestoreState, saveReelsPosition, readProfileReturnState } from '@/lib/navigation-state'
 import '../telescope.css'
 
@@ -95,7 +96,7 @@ function readPublicSubscription(value: unknown): CreatorProfile['subscription'] 
   return {
     title: typeof raw.title === 'string' && raw.title ? raw.title : 'Subscription',
     message: typeof raw.message === 'string' ? raw.message : 'Join this creator on TeleFans.',
-    priceLabel: mode === 'free' ? 'Free' : `${stars} Stars / month`,
+    priceLabel: mode === 'free' ? 'Free' : formatUsdFromStars(stars),
     isFree: mode === 'free',
     planMode: mode,
     normalPriceStars: normal,
@@ -470,11 +471,12 @@ export function CreatorProfilePage() {
 
         <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
-          <div className="creator-subscription-title-row"><h2>{offer.title}</h2><span className={`creator-subscription-badge ${offer.mode}`}>{offer.mode === 'free' ? 'FREE' : offer.mode === 'promo' ? 'PROMO' : 'PAID'}</span></div>
+          <div className="creator-subscription-title-row"><h2>{offer.title === 'Subscription' ? `Subscribe to ${creator.name}` : offer.title}</h2><span className={`creator-subscription-badge ${offer.mode}`}>{offer.mode === 'free' ? 'FREE' : offer.mode === 'promo' ? 'PROMO' : 'PAID'}</span></div>
           <p className="creator-subscription-message">{offer.message || 'Join this creator on TeleFans.'}</p>
-          {offer.mode === 'promo' && <p className="creator-subscription-detail">{offer.stars} Stars for the promotion{offer.days ? ` · ${offer.days} days` : ''}{offer.promoExpiresAt ? ` · ends ${new Date(offer.promoExpiresAt).toLocaleDateString()}` : ''}</p>}
-          {offer.mode === 'paid' && <p className="creator-subscription-detail">{offer.stars} Stars / month · Telegram Stars</p>}
-          {subscriptionStatus.subscribed ? <div className="creator-subscription-active"><p><strong>Subscription active.</strong> Your private actions are shown below the bio.</p></div> : <button type="button" className="creator-offer-row" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label="Subscribe to this creator">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}<span>{subscriptionLoading ? 'Checking subscription…' : subscriptionActionLoading ? 'Waiting for Telegram…' : offer.mode === 'free' ? 'Subscribe for free' : `Subscribe for ${offer.stars} Stars`}</span><span className="offer-arrow">›</span></button>}
+          <div className="creator-subscription-identity"><div className="creator-subscription-avatar">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}</div><div><strong>{creator.name}</strong><span>{creator.handle}</span></div></div>
+          {offer.mode === 'promo' && <p className="creator-subscription-detail">{formatUsdFromStars(offer.stars)} for the promotion{offer.days ? ` · ${offer.days} days` : ''}{offer.promoExpiresAt ? ` · ends ${new Date(offer.promoExpiresAt).toLocaleDateString()}` : ''}</p>}
+          {offer.mode === 'paid' && <p className="creator-subscription-detail">{formatUsdFromStars(offer.stars)} / month</p>}
+          {subscriptionStatus.subscribed ? <div className="creator-subscription-active"><p><strong>Subscription active.</strong> Your private actions are shown below the bio.</p></div> : <button type="button" className="creator-offer-row" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label="Subscribe to this creator">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}<span>{subscriptionLoading ? 'Checking subscription…' : subscriptionActionLoading ? 'Opening secure checkout…' : offer.mode === 'free' ? 'Subscribe for free' : `Subscribe for ${formatUsdFromStars(offer.stars)}`}</span><span className="offer-arrow">›</span></button>}
           {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
           {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
         </section>

@@ -94,9 +94,9 @@ async function loadSettings(db: ReturnType<typeof createClient>, creatorId: stri
 }
 
 async function loadCreator(db: ReturnType<typeof createClient>, creatorId: string) {
-  const { data, error } = await db.from('creators').select('id, name, handle, published').eq('id', creatorId).eq('published', true).maybeSingle()
+  const { data, error } = await db.from('creators').select('id, name, handle, avatar_image, published').eq('id', creatorId).eq('published', true).maybeSingle()
   if (error) throw error
-  return data as { id: string; name: string; handle: string; published: boolean } | null
+  return data as { id: string; name: string; handle: string; avatar_image: string | null; published: boolean } | null
 }
 
 function normalizeTelegramUsername(value: unknown) {
@@ -169,7 +169,7 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
 
   if (!botToken) return json({ ok: false, error: 'Telegram Stars is not configured' }, 503)
   const payload = `tfsub:${creatorId}:${user.id}:${crypto.randomUUID()}`
-  const title = (settings.title || `Subscribe to ${creator.name}`).slice(0, 32)
+  const title = (creator.name || settings.title || 'TeleFans').slice(0, 32)
   const description = (settings.message || `Subscription to ${creator.name}`).slice(0, 255)
   const invoice = await telegramApi(botToken, 'createInvoiceLink', {
     title,
@@ -177,7 +177,8 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
     payload,
     provider_token: '',
     currency: 'XTR',
-    prices: [{ label: title, amount: offer.stars }],
+    prices: [{ label: creator.name || title, amount: offer.stars }],
+    ...(creator.avatar_image ? { photo_url: creator.avatar_image } : {}),
     ...(offer.autoRenew ? { subscription_period: SUBSCRIPTION_PERIOD_SECONDS } : {}),
   }) as string
   const { error } = await db.from('creator_subscriptions').upsert({ creator_id: creatorId, telegram_id: user.id, subscription_type: offer.mode, payment_status: 'pending', stars_amount: offer.stars, telegram_invoice_payload: payload, telegram_payment_charge_id: null, current_period_start: null, current_period_end: null, auto_renew: offer.autoRenew }, { onConflict: 'creator_id,telegram_id' })
