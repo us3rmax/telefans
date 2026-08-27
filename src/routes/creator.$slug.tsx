@@ -379,7 +379,7 @@ export function CreatorProfilePage() {
   }
 
   const offer = subscriptionStatus.offer ?? toSubscriptionOffer(creator.subscription)
-  const subscriptionDisplayPrice = offer.mode === 'free' ? 'GRATUITO' : `${formatUsdFromStars(offer.stars)} por mês`
+  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdFromStars(offer.stars)} per month`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
   const openPost = (post: PublicCreatorPost, group: CreatorPostGroup, index: number) => {
@@ -471,10 +471,10 @@ export function CreatorProfilePage() {
         </section>
 
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
-          <span className="creator-section-label">ASSINATURA</span>
-          <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Assinar ${creator.name}`} aria-busy={subscriptionActionLoading}>
-            <span>ASSINAR</span>
-            <span>{subscriptionActionLoading ? 'ABRINDO…' : subscriptionDisplayPrice}</span>
+          <span className="creator-section-label">SUBSCRIPTION</span>
+          <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Subscribe to ${creator.name}`} aria-busy={subscriptionActionLoading}>
+            <span>SUBSCRIBE</span>
+            <span>{subscriptionActionLoading ? 'OPENING…' : subscriptionDisplayPrice}</span>
           </button>
           {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
           {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}

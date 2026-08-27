@@ -6,11 +6,11 @@ export function starsToUsd(stars: number) {
 }
 
 export function formatUsdFromStars(stars: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(starsToUsd(stars))
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(starsToUsd(stars))
 }
 
 export function formatUsdInputFromStars(stars: number) {
-  return starsToUsd(stars).toFixed(1)
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1, useGrouping: false }).format(starsToUsd(stars))
 }
 
 export function usdToStars(usd: number) {
