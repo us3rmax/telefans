@@ -99,6 +99,10 @@ async function loadCreator(db: ReturnType<typeof createClient>, creatorId: strin
   return data as { id: string; name: string; published: boolean } | null
 }
 
+function defaultFreeSettings(creatorId: string, creatorName: string): Settings {
+  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, telegram_username: '', vip_channel_url: '', is_active: true }
+}
+
 async function ensureTelegramUser(db: ReturnType<typeof createClient>, user: TelegramUser) {
   const { error } = await db.from('telegram_users').upsert({ telegram_id: user.id, username: user.username ?? null, first_name: user.first_name, last_name: user.last_name ?? null, photo_url: user.photo_url ?? null, auth_date: new Date().toISOString() }, { onConflict: 'telegram_id' })
   if (error) throw error
@@ -136,8 +140,10 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
   if (!UUID_RE.test(creatorId)) return json({ ok: false, error: 'Invalid creator id' }, 400)
   await ensureTelegramUser(db, user)
   const creator = await loadCreator(db, creatorId)
-  const settings = await loadSettings(db, creatorId)
-  if (!creator || !settings || !settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
+  const storedSettings = await loadSettings(db, creatorId)
+  if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
+  const settings = storedSettings ?? defaultFreeSettings(creatorId, creator.name)
+  if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
   const offer = activeOffer(settings)
   const existing = await currentSubscription(db, creatorId, user.id)
   if (isActiveSubscription(existing)) return new Response(JSON.stringify(resourceResponse(settings, existing, offer)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -169,8 +175,11 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
 
 async function handleStatus(db: ReturnType<typeof createClient>, user: TelegramUser, creatorId: string) {
   if (!UUID_RE.test(creatorId)) return json({ ok: false, error: 'Invalid creator id' }, 400)
-  const settings = await loadSettings(db, creatorId)
-  if (!settings || !settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
+  const creator = await loadCreator(db, creatorId)
+  const storedSettings = await loadSettings(db, creatorId)
+  if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
+  const settings = storedSettings ?? defaultFreeSettings(creatorId, creator.name)
+  if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
   const offer = activeOffer(settings)
   const subscription = await currentSubscription(db, creatorId, user.id)
   if (subscription?.payment_status === 'active' && !isActiveSubscription(subscription)) {

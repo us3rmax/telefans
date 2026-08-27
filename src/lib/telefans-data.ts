@@ -206,7 +206,19 @@ async function invokeCreatorSubscription(action: 'start' | 'status', creatorId: 
   const initData = getTelegramInitData()
   if (!initData) throw new Error('Open TeleFans in Telegram to manage this subscription.')
   const { data, error } = await supabase.functions.invoke<CreatorSubscriptionResponse>('telegram-subscription', { body: { action, creatorId, initData } })
-  if (error) throw new Error(data?.error ?? error.message)
+  if (error) {
+    let message = data?.error ?? error.message
+    const context = (error as { context?: unknown }).context
+    if (context && typeof context === 'object' && 'json' in context && typeof context.json === 'function') {
+      try {
+        const body = await (context as { json: () => Promise<{ error?: string }> }).json()
+        message = body?.error ?? message
+      } catch {
+        // Keep the SDK message when the response body is not readable.
+      }
+    }
+    throw new Error(message)
+  }
   if (!data?.ok) throw new Error(data?.error ?? 'Subscription request failed.')
   return data
 }
