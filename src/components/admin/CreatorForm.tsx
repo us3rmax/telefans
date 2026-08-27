@@ -20,7 +20,7 @@ type SubscriptionFormState = {
   vip_channel_url: string
   is_active: boolean
 }
-type NormalizedSubscription = SubscriptionFormState & { normal_price_stars: number; promo_price_stars: number }
+type NormalizedSubscription = SubscriptionFormState & { normal_price_stars: number; promo_price_stars: number; normal_price_usd_value: number | null; promo_price_usd_value: number | null }
 
 const slugify = (value: string) => value.trim().replace(/^\/+|\/+$/g, '').replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').toLowerCase()
 const normalizeHandle = (value: string) => value.trim().replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()
@@ -44,6 +44,21 @@ function getDefaultPromoExpiresAtLocal() {
   return toDateTimeLocal(new Date(Date.now() + DEFAULT_PROMO_MINUTES * 60_000).toISOString())
 }
 
+function readUsdInput(value: unknown, fallbackStars: number) {
+  const number = Number(value)
+  return Number.isFinite(number) && number > 0 ? String(Number(number.toFixed(2))) : formatUsdInputFromStars(fallbackStars)
+}
+
+function parseUsdInput(value: string) {
+  const number = Number(value.replace(',', '.'))
+  return Number.isFinite(number) ? Math.round(number * 100) / 100 : 0
+}
+
+function isAllowedUsdPrice(value: number) {
+  const cents = Math.round(value * 100) % 100
+  return value >= 3.99 && value <= 19.99 && [0, 90, 99].includes(cents)
+}
+
 function readSubscription(value: unknown): SubscriptionFormState {
   const raw = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
   const planMode = raw.plan_mode === 'paid' || raw.plan_mode === 'promo' ? raw.plan_mode : 'free'
@@ -51,8 +66,8 @@ function readSubscription(value: unknown): SubscriptionFormState {
     plan_mode: planMode,
     title: typeof raw.title === 'string' && raw.title ? raw.title : defaultSubscription.title,
     message: typeof raw.message === 'string' ? raw.message : defaultSubscription.message,
-    normal_price_usd: formatUsdInputFromStars(toNumber(raw.normal_price_stars, 0)),
-    promo_price_usd: formatUsdInputFromStars(toNumber(raw.promo_price_stars, 0)),
+    normal_price_usd: readUsdInput(raw.normal_price_usd, toNumber(raw.normal_price_stars, 0)),
+    promo_price_usd: readUsdInput(raw.promo_price_usd, toNumber(raw.promo_price_stars, 0)),
     promo_days: Math.max(1, toNumber(raw.promo_days, defaultSubscription.promo_days)),
     promo_expires_at: toDateTimeLocal(raw.promo_expires_at),
     telegram_username: typeof raw.telegram_username === 'string' ? raw.telegram_username : '',
@@ -67,7 +82,9 @@ function publicSubscription(value: NormalizedSubscription) {
     title: value.title.trim() || 'Subscription',
     message: value.message.trim(),
     normal_price_stars: value.normal_price_stars,
+    normal_price_usd: value.normal_price_usd_value,
     promo_price_stars: value.promo_price_stars,
+    promo_price_usd: value.promo_price_usd_value,
     promo_days: value.promo_days,
     promo_expires_at: value.promo_expires_at ? new Date(value.promo_expires_at).toISOString() : null,
     isFree: value.plan_mode === 'free',
@@ -148,15 +165,17 @@ export function CreatorForm({ creator }: Props) {
         message: subscription.message.trim(),
         telegram_username: normalizeHandle(subscription.telegram_username),
         vip_channel_url: subscription.vip_channel_url.trim(),
-        normal_price_stars: usdToStars(Number(subscription.normal_price_usd.replace(',', '.'))),
-        promo_price_stars: usdToStars(Number(subscription.promo_price_usd.replace(',', '.'))),
+        normal_price_stars: usdToStars(parseUsdInput(subscription.normal_price_usd)),
+        promo_price_stars: usdToStars(parseUsdInput(subscription.promo_price_usd)),
+        normal_price_usd_value: subscription.plan_mode === 'free' ? null : parseUsdInput(subscription.normal_price_usd),
+        promo_price_usd_value: subscription.plan_mode === 'promo' ? parseUsdInput(subscription.promo_price_usd) : null,
         promo_days: Math.max(1, Math.round(subscription.promo_days)),
       }
       if (normalizedSubscription.is_active && !normalizedSubscription.telegram_username) throw new Error('Telegram username is required when the subscription is active.')
-      if (normalizedSubscription.plan_mode === 'paid' && normalizedSubscription.normal_price_stars < 1) throw new Error(`A paid subscription needs a price of at least ${formatUsdFromStars(1)}.`)
-      if (normalizedSubscription.plan_mode === 'promo' && (normalizedSubscription.normal_price_stars < 1 || normalizedSubscription.promo_price_stars < 1)) throw new Error(`A promotional subscription needs normal and promotional prices of at least ${formatUsdFromStars(1)}.`)
+      if (normalizedSubscription.plan_mode !== 'free' && !isAllowedUsdPrice(normalizedSubscription.normal_price_usd_value ?? 0)) throw new Error('Paid subscriptions must use a price from $3.99 to $19.99 ending in .99, .90, or a whole dollar amount.')
+      if (normalizedSubscription.plan_mode === 'promo' && !isAllowedUsdPrice(normalizedSubscription.promo_price_usd_value ?? 0)) throw new Error('Promotional prices must use a price from $3.99 to $19.99 ending in .99, .90, or a whole dollar amount.')
       if (normalizedSubscription.vip_channel_url && !/^(https:\/\/t\.me\/|tg:\/\/)/i.test(normalizedSubscription.vip_channel_url)) throw new Error('VIP channel must be a Telegram link starting with https://t.me/ or tg://.')
-      const settingsPayload = { plan_mode: normalizedSubscription.plan_mode, title: normalizedSubscription.title, message: normalizedSubscription.message, normal_price_stars: normalizedSubscription.normal_price_stars, promo_price_stars: normalizedSubscription.promo_price_stars, promo_days: normalizedSubscription.promo_days, promo_expires_at: normalizedSubscription.promo_expires_at, telegram_username: normalizedSubscription.telegram_username, vip_channel_url: normalizedSubscription.vip_channel_url, is_active: normalizedSubscription.is_active }
+      const settingsPayload = { plan_mode: normalizedSubscription.plan_mode, title: normalizedSubscription.title, message: normalizedSubscription.message, normal_price_stars: normalizedSubscription.normal_price_stars, normal_price_usd: normalizedSubscription.normal_price_usd_value, promo_price_stars: normalizedSubscription.promo_price_stars, promo_price_usd: normalizedSubscription.promo_price_usd_value, promo_days: normalizedSubscription.promo_days, promo_expires_at: normalizedSubscription.promo_expires_at, telegram_username: normalizedSubscription.telegram_username, vip_channel_url: normalizedSubscription.vip_channel_url, is_active: normalizedSubscription.is_active }
       const payload = { name: form.name.trim(), handle: normalizeHandle(form.handle), slug: slugify(form.slug || suggestedSlug), avatar_image: form.avatar_image, cover_image: form.cover_image, bio: form.bio.trim(), expanded_bio: null, subscription: publicSubscription(normalizedSubscription) }
       if (!payload.name || !payload.handle || !payload.slug || !payload.bio) throw new Error('Name, handle, slug and bio are required.')
       if (creator) {
@@ -199,8 +218,8 @@ export function CreatorForm({ creator }: Props) {
         <label className="flex items-center gap-3 self-end pb-2 text-sm"><input type="checkbox" checked={subscription.is_active} onChange={event => setSubscriptionValue('is_active', event.target.checked)} className="h-4 w-4" /><span><span className="font-medium">Enable subscription</span><span className="block text-xs text-muted-foreground">Required before checkout or free activation.</span></span></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Offer title</span><input value={subscription.title} onChange={event => setSubscriptionValue('title', event.target.value)} maxLength={80} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Subscription" /></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Offer message</span><input value={subscription.message} onChange={event => setSubscriptionValue('message', event.target.value)} maxLength={255} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Exclusive content every week" /></label>
-        {isPaidOffer && <label className="space-y-1 text-sm"><span className="font-medium">Normal price (USD)</span><input type="number" min="0.01" step="0.01" value={subscription.normal_price_usd} onChange={event => setSubscriptionValue('normal_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label>}
-        {subscription.plan_mode === 'promo' && <><label className="space-y-1 text-sm"><span className="font-medium">Promotional price (USD)</span><input type="number" min="0.01" step="0.01" value={subscription.promo_price_usd} onChange={event => setSubscriptionValue('promo_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion duration (days)</span><input type="number" min="1" max="3650" step="1" value={subscription.promo_days} onChange={event => setSubscriptionValue('promo_days', Number(event.target.value))} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion ends (defaults to 10 minutes)</span><input type="datetime-local" value={subscription.promo_expires_at} onChange={event => setSubscriptionValue('promo_expires_at', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label></>}
+        {isPaidOffer && <label className="space-y-1 text-sm"><span className="font-medium">Normal price (USD)</span><input type="number" min="3.99" max="19.99" step="0.01" value={subscription.normal_price_usd} onChange={event => setSubscriptionValue('normal_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label>}
+        {subscription.plan_mode === 'promo' && <><label className="space-y-1 text-sm"><span className="font-medium">Promotional price (USD)</span><input type="number" min="3.99" max="19.99" step="0.01" value={subscription.promo_price_usd} onChange={event => setSubscriptionValue('promo_price_usd', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion duration (days)</span><input type="number" min="1" max="3650" step="1" value={subscription.promo_days} onChange={event => setSubscriptionValue('promo_days', Number(event.target.value))} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label><label className="space-y-1 text-sm"><span className="font-medium">Promotion ends (defaults to 10 minutes)</span><input type="datetime-local" value={subscription.promo_expires_at} onChange={event => setSubscriptionValue('promo_expires_at', event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /></label></>}
         <label className="space-y-1 text-sm"><span className="font-medium">Creator Telegram username</span><input value={subscription.telegram_username} onChange={event => setSubscriptionValue('telegram_username', event.target.value)} onBlur={() => setSubscriptionValue('telegram_username', normalizeHandle(subscription.telegram_username))} placeholder="creator_username" className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /><small className="text-muted-foreground">Used by the unlocked Message button.</small></label>
         <label className="space-y-1 text-sm"><span className="font-medium">VIP channel link</span><input value={subscription.vip_channel_url} onChange={event => setSubscriptionValue('vip_channel_url', event.target.value)} placeholder="https://t.me/your_channel" className="h-10 w-full rounded-md border bg-background px-3 outline-none focus:ring-2 focus:ring-primary/30" /><small className="text-muted-foreground">Private destination; returned only after subscription.</small></label>
       </div>

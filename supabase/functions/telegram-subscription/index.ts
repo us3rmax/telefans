@@ -7,6 +7,16 @@ const corsHeaders = {
 }
 const SUBSCRIPTION_PERIOD_SECONDS = 2_592_000
 const DEFAULT_PROMO_MINUTES = 10
+const DISPLAY_STARS_PER_USD = 50
+const LIMITED_COUNTRIES = new Set([
+  'united states', 'united states of america', 'usa', 'us',
+  'canada', 'ca', 'united kingdom', 'uk', 'great britain', 'gb',
+  'germany', 'de', 'france', 'fr', 'italy', 'it', 'spain', 'es',
+  'sweden', 'se', 'norway', 'no', 'denmark', 'dk', 'finland', 'fi',
+  'australia', 'au', 'new zealand', 'nz', 'portugal', 'pt', 'greece', 'gr',
+  'poland', 'pl', 'czechia', 'czech republic', 'cz', 'netherlands', 'holland', 'nl',
+  'belgium', 'be', 'austria', 'at', 'switzerland', 'ch', 'ireland', 'ie',
+])
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type TelegramUser = { id: number; username?: string; first_name: string; last_name?: string; photo_url?: string }
@@ -16,7 +26,9 @@ type Settings = {
   title: string
   message: string
   normal_price_stars: number
+  normal_price_usd: number | null
   promo_price_stars: number
+  promo_price_usd: number | null
   promo_days: number
   promo_expires_at: string | null
   updated_at: string
@@ -28,6 +40,9 @@ type Settings = {
 type Offer = {
   mode: 'free' | 'paid' | 'promo'
   stars: number
+  priceUsd: number
+  normalPriceUsd: number
+  pricingTier: 'limited' | 'standard'
   days: number | null
   autoRenew: boolean
 }
@@ -70,6 +85,33 @@ async function telegramApi(botToken: string, method: string, body: Record<string
   return payload.result
 }
 
+function normalizeCountry(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase().replace(/[._]/g, ' ').replace(/\s+/g, ' ') : ''
+}
+
+function isLimitedCountry(value: unknown) {
+  return LIMITED_COUNTRIES.has(normalizeCountry(value))
+}
+
+function starsToUsd(stars: number) {
+  const normalized = Number.isFinite(stars) ? Math.max(0, Math.round(stars)) : 0
+  return normalized / DISPLAY_STARS_PER_USD
+}
+
+function usdToStars(usd: number) {
+  return Math.max(1, Math.round(usd * DISPLAY_STARS_PER_USD))
+}
+
+function normalizePriceUsd(value: unknown, fallback: number) {
+  const candidate = Number(value)
+  const source = Number.isFinite(candidate) ? candidate : fallback
+  const cents = Math.min(1999, Math.max(399, Math.round(source * 100)))
+  const dollars = Math.floor(cents / 100)
+  const allowed = [dollars * 100, dollars * 100 + 90, dollars * 100 + 99].filter(item => item >= 399 && item <= 1999)
+  const selected = allowed.reduce((best, item) => Math.abs(item - cents) < Math.abs(best - cents) ? item : best, allowed[0] ?? 399)
+  return selected / 100
+}
+
 function effectivePromoExpiresAt(settings: Settings) {
   if (settings.plan_mode !== 'promo') return settings.promo_expires_at
   if (settings.promo_expires_at) return settings.promo_expires_at
@@ -77,12 +119,18 @@ function effectivePromoExpiresAt(settings: Settings) {
   return Number.isFinite(updatedAt) ? new Date(updatedAt + DEFAULT_PROMO_MINUTES * 60_000).toISOString() : null
 }
 
-function activeOffer(settings: Settings, now = Date.now()): Offer {
-  if (!settings.is_active || settings.plan_mode === 'free') return { mode: 'free', stars: 0, days: null, autoRenew: false }
+function activeOffer(settings: Settings, country: string | null, now = Date.now()): Offer {
+  const pricingTier = isLimitedCountry(country) ? 'limited' : 'standard'
+  if (!settings.is_active) return { mode: 'free', stars: 0, priceUsd: 0, normalPriceUsd: 0, pricingTier, days: null, autoRenew: false }
+  const configuredNormalUsd = normalizePriceUsd(settings.normal_price_usd, starsToUsd(settings.normal_price_stars))
+  const normalPriceUsd = pricingTier === 'limited' ? Math.min(4.99, configuredNormalUsd) : configuredNormalUsd
+  if (settings.plan_mode === 'free' && pricingTier === 'limited') return { mode: 'free', stars: 0, priceUsd: 0, normalPriceUsd, pricingTier, days: null, autoRenew: false }
   const promoExpiresAt = effectivePromoExpiresAt(settings)
-  const promoValid = settings.plan_mode === 'promo' && settings.promo_price_stars > 0 && (!promoExpiresAt || new Date(promoExpiresAt).getTime() > now)
-  if (promoValid) return { mode: 'promo', stars: settings.promo_price_stars, days: Math.max(1, settings.promo_days), autoRenew: false }
-  return { mode: 'paid', stars: Math.max(1, settings.normal_price_stars), days: 30, autoRenew: true }
+  const configuredPromoUsd = normalizePriceUsd(settings.promo_price_usd, starsToUsd(settings.promo_price_stars))
+  const promoPriceUsd = pricingTier === 'limited' ? Math.min(4.99, configuredPromoUsd) : configuredPromoUsd
+  const promoValid = settings.plan_mode === 'promo' && promoPriceUsd >= 3.99 && (!promoExpiresAt || new Date(promoExpiresAt).getTime() > now)
+  if (promoValid) return { mode: 'promo', stars: usdToStars(promoPriceUsd), priceUsd: promoPriceUsd, normalPriceUsd, pricingTier, days: Math.max(1, settings.promo_days), autoRenew: false }
+  return { mode: 'paid', stars: usdToStars(normalPriceUsd), priceUsd: normalPriceUsd, normalPriceUsd, pricingTier, days: 30, autoRenew: true }
 }
 
 function publicOffer(settings: Settings, offer: Offer) {
@@ -91,6 +139,9 @@ function publicOffer(settings: Settings, offer: Offer) {
     stars: offer.stars,
     days: offer.days,
     autoRenew: offer.autoRenew,
+    priceUsd: offer.priceUsd,
+    normalPriceUsd: offer.normalPriceUsd,
+    pricingTier: offer.pricingTier,
     title: settings.title,
     message: settings.message,
     promoExpiresAt: effectivePromoExpiresAt(settings),
@@ -98,7 +149,7 @@ function publicOffer(settings: Settings, offer: Offer) {
 }
 
 async function loadSettings(db: ReturnType<typeof createClient>, creatorId: string) {
-  const { data, error } = await db.from('creator_subscription_settings').select('creator_id, plan_mode, title, message, normal_price_stars, promo_price_stars, promo_days, promo_expires_at, updated_at, telegram_username, vip_channel_url, is_active').eq('creator_id', creatorId).maybeSingle()
+  const { data, error } = await db.from('creator_subscription_settings').select('creator_id, plan_mode, title, message, normal_price_stars, normal_price_usd, promo_price_stars, promo_price_usd, promo_days, promo_expires_at, updated_at, telegram_username, vip_channel_url, is_active').eq('creator_id', creatorId).maybeSingle()
   if (error) throw error
   return data as Settings | null
 }
@@ -115,7 +166,7 @@ function normalizeTelegramUsername(value: unknown) {
 }
 
 function defaultFreeSettings(creatorId: string, creatorName: string, creatorHandle: string): Settings {
-  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, promo_price_stars: 0, promo_days: 30, promo_expires_at: null, updated_at: new Date().toISOString(), telegram_username: normalizeTelegramUsername(creatorHandle), vip_channel_url: '', is_active: true }
+  return { creator_id: creatorId, plan_mode: 'free', title: 'Subscription', message: `Join ${creatorName} on TeleFans.`, normal_price_stars: 0, normal_price_usd: null, promo_price_stars: 0, promo_price_usd: null, promo_days: 30, promo_expires_at: null, updated_at: new Date().toISOString(), telegram_username: normalizeTelegramUsername(creatorHandle), vip_channel_url: '', is_active: true }
 }
 
 function withCreatorDefaults(settings: Settings, creatorHandle: string) {
@@ -123,6 +174,12 @@ function withCreatorDefaults(settings: Settings, creatorHandle: string) {
   if (configuredUsername) return configuredUsername === settings.telegram_username ? settings : { ...settings, telegram_username: configuredUsername }
   const fallbackUsername = normalizeTelegramUsername(creatorHandle)
   return fallbackUsername ? { ...settings, telegram_username: fallbackUsername } : settings
+}
+
+async function loadTelegramUserCountry(db: ReturnType<typeof createClient>, telegramId: number) {
+  const { data, error } = await db.from('telegram_users').select('location_country').eq('telegram_id', telegramId).maybeSingle()
+  if (error) throw error
+  return typeof data?.location_country === 'string' ? data.location_country : null
 }
 
 async function ensureTelegramUser(db: ReturnType<typeof createClient>, user: TelegramUser) {
@@ -166,7 +223,8 @@ async function handleStart(db: ReturnType<typeof createClient>, botToken: string
   if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
   const settings = withCreatorDefaults(storedSettings ?? defaultFreeSettings(creatorId, creator.name, creator.handle), creator.handle)
   if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
-  const offer = activeOffer(settings)
+  const country = await loadTelegramUserCountry(db, user.id)
+  const offer = activeOffer(settings, country)
   const existing = await currentSubscription(db, creatorId, user.id)
   if (isActiveSubscription(existing)) return new Response(JSON.stringify(resourceResponse(settings, existing, offer)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
@@ -203,7 +261,8 @@ async function handleStatus(db: ReturnType<typeof createClient>, user: TelegramU
   if (!creator) return json({ ok: false, error: 'Creator is not available' }, 404)
   const settings = withCreatorDefaults(storedSettings ?? defaultFreeSettings(creatorId, creator.name, creator.handle), creator.handle)
   if (!settings.is_active) return json({ ok: false, error: 'Subscription is not available for this creator' }, 404)
-  const offer = activeOffer(settings)
+  const country = await loadTelegramUserCountry(db, user.id)
+  const offer = activeOffer(settings, country)
   const subscription = await currentSubscription(db, creatorId, user.id)
   if (subscription?.payment_status === 'active' && !isActiveSubscription(subscription)) {
     await db.from('creator_subscriptions').update({ payment_status: 'expired', updated_at: new Date().toISOString() }).eq('id', subscription.id)
@@ -235,7 +294,8 @@ async function handleWebhook(request: Request, body: TelegramPaymentUpdate, db: 
   const settings = await loadSettings(db, creatorId)
   if (!settings || !settings.is_active) return json({ ok: false, error: 'Subscription settings are unavailable' }, 404)
   const subscriptionType = existing?.subscription_type ?? (settings.plan_mode === 'promo' ? 'promo' : 'paid')
-  const expectedStars = existing?.stars_amount ?? activeOffer(settings).stars
+  const country = await loadTelegramUserCountry(db, telegramId)
+  const expectedStars = existing?.stars_amount ?? activeOffer(settings, country).stars
   if (payment.total_amount !== expectedStars) return json({ ok: false, error: 'Invoice amount does not match the configured offer' }, 400)
   const configuredDays = subscriptionType === 'promo' ? Math.max(1, settings.promo_days) : 30
   const periodEnd = payment.subscription_expiration_date

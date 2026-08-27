@@ -5,8 +5,13 @@ export function starsToUsd(stars: number) {
   return normalized / DISPLAY_STARS_PER_USD
 }
 
+export function formatUsdAmount(usd: number) {
+  const normalized = Number.isFinite(usd) ? Math.max(0, usd) : 0
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(normalized)
+}
+
 export function formatUsdFromStars(stars: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(starsToUsd(stars))
+  return formatUsdAmount(starsToUsd(stars))
 }
 
 export function formatUsdInputFromStars(stars: number) {

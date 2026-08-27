@@ -235,10 +235,12 @@ export type Database = {
           is_active: boolean
           message: string
           normal_price_stars: number
+          normal_price_usd: number | null
           plan_mode: string
           promo_days: number
           promo_expires_at: string | null
           promo_price_stars: number
+          promo_price_usd: number | null
           telegram_username: string
           title: string
           updated_at: string
@@ -250,10 +252,12 @@ export type Database = {
           is_active?: boolean
           message?: string
           normal_price_stars?: number
+          normal_price_usd?: number | null
           plan_mode?: string
           promo_days?: number
           promo_expires_at?: string | null
           promo_price_stars?: number
+          promo_price_usd?: number | null
           telegram_username?: string
           title?: string
           updated_at?: string
@@ -265,10 +269,12 @@ export type Database = {
           is_active?: boolean
           message?: string
           normal_price_stars?: number
+          normal_price_usd?: number | null
           plan_mode?: string
           promo_days?: number
           promo_expires_at?: string | null
           promo_price_stars?: number
+          promo_price_usd?: number | null
           telegram_username?: string
           title?: string
           updated_at?: string

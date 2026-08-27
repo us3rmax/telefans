@@ -190,6 +190,9 @@ export type CreatorSubscriptionResponse = {
     title: string
     message: string
     promoExpiresAt: string | null
+    priceUsd: number
+    normalPriceUsd: number
+    pricingTier: 'limited' | 'standard'
   }
   subscription?: {
     status: string

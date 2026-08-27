@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getCreatorSubscriptionStatus, getPublishedCreator, listCreatorPosts, startCreatorSubscription, unlockPaidMedia } from '@/lib/telefans-data'
 import { getTelegramInitData, getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
-import { formatUsdFromStars } from '@/lib/telegram-stars'
+import { formatUsdAmount, starsToUsd } from '@/lib/telegram-stars'
 import { clearProfileReturnState, saveExploreRestoreState, saveReelsPosition, readProfileReturnState } from '@/lib/navigation-state'
 import '../telescope.css'
 
@@ -75,6 +75,9 @@ const DEFAULT_PROMO_MINUTES = 10
 type SubscriptionOffer = {
   mode: 'free' | 'paid' | 'promo'
   stars: number
+  priceUsd: number
+  normalPriceUsd: number
+  pricingTier: 'limited' | 'standard'
   days: number | null
   autoRenew: boolean
   title: string
@@ -95,14 +98,22 @@ function readPublicSubscription(value: unknown): CreatorProfile['subscription'] 
   const normal = Number(raw.normal_price_stars) || 0
   const promo = Number(raw.promo_price_stars) || 0
   const stars = mode === 'promo' && promo > 0 ? promo : normal
+  const rawNormalUsd = Number(raw.normal_price_usd)
+  const rawPromoUsd = Number(raw.promo_price_usd)
+  const normalPriceUsd = Number.isFinite(rawNormalUsd) && rawNormalUsd > 0 ? rawNormalUsd : Number(starsToUsd(normal))
+  const priceUsd = mode === 'promo' && Number.isFinite(rawPromoUsd) && rawPromoUsd > 0 ? rawPromoUsd : normalPriceUsd
   return {
     title: typeof raw.title === 'string' && raw.title ? raw.title : 'Subscription',
     message: typeof raw.message === 'string' ? raw.message : 'Join this creator on TeleFans.',
-    priceLabel: mode === 'free' ? 'Free' : formatUsdFromStars(stars),
+    priceLabel: mode === 'free' ? 'Free' : formatUsdAmount(priceUsd),
     isFree: mode === 'free',
     planMode: mode,
     normalPriceStars: normal,
+    normalPriceUsd,
     promoPriceStars: promo,
+    promoPriceUsd: Number.isFinite(rawPromoUsd) && rawPromoUsd > 0 ? rawPromoUsd : starsToUsd(promo),
+    priceUsd,
+    pricingTier: 'standard',
     promoDays: Number(raw.promo_days) || 30,
     promoExpiresAt: typeof raw.promo_expires_at === 'string' ? raw.promo_expires_at : null,
   }
@@ -112,7 +123,9 @@ function toSubscriptionOffer(subscription: CreatorProfile['subscription']): Subs
   const mode = subscription.planMode ?? (subscription.isFree ? 'free' : 'paid')
   const normal = subscription.normalPriceStars ?? 0
   const promo = subscription.promoPriceStars ?? 0
-  return { mode, stars: mode === 'promo' && promo > 0 ? promo : normal, days: mode === 'free' ? null : (subscription.promoDays ?? 30), autoRenew: mode !== 'free', title: subscription.title, message: subscription.message, promoExpiresAt: subscription.promoExpiresAt ?? null }
+  const normalPriceUsd = subscription.normalPriceUsd ?? starsToUsd(normal)
+  const priceUsd = subscription.priceUsd ?? (mode === 'promo' && promo > 0 ? (subscription.promoPriceUsd ?? starsToUsd(promo)) : normalPriceUsd)
+  return { mode, stars: mode === 'promo' && promo > 0 ? promo : normal, priceUsd, normalPriceUsd, pricingTier: subscription.pricingTier ?? 'standard', days: mode === 'free' ? null : (subscription.promoDays ?? 30), autoRenew: mode !== 'free', title: subscription.title, message: subscription.message, promoExpiresAt: subscription.promoExpiresAt ?? null }
 }
 
 export function CreatorProfilePage() {
@@ -424,9 +437,8 @@ export function CreatorProfilePage() {
   }, [promoDeadline])
   const promoSecondsLeft = promoDeadline ? Math.max(0, Math.ceil((promoDeadline - promoClock) / 1000)) : null
   const promotionActive = offer.mode === 'promo' && promoSecondsLeft !== null && promoSecondsLeft > 0
-  const normalSubscriptionStars = creator.subscription.normalPriceStars ?? offer.stars
-  const displayStars = promotionActive ? offer.stars : normalSubscriptionStars
-  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdFromStars(displayStars)} per month`
+  const displayUsd = promotionActive ? offer.priceUsd : offer.normalPriceUsd
+  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdAmount(displayUsd)} per month`
   const promoCountdown = promoSecondsLeft === null ? '' : `${String(Math.floor(promoSecondsLeft / 60)).padStart(2, '0')}:${String(promoSecondsLeft % 60).padStart(2, '0')}`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 

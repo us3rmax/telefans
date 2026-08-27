@@ -19,8 +19,12 @@ export type CreatorSubscription = {
   planMode?: 'free' | 'paid' | 'promo'
   normalPriceStars?: number
   promoPriceStars?: number
+  promoPriceUsd?: number
   promoDays?: number
   promoExpiresAt?: string | null
+  priceUsd?: number
+  normalPriceUsd?: number
+  pricingTier?: 'limited' | 'standard'
   autoRenew?: boolean
 }
 
