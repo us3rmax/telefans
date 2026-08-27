@@ -1092,13 +1092,16 @@ button { cursor: pointer; }
 .creator-subscription-feedback { color: #43728a; }
 @media (max-width: 420px) { .creator-subscription-title-row { align-items: flex-start; } .creator-subscription-title-row h2 { max-width: 70%; } .creator-subscription-actions button { flex: 1 1 120px; } .creator-subscription-cta { min-height: 58px; padding-inline: 25px; font-size: 17px; } }
 
-.creator-profile-private-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-.creator-profile-private-actions button { flex: 1 1 140px; min-height: 42px; padding: 0 16px; border: 0; border-radius: 9px; background: #0ca9dc; color: #fff; font: 600 14px 'Roboto', sans-serif; cursor: pointer; transition: transform .18s, filter .18s, opacity .18s; }
-.creator-profile-private-actions button:last-child { background: #1a9d64; }
-.creator-profile-private-actions button:hover:not(:disabled) { filter: brightness(.95); transform: translateY(-1px); }
-.creator-profile-private-actions button:active:not(:disabled) { transform: scale(.98); }
-.creator-profile-private-actions button:disabled { cursor: not-allowed; opacity: .46; }
-@media (prefers-reduced-motion: reduce) { .creator-profile-private-actions button { transition: none; } }
+.creator-profile-private-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.creator-private-action { flex: 1 1 140px; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; background: #1a1a1c; color: #fff; font: 600 15px 'Roboto', sans-serif; cursor: pointer; transition: transform .18s, background .18s, border-color .18s, opacity .18s; }
+.creator-private-action svg { width: 18px; height: 18px; }
+.creator-private-action-vip { border-color: rgba(234,179,8,.24); background: linear-gradient(180deg, #242426, #1a1a1c); }
+.creator-private-action-vip svg { color: #eab308; }
+.creator-private-action:hover:not(:disabled) { background: #242426; transform: translateY(-1px); }
+.creator-private-action-vip:hover:not(:disabled) { border-color: rgba(234,179,8,.4); }
+.creator-private-action:active:not(:disabled) { transform: scale(.98); }
+.creator-private-action:disabled { cursor: not-allowed; opacity: .4; }
+@media (prefers-reduced-motion: reduce) { .creator-private-action { transition: none; } }
 
 .creator-subscription-identity { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; }
 .creator-subscription-avatar { width: 42px; height: 42px; flex: 0 0 42px; overflow: hidden; border-radius: 50%; background: #eef1f2; }

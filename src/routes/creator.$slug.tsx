@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Crown, Feather, Heart, LockKeyhole, MessageCircle, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getCreatorSubscriptionStatus, getPublishedCreator, listCreatorPosts, startCreatorSubscription, unlockPaidMedia } from '@/lib/telefans-data'
@@ -467,7 +467,7 @@ export function CreatorProfilePage() {
           </div>
           <p className={`creator-bio ${expanded ? 'is-expanded' : ''}`} aria-expanded={expanded}>{creator.bio}</p>
           {creator.bio.length > 180 && <button type="button" className="creator-more-info" onClick={() => setExpanded(!expanded)}>{expanded ? 'Show less' : 'More info'}</button>}
-          {subscriptionStatus.subscribed && <div className="creator-profile-private-actions" aria-label="Private creator actions"><button type="button" onClick={() => openSubscriptionDestination('message')} disabled={!subscriptionStatus.telegramUsername}>Message</button><button type="button" onClick={() => openSubscriptionDestination('vip')} disabled={!subscriptionStatus.vipChannelUrl}>Access VIP</button></div>}
+          {subscriptionStatus.subscribed && <div className="creator-profile-private-actions" aria-label="Private creator actions"><button type="button" className="creator-private-action creator-private-action-message" onClick={() => openSubscriptionDestination('message')} disabled={!subscriptionStatus.telegramUsername}><MessageCircle aria-hidden="true" /><span>Message</span></button><button type="button" className="creator-private-action creator-private-action-vip" onClick={() => openSubscriptionDestination('vip')} disabled={!subscriptionStatus.vipChannelUrl}><Crown aria-hidden="true" fill="currentColor" /><span>Access VIP</span></button></div>}
         </section>
 
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
