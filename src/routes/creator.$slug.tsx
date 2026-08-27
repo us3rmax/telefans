@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Feather, Heart, LockKeyhole, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getPublishedCreator, listCreatorPosts, unlockPaidMedia } from '@/lib/telefans-data'
 import { getTelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
@@ -56,15 +56,42 @@ export function CreatorProfilePage() {
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
-  const [activeSlideByGroup, setActiveSlideByGroup] = useState<Record<string, number>>({})
   const [offerOpened, setOfferOpened] = useState(false)
   const [expandedPost, setExpandedPost] = useState<PublicCreatorPost | null>(null)
+  const [expandedPostGroup, setExpandedPostGroup] = useState<CreatorPostGroup | null>(null)
+  const [expandedPostIndex, setExpandedPostIndex] = useState(0)
   const [pendingUnlock, setPendingUnlock] = useState<PublicCreatorPost | null>(null)
   const [unlockingPostId, setUnlockingPostId] = useState<string | null>(null)
   const [unlockError, setUnlockError] = useState('')
   const [unlockedMedia, setUnlockedMedia] = useState<Record<string, string>>({})
   const [coinBalance, setCoinBalance] = useState<number | null>(null)
   const availability = getCreatorAvailability(slug)
+  const touchStartX = useRef<number | null>(null)
+
+  const closeExpandedPost = useCallback(() => {
+    setExpandedPost(null)
+    setExpandedPostGroup(null)
+    setExpandedPostIndex(0)
+  }, [])
+
+  const openExpandedSlide = useCallback((post: PublicCreatorPost, index: number) => {
+    if (post.isPaid && !unlockedMedia[post.id]) {
+      setUnlockError('')
+      setPendingUnlock(post)
+      return
+    }
+    setPendingUnlock(null)
+    setExpandedPostIndex(index)
+    setExpandedPost({ ...post, mediaUrl: unlockedMedia[post.id] || post.mediaUrl })
+  }, [unlockedMedia])
+
+  const changeExpandedSlide = useCallback((delta: number) => {
+    if (!expandedPost || !expandedPostGroup || pendingUnlock || expandedPostGroup.posts.length < 2) return
+    const slideCount = expandedPostGroup.posts.length
+    const currentIndex = Math.min(Math.max(expandedPostIndex, 0), slideCount - 1)
+    const nextIndex = (currentIndex + delta + slideCount) % slideCount
+    openExpandedSlide(expandedPostGroup.posts[nextIndex], nextIndex)
+  }, [expandedPost, expandedPostGroup, expandedPostIndex, openExpandedSlide, pendingUnlock])
 
   const goBack = useCallback(() => {
     if (pendingUnlock) {
@@ -72,7 +99,7 @@ export function CreatorProfilePage() {
       return
     }
     if (expandedPost) {
-      setExpandedPost(null)
+      closeExpandedPost()
       return
     }
     const origin = readProfileReturnState()
@@ -92,7 +119,7 @@ export function CreatorProfilePage() {
       return
     }
     void navigate({ to: '/' })
-  }, [expandedPost, navigate, pendingUnlock])
+  }, [closeExpandedPost, expandedPost, navigate, pendingUnlock])
 
   useEffect(() => useTelegramBackButton(goBack), [goBack])
 
@@ -100,8 +127,17 @@ export function CreatorProfilePage() {
     if (!expandedPost && !pendingUnlock) return
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setExpandedPost(null)
+        closeExpandedPost()
         setPendingUnlock(null)
+        return
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        changeExpandedSlide(-1)
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        changeExpandedSlide(1)
       }
     }
     const previousOverflow = document.body.style.overflow
@@ -111,7 +147,7 @@ export function CreatorProfilePage() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [expandedPost, pendingUnlock])
+  }, [changeExpandedSlide, closeExpandedPost, expandedPost, pendingUnlock])
 
   useEffect(() => {
     let active = true
@@ -119,8 +155,9 @@ export function CreatorProfilePage() {
     setCreatorMediaLoaded(false)
     setPublicPosts([])
     setExpanded(false)
-    setActiveSlideByGroup({})
     setExpandedPost(null)
+    setExpandedPostGroup(null)
+    setExpandedPostIndex(0)
     setPendingUnlock(null)
     setUnlockedMedia({})
     setUnlockError('')
@@ -176,13 +213,11 @@ export function CreatorProfilePage() {
 
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
-  const openPost = (post: PublicCreatorPost) => {
+  const openPost = (post: PublicCreatorPost, group: CreatorPostGroup, index: number) => {
     setUnlockError('')
-    if (post.isPaid && !unlockedMedia[post.id]) {
-      setPendingUnlock(post)
-      return
-    }
-    setExpandedPost({ ...post, mediaUrl: unlockedMedia[post.id] || post.mediaUrl })
+    setExpandedPostGroup(group)
+    setExpandedPostIndex(index)
+    openExpandedSlide(post, index)
   }
 
   const confirmUnlock = async () => {
@@ -195,6 +230,8 @@ export function CreatorProfilePage() {
       setUnlockedMedia(current => ({ ...current, [post.id]: unlocked.mediaUrl }))
       setCoinBalance(unlocked.coinsBalance)
       setPendingUnlock(null)
+      const unlockedIndex = expandedPostGroup?.posts.findIndex(item => item.id === post.id) ?? -1
+      if (unlockedIndex >= 0) setExpandedPostIndex(unlockedIndex)
       setExpandedPost({ ...post, mediaUrl: unlocked.mediaUrl })
     } catch (error) {
       setUnlockError(error instanceof Error ? error.message : 'Could not unlock this media.')
@@ -220,25 +257,20 @@ export function CreatorProfilePage() {
   const postGroups = groupPosts(posts)
   const paidMediaGroups = groupPosts(paidMedia)
 
-  const moveSlide = (groupId: string, slideCount: number, delta: number) => {
-    setActiveSlideByGroup(current => ({ ...current, [groupId]: ((current[groupId] ?? 0) + delta + slideCount) % slideCount }))
-  }
+  const lightboxPosts = expandedPostGroup?.posts ?? (expandedPost ? [expandedPost] : [])
+  const lightboxSlideIndex = Math.min(Math.max(expandedPostIndex, 0), Math.max(lightboxPosts.length - 1, 0))
+  const lightboxPost = lightboxPosts[lightboxSlideIndex] ?? expandedPost
+  const activeLightboxPost = lightboxPost ? { ...lightboxPost, mediaUrl: unlockedMedia[lightboxPost.id] || lightboxPost.mediaUrl } : null
 
   const renderPostGroup = (group: CreatorPostGroup, isPaid: boolean) => {
-    const slideIndex = Math.min(activeSlideByGroup[group.id] ?? 0, group.posts.length - 1)
-    const post = group.posts[slideIndex]
+    const post = group.posts[0]
     const unlocked = Boolean(unlockedMedia[post.id])
     const cardClass = isPaid ? `paid-media-card ${unlocked ? 'is-unlocked' : 'is-locked'}` : 'creator-post-card'
     return <div className={`creator-carousel-card ${cardClass}`} key={group.id}>
-      <button type="button" className="creator-carousel-media" onClick={() => openPost(post)} aria-label={`${isPaid && !unlocked ? 'Unlock' : 'Open'} ${group.posts.length > 1 ? `slide ${slideIndex + 1} of ${group.posts.length} from ` : ''}post from ${creator.name}`}>
+      <button type="button" className="creator-carousel-media" onClick={() => openPost(post, group, 0)} aria-label={`${isPaid && !unlocked ? 'Unlock' : 'Open'} ${group.posts.length > 1 ? `carousel with ${group.posts.length} slides from ` : ''}post from ${creator.name}`}>
         <img src={previewUrl(post)} alt={post.title || `${creator.name} post`} />
         {isPaid && !unlocked && <div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div>}
       </button>
-      {group.posts.length > 1 && <>
-        <button type="button" className="creator-carousel-arrow creator-carousel-arrow-left" onClick={event => { event.stopPropagation(); moveSlide(group.id, group.posts.length, -1) }} aria-label="Previous slide"><ChevronLeft /></button>
-        <button type="button" className="creator-carousel-arrow creator-carousel-arrow-right" onClick={event => { event.stopPropagation(); moveSlide(group.id, group.posts.length, 1) }} aria-label="Next slide"><ChevronRight /></button>
-        <span className="creator-carousel-counter" aria-live="polite">{slideIndex + 1} / {group.posts.length}</span>
-      </>}
     </div>
   }
 
@@ -301,11 +333,32 @@ export function CreatorProfilePage() {
         </section>
       </div>}
 
-      {expandedPost && <div className="creator-media-lightbox" role="dialog" aria-modal="true" aria-label="Expanded media" onClick={() => setExpandedPost(null)}>
-        <button type="button" className="creator-media-lightbox-close" onClick={() => setExpandedPost(null)} aria-label="Close expanded media"><X /></button>
-        <div className="creator-media-lightbox-content" onClick={event => event.stopPropagation()}>
-          <img src={expandedPost.mediaUrl} alt={expandedPost.title || `${creator.name} post`} />
-          <div className="creator-media-lightbox-caption"><strong>{creator.name}</strong>{expandedPost.caption && <span>{expandedPost.caption}</span>}</div>
+      {expandedPost && activeLightboxPost && <div className="creator-media-lightbox" role="dialog" aria-modal="true" aria-label="Expanded media" onClick={closeExpandedPost}>
+        <button type="button" className="creator-media-lightbox-close" onClick={event => { event.stopPropagation(); closeExpandedPost() }} aria-label="Close expanded media"><X /></button>
+        <div
+          className="creator-media-lightbox-content"
+          onClick={event => event.stopPropagation()}
+          onTouchStart={event => { touchStartX.current = event.changedTouches[0]?.clientX ?? null }}
+          onTouchEnd={event => {
+            const startX = touchStartX.current
+            touchStartX.current = null
+            const endX = event.changedTouches[0]?.clientX
+            if (startX === null || endX === undefined || Math.abs(startX - endX) < 48) return
+            changeExpandedSlide(startX > endX ? 1 : -1)
+          }}
+        >
+          <div className="creator-media-lightbox-stage">
+            {lightboxPosts.length > 1 && <button type="button" className="creator-media-lightbox-arrow creator-media-lightbox-arrow-left" onClick={() => changeExpandedSlide(-1)} aria-label="Previous slide"><ChevronLeft /></button>}
+            <img src={activeLightboxPost.mediaUrl} alt={activeLightboxPost.title || `${creator.name} post`} />
+            {lightboxPosts.length > 1 && <button type="button" className="creator-media-lightbox-arrow creator-media-lightbox-arrow-right" onClick={() => changeExpandedSlide(1)} aria-label="Next slide"><ChevronRight /></button>}
+          </div>
+          {lightboxPosts.length > 1 && <div className="creator-media-lightbox-navigation" aria-label="Carousel navigation">
+            <span className="creator-media-lightbox-counter" aria-live="polite">{lightboxSlideIndex + 1} / {lightboxPosts.length}</span>
+            <div className="creator-media-lightbox-dots">
+              {lightboxPosts.map((post, index) => <button key={post.id} type="button" className={`creator-media-lightbox-dot ${index === lightboxSlideIndex ? 'active' : ''}`} onClick={() => openExpandedSlide(post, index)} aria-label={`Open slide ${index + 1} of ${lightboxPosts.length}`} aria-current={index === lightboxSlideIndex ? 'true' : undefined} />)}
+            </div>
+          </div>}
+          <div className="creator-media-lightbox-caption"><strong>{creator.name}</strong>{activeLightboxPost.caption && <span>{activeLightboxPost.caption}</span>}</div>
         </div>
       </div>}
     </div>

@@ -915,13 +915,25 @@ button { cursor: pointer; }
 .creator-media-lightbox { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: rgba(0,0,0,.92); }
 .creator-media-lightbox-close { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; }
 .creator-media-lightbox-close svg { width: 22px; height: 22px; }
-.creator-media-lightbox-content { display: flex; width: min(100%, 760px); max-height: 100%; flex-direction: column; align-items: center; gap: 14px; }
-.creator-media-lightbox-content img { display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100dvh - 110px); object-fit: contain; border-radius: 8px; }
+.creator-media-lightbox-content { display: flex; width: min(100%, 760px); max-height: 100%; flex-direction: column; align-items: center; gap: 12px; touch-action: pan-y; }
+.creator-media-lightbox-stage { position: relative; display: flex; width: 100%; min-height: 0; align-items: center; justify-content: center; }
+.creator-media-lightbox-content img { display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100dvh - 172px); object-fit: contain; border-radius: 8px; }
+.creator-media-lightbox-arrow { position: absolute; top: 50%; z-index: 1; display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 1px solid rgba(255,255,255,.72); border-radius: 50%; background: rgba(15,18,22,.62); color: #fff; transform: translateY(-50%); transition: background .18s, transform .18s; }
+.creator-media-lightbox-arrow:hover { background: rgba(15,18,22,.88); transform: translateY(-50%) scale(1.05); }
+.creator-media-lightbox-arrow:focus-visible, .creator-media-lightbox-dot:focus-visible { outline: 2px solid #16aee1; outline-offset: 3px; }
+.creator-media-lightbox-arrow svg { width: 22px; height: 22px; }
+.creator-media-lightbox-arrow-left { left: 12px; }
+.creator-media-lightbox-arrow-right { right: 12px; }
+.creator-media-lightbox-navigation { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 22px; }
+.creator-media-lightbox-counter { min-width: 38px; padding: 4px 7px; border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; text-align: center; }
+.creator-media-lightbox-dots { display: flex; align-items: center; gap: 5px; max-width: min(55vw, 280px); overflow: hidden; }
+.creator-media-lightbox-dot { width: 6px; height: 6px; flex: 0 0 6px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.4); transition: transform .18s, background .18s; }
+.creator-media-lightbox-dot.active { background: #fff; transform: scale(1.35); }
 .creator-media-lightbox-caption { display: flex; width: min(100%, 620px); flex-direction: column; gap: 4px; color: #fff; text-align: center; }
 .creator-media-lightbox-caption strong { font-size: 15px; }
 .creator-media-lightbox-caption span { overflow: hidden; color: rgba(255,255,255,.72); font-size: 13px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 420px) { .creator-media-lightbox { padding-inline: 10px; } .creator-media-lightbox-content img { max-height: calc(100dvh - 92px); border-radius: 4px; } }
-@media (prefers-reduced-motion: reduce) { .creator-media-lightbox-content img { transition: none; } .creator-carousel-arrow { transition: none; } }
+@media (max-width: 420px) { .creator-media-lightbox { padding-inline: 10px; } .creator-media-lightbox-content img { max-height: calc(100dvh - 150px); border-radius: 4px; } .creator-media-lightbox-arrow { width: 36px; height: 36px; } .creator-media-lightbox-arrow-left { left: 6px; } .creator-media-lightbox-arrow-right { right: 6px; } }
+@media (prefers-reduced-motion: reduce) { .creator-media-lightbox-content img, .creator-media-lightbox-arrow, .creator-media-lightbox-dot { transition: none; } .creator-carousel-arrow { transition: none; } }
 
 .creator-unlock-backdrop { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 20px; background: rgba(20,22,25,.38); backdrop-filter: blur(12px); }
 .creator-unlock-modal { position: relative; width: min(100%, 360px); padding: 27px 22px 20px; border: 1px solid #e2e5e7; border-radius: 20px; background: #fff; color: #282828; box-shadow: 0 18px 55px rgba(0,0,0,.24); text-align: center; }
