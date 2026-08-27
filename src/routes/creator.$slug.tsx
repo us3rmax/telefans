@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Crown, Feather, Heart, LockKeyhole, MessageCircle, X } from 'lucide-react'
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Coins, Crown, Feather, Heart, Images, LockKeyhole, MessageCircle, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCreatorProfile, normalizeCreatorHandle, type CreatorBadge, type CreatorProfile } from '@/data/creators'
 import { getCreatorSubscriptionStatus, getPublishedCreator, listCreatorPosts, startCreatorSubscription, unlockPaidMedia } from '@/lib/telefans-data'
@@ -505,6 +505,7 @@ export function CreatorProfilePage() {
     return <div className={`creator-carousel-card ${cardClass}`} key={group.id}>
       <button type="button" className="creator-carousel-media" onClick={() => openPost(post, group, 0)} aria-label={`${isPaid && !unlocked ? 'Unlock' : 'Open'} ${group.posts.length > 1 ? `carousel with ${group.posts.length} slides from ` : ''}post from ${creator.name}`}>
         <img src={previewUrl(post)} alt={post.title || `${creator.name} post`} />
+        {group.posts.length > 1 && <span className="creator-carousel-badge" aria-hidden="true"><Images /><span>{group.posts.length}</span></span>}
         {isPaid && !unlocked && <div className="paid-media-overlay"><LockKeyhole className="paid-media-lock" /><span>{post.unlockPrice} coins</span></div>}
       </button>
     </div>
