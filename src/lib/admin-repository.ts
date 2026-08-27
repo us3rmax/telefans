@@ -174,11 +174,38 @@ export async function createCarouselFromMediaAssets(assetIds: string[], creatorI
   if (new Set(selectedPosts.map(post => post.is_paid)).size > 1) throw new Error('Select either Feed images or Paid Media images, not both, for one carousel.')
   const postIds = selectedPosts.map(post => post.id)
 
-  const { data, error } = await supabase.rpc('create_creator_carousel', { p_creator_id: creatorId, p_post_ids: postIds })
-  assertNoError(error)
-  const grouped = data ?? []
-  if (!grouped.length) throw new Error('The carousel could not be created.')
-  await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: grouped[0].carousel_id, post_ids: postIds })
+  const rpcResult = await supabase.rpc('create_creator_carousel', { p_creator_id: creatorId, p_post_ids: postIds })
+  if (!rpcResult.error) {
+    const grouped = rpcResult.data ?? []
+    if (!grouped.length) throw new Error('The carousel could not be created.')
+    await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: grouped[0].carousel_id, post_ids: postIds })
+    return grouped
+  }
+
+  // Some Supabase projects may temporarily serve a stale PostgREST schema cache
+  // after the migration. Keep the same validation and apply the ordered grouping
+  // through the table API so the admin action remains usable.
+  const rpcError = rpcResult.error.message.toLowerCase()
+  if (!rpcError.includes('could not find the function') && !rpcError.includes('schema cache')) {
+    throw new Error(rpcResult.error.message)
+  }
+
+  const carouselId = crypto.randomUUID()
+  const grouped: CreatorPost[] = []
+  for (const [carouselPosition, postId] of postIds.entries()) {
+    const { data: updatedPost, error: updateError } = await supabase
+      .from('creator_posts')
+      .update({ carousel_id: carouselId, carousel_position: carouselPosition })
+      .eq('id', postId)
+      .eq('creator_id', creatorId)
+      .eq('type', 'image')
+      .select('*')
+      .single()
+    assertNoError(updateError)
+    if (!updatedPost) throw new Error('The carousel could not be created.')
+    grouped.push(updatedPost)
+  }
+  await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: carouselId, post_ids: postIds, fallback: true })
   return grouped
 }
 
