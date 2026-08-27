@@ -174,44 +174,17 @@ export async function createCarouselFromMediaAssets(assetIds: string[], creatorI
   if (new Set(selectedPosts.map(post => post.is_paid)).size > 1) throw new Error('Select either Feed images or Paid Media images, not both, for one carousel.')
   const postIds = selectedPosts.map(post => post.id)
 
-  const rpcResult = await supabase.rpc('create_creator_carousel', { p_creator_id: creatorId, p_post_ids: postIds })
-  if (!rpcResult.error) {
-    const grouped = rpcResult.data ?? []
-    if (!grouped.length) throw new Error('The carousel could not be created.')
-    await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: grouped[0].carousel_id, post_ids: postIds })
-    return grouped
+  const { data, error } = await supabase.rpc('create_creator_carousel', { p_creator_id: creatorId, p_post_ids: postIds })
+  if (error) {
+    const message = error.message.toLowerCase()
+    if (message.includes('could not find the function') || message.includes('schema cache')) {
+      throw new Error('The carousel function is not available in Supabase. Refresh the project schema and try again.')
+    }
+    throw new Error(error.message)
   }
-
-  // Some Supabase projects may temporarily serve a stale PostgREST schema cache
-  // after the migration. Keep the same validation and apply the ordered grouping
-  // through the table API so the admin action remains usable.
-  const rpcError = rpcResult.error.message.toLowerCase()
-  if (!rpcError.includes('could not find the function') && !rpcError.includes('schema cache')) {
-    throw new Error(rpcResult.error.message)
-  }
-
-  const carouselId = crypto.randomUUID()
-  for (const [carouselPosition, postId] of postIds.entries()) {
-    const { error: updateError } = await supabase
-      .from('creator_posts')
-      .update({ carousel_id: carouselId, carousel_position: carouselPosition })
-      .eq('id', postId)
-      .eq('creator_id', creatorId)
-      .eq('type', 'image')
-    assertNoError(updateError)
-  }
-
-  const { data: groupedRows, error: groupedError } = await supabase
-    .from('creator_posts')
-    .select('*')
-    .eq('creator_id', creatorId)
-    .eq('carousel_id', carouselId)
-    .in('id', postIds)
-    .order('carousel_position', { ascending: true })
-  assertNoError(groupedError)
-  const grouped = groupedRows ?? []
-  if (grouped.length !== postIds.length) throw new Error('The carousel could not be verified after updating the selected posts.')
-  await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: carouselId, post_ids: postIds, fallback: true })
+  const grouped = data ?? []
+  if (grouped.length !== postIds.length) throw new Error('The carousel could not be created.')
+  await writeAudit('post.carousel_created', 'creator_post', grouped[0].id, { creator_id: creatorId, carousel_id: grouped[0].carousel_id, post_ids: postIds })
   return grouped
 }
 
