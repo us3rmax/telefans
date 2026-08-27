@@ -43,6 +43,7 @@ type PublicCreatorPost = {
 export function CreatorProfilePage() {
   const { slug } = Route.useParams()
   const [creator, setCreator] = useState<CreatorProfile>(() => getCreatorProfile(slug))
+  const [creatorMediaLoaded, setCreatorMediaLoaded] = useState(false)
   const [publicPosts, setPublicPosts] = useState<PublicCreatorPost[]>([])
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'posts' | 'media'>('posts')
@@ -87,10 +88,21 @@ export function CreatorProfilePage() {
 
   useEffect(() => {
     let active = true
+    setCreator(getCreatorProfile(slug))
+    setCreatorMediaLoaded(false)
+    setPublicPosts([])
+    setExpanded(false)
+    setExpandedPost(null)
+    setPendingUnlock(null)
+    setUnlockedMedia({})
+    setUnlockError('')
     const loadPublicCreator = async () => {
       try {
         const remote = await getPublishedCreator(slug)
-        if (!remote || !active) return
+        if (!remote || !active) {
+          if (active) setCreatorMediaLoaded(true)
+          return
+        }
         const fallback = getCreatorProfile(slug)
         setCreator({
           ...fallback,
@@ -102,6 +114,7 @@ export function CreatorProfilePage() {
           bio: remote.bio || fallback.bio,
           status: remote.status || fallback.status,
         })
+        setCreatorMediaLoaded(true)
         const posts = await listCreatorPosts(remote.id)
         if (active) setPublicPosts(posts.map(post => ({
           id: post.id,
@@ -115,7 +128,10 @@ export function CreatorProfilePage() {
           unlockPrice: post.unlock_price,
         })))
       } catch {
-        if (active) setPublicPosts([])
+        if (active) {
+          setCreatorMediaLoaded(true)
+          setPublicPosts([])
+        }
       }
     }
     void loadPublicCreator()
@@ -165,13 +181,13 @@ export function CreatorProfilePage() {
       <div className="creator-profile-scroll">
         <section className="creator-hero">
           <div className="creator-hero-media">
-            <img src={creator.coverImage} alt={creator.name} />
+            {creatorMediaLoaded && creator.coverImage ? <img src={creator.coverImage} alt={creator.name} /> : <span className="creator-image-placeholder" aria-hidden="true" />}
             <div className="creator-hero-gradient" />
           </div>
           <div className="creator-cover-header">
             <Link to="/" className="creator-cover-back" aria-label="Back" onClick={(event) => { if (window.history.length > 1) { event.preventDefault(); window.history.back() } }}><ArrowLeft /></Link>
           </div>
-          <div className="creator-avatar"><img src={creator.avatarImage} alt={`${creator.name} avatar`} /></div>
+          <div className="creator-avatar">{creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt={`${creator.name} avatar`} /> : <span className="creator-image-placeholder" aria-hidden="true" />}</div>
         </section>
 
         <section className="creator-about">
@@ -187,7 +203,7 @@ export function CreatorProfilePage() {
           <span className="creator-section-label">SUBSCRIPTION</span>
           <h2>{creator.subscription.title}</h2>
           <button type="button" className="creator-offer-row" onClick={openOffer} aria-label="View subscription offer">
-            <img src={creator.avatarImage} alt="" />
+            {creatorMediaLoaded && creator.avatarImage ? <img src={creator.avatarImage} alt="" /> : <span className="creator-image-placeholder" aria-hidden="true" />}
             <span>{creator.subscription.message}</span>
             <span className="offer-arrow">›</span>
           </button>

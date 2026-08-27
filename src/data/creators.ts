@@ -99,8 +99,9 @@ export function getCreatorProfile(slug: string): CreatorProfile {
     slug,
     name: slug.replace(/-/g, ' '),
     handle: `@${slug.replace(/-/g, '')}`,
-    coverImage: creatorProfiles['abigaiil-morris'].coverImage,
-    avatarImage: creatorProfiles['abigaiil-morris'].avatarImage,
+    // Unknown creators must not inherit another creator's media while remote data loads.
+    coverImage: '',
+    avatarImage: '',
     badges: ['verified'],
     status: 'Available now',
     bio: 'Welcome to my exclusive profile on TeleFans.',
