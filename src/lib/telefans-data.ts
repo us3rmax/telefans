@@ -51,6 +51,24 @@ export async function listPublishedCreators(): Promise<CreatorRow[]> {
 export type PublishedCreatorExploreStats = CreatorRow & {
   trendingScore: number
   popularScore: number
+  latestActivityAt: string
+  contentCount: number
+}
+
+const ACTIVITY_DAY = 86400000
+const TRENDING_HALF_LIFE_DAYS = 14
+const TRENDING_LOOKBACK_DAYS = 90
+
+function activityFreshness(value: string, now: number) {
+  const timestamp = new Date(value).getTime()
+  if (!Number.isFinite(timestamp)) return 0
+  const ageDays = Math.max(0, (now - timestamp) / ACTIVITY_DAY)
+  if (ageDays > TRENDING_LOOKBACK_DAYS) return 0
+  return Math.pow(0.5, ageDays / TRENDING_HALF_LIFE_DAYS)
+}
+
+function keepLatestActivity(current: string, candidate: string) {
+  return new Date(candidate).getTime() > new Date(current).getTime() ? candidate : current
 }
 
 export async function listPublishedCreatorExploreStats(): Promise<PublishedCreatorExploreStats[]> {
@@ -58,52 +76,80 @@ export async function listPublishedCreatorExploreStats(): Promise<PublishedCreat
   const creators = await listPublishedCreators()
   if (!creators.length) return []
   const creatorIds = creators.map((creator) => creator.id)
+  const creatorIdSet = new Set(creatorIds)
   const [{ data: posts, error: postsError }, { data: follows, error: followsError }] = await Promise.all([
-    supabase.from('creator_posts').select('id, creator_id, created_at, published').in('creator_id', creatorIds).eq('published', true),
-    supabase.from('creator_following').select('creator_id').in('creator_id', creatorIds),
+    // Avoid a very long PostgREST `in` URL when the catalog has many creators.
+    supabase.from('creator_posts').select('id, creator_id, created_at, published').eq('published', true).limit(10000),
+    supabase.from('creator_following').select('creator_id, created_at').limit(10000),
   ])
   if (postsError) throw postsError
   if (followsError) throw followsError
-  const postRows = posts ?? []
-  const postIds = postRows.map((post) => post.id)
+  const postRows = (posts ?? []).filter((post) => creatorIdSet.has(post.creator_id))
   const [{ data: likes, error: likesError }, { data: comments, error: commentsError }, { data: views, error: viewsError }] = await Promise.all([
-    postIds.length ? supabase.from('post_likes').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
-    postIds.length ? supabase.from('post_comments').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
-    postIds.length ? supabase.from('post_views').select('post_id, created_at').in('post_id', postIds) : Promise.resolve({ data: [], error: null }),
+    // Filter against postById below; querying by hundreds of post IDs can exceed URL limits.
+    supabase.from('post_likes').select('post_id, created_at').limit(10000),
+    supabase.from('post_comments').select('post_id, created_at').limit(10000),
+    supabase.from('post_views').select('post_id, created_at').limit(10000),
   ])
   if (likesError) throw likesError
   if (commentsError) throw commentsError
   if (viewsError) throw viewsError
+
+  const now = Date.now()
   const postById = new Map(postRows.map((post) => [post.id, post]))
   const followerCounts = new Map<string, number>()
-  for (const follow of follows ?? []) followerCounts.set(follow.creator_id, (followerCounts.get(follow.creator_id) ?? 0) + 1)
-  const stats = new Map<string, { recent: number; total: number }>()
-  for (const creator of creators) stats.set(creator.id, { recent: 0, total: 0 })
-  const cutoff = Date.now() - 30 * 86400000
+  const stats = new Map<string, { recentEngagement: number; totalEngagement: number; recentPosts: number; contentCount: number; recentFollowerSignals: number; latestActivityAt: string }>()
+  for (const creator of creators) {
+    const fallbackActivity = creator.updated_at || creator.created_at || new Date(0).toISOString()
+    stats.set(creator.id, { recentEngagement: 0, totalEngagement: 0, recentPosts: 0, contentCount: 0, recentFollowerSignals: 0, latestActivityAt: fallbackActivity })
+  }
+
   const addMetric = (rows: Array<{ post_id: string; created_at: string }>, weight: number) => {
     for (const row of rows) {
       const post = postById.get(row.post_id)
       if (!post) continue
-      const value = weight
       const creatorStats = stats.get(post.creator_id)
       if (!creatorStats) continue
-      creatorStats.total += value
-      if (new Date(row.created_at).getTime() >= cutoff) creatorStats.recent += value
+      const freshness = activityFreshness(row.created_at, now)
+      creatorStats.totalEngagement += weight
+      creatorStats.recentEngagement += weight * freshness
+      creatorStats.latestActivityAt = keepLatestActivity(creatorStats.latestActivityAt, row.created_at)
     }
   }
+
   addMetric(likes ?? [], 3)
   addMetric(comments ?? [], 5)
   addMetric(views ?? [], 0.2)
   for (const post of postRows) {
     const creatorStats = stats.get(post.creator_id)
     if (!creatorStats) continue
-    creatorStats.total += 2
-    if (new Date(post.created_at).getTime() >= cutoff) creatorStats.recent += 4
+    const freshness = activityFreshness(post.created_at, now)
+    creatorStats.contentCount += 1
+    creatorStats.totalEngagement += 1
+    creatorStats.recentPosts += freshness
+    creatorStats.latestActivityAt = keepLatestActivity(creatorStats.latestActivityAt, post.created_at)
   }
+  for (const follow of follows ?? []) {
+    const creatorStats = stats.get(follow.creator_id)
+    if (!creatorStats) continue
+    followerCounts.set(follow.creator_id, (followerCounts.get(follow.creator_id) ?? 0) + 1)
+    creatorStats.recentFollowerSignals += activityFreshness(follow.created_at, now)
+    creatorStats.latestActivityAt = keepLatestActivity(creatorStats.latestActivityAt, follow.created_at)
+  }
+
   const result = creators.map((creator) => {
-    const creatorStats = stats.get(creator.id) ?? { recent: 0, total: 0 }
+    const creatorStats = stats.get(creator.id) ?? { recentEngagement: 0, totalEngagement: 0, recentPosts: 0, contentCount: 0, recentFollowerSignals: 0, latestActivityAt: creator.updated_at || creator.created_at || new Date(0).toISOString() }
     const followers = followerCounts.get(creator.id) ?? 0
-    return { ...creator, trendingScore: Math.round((creatorStats.recent + followers * 0.5) * 10) / 10, popularScore: Math.round((creatorStats.total + followers * 5) * 10) / 10 }
+    const latestFreshness = activityFreshness(creatorStats.latestActivityAt, now)
+    const trendingScore = creatorStats.recentEngagement * 4 + Math.min(creatorStats.recentPosts, 7) * 3 + latestFreshness * 25 + creatorStats.recentFollowerSignals * 2
+    const popularScore = creatorStats.totalEngagement * 2 + Math.log1p(creatorStats.contentCount) * 30 + followers * 8
+    return {
+      ...creator,
+      trendingScore: Math.round(trendingScore * 10) / 10,
+      popularScore: Math.round(popularScore * 10) / 10,
+      latestActivityAt: creatorStats.latestActivityAt,
+      contentCount: creatorStats.contentCount,
+    }
   })
   exploreStatsCache = { data: result, expiresAt: Date.now() + PUBLIC_CACHE_TTL }
   return result

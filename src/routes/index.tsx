@@ -34,24 +34,32 @@ export function ExplorePage() {
 
   useEffect(() => {
     let active = true
-    const toExploreCreator = (creator: { name: string; avatar_image?: string | null; cover_image?: string | null; slug: string; created_at?: string; updated_at?: string; trendingScore?: number; popularScore?: number }): ExploreCreator => ({
+    const toExploreCreator = (creator: { name: string; avatar_image?: string | null; cover_image?: string | null; slug: string; created_at?: string; updated_at?: string; latestActivityAt?: string; contentCount?: number; trendingScore?: number; popularScore?: number }): ExploreCreator => ({
       name: creator.name,
       image: creator.avatar_image || creator.cover_image || '/placeholder-avatar.svg',
       slug: creator.slug,
       trendingScore: creator.trendingScore ?? 0,
       popularScore: creator.popularScore ?? 0,
       createdAt: creator.created_at || creator.updated_at || new Date(0).toISOString(),
+      latestActivityAt: creator.latestActivityAt || creator.updated_at || creator.created_at || new Date(0).toISOString(),
+      contentCount: creator.contentCount ?? 0,
     })
 
-    // Load every published creator directly first. Ranking metrics are optional
-    // and must never block or replace the complete catalog with an empty state.
+    // Load the complete published catalog and resolve ranking metrics before
+    // revealing the grid. Otherwise every score is zero for one render and the
+    // database's name order looks like the ranking algorithm.
     void listPublishedCreators().then((rows) => {
       if (!active) return
-      setPublishedCreators(rows.map(toExploreCreator))
-      setRemoteCatalogLoaded(true)
+      const baseCatalog = rows.map(toExploreCreator)
       void listPublishedCreatorExploreStats().then((stats) => {
-        if (active && stats.length) setPublishedCreators(stats.map(toExploreCreator))
-      }).catch(() => undefined)
+        if (!active) return
+        setPublishedCreators((stats.length ? stats : baseCatalog).map(toExploreCreator))
+        setRemoteCatalogLoaded(true)
+      }).catch(() => {
+        if (!active) return
+        setPublishedCreators(baseCatalog)
+        setRemoteCatalogLoaded(true)
+      })
     }).catch(() => {
       if (!active) return
       setPublishedCreators(exploreCreators)

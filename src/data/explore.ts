@@ -7,14 +7,16 @@ export type ExploreCreator = {
   trendingScore: number
   popularScore: number
   createdAt: string
+  latestActivityAt: string
+  contentCount: number
 }
 
 const image = (id: string) => `https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/${id}/public`
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
 /**
- * Deterministic Explore metadata. These values are intentionally local until
- * the Explore ranking is connected to persisted creator analytics.
+ * Deterministic Explore metadata used only when the live catalog is unavailable.
+ * The published Supabase catalog and its persisted activity metrics are preferred.
  */
 const source = [
   ['Abigaiil Morris', '8e1e169a-09c9-4e66-f7be-b42f59cff800', 86, 78, '2026-07-30'],
@@ -46,12 +48,25 @@ export const exploreCreators: ExploreCreator[] = source.map(([name, id, trending
   trendingScore,
   popularScore,
   createdAt,
+  latestActivityAt: createdAt,
+  contentCount: 0,
 }))
+
+function timestamp(value: string) {
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function newestFirst(a: ExploreCreator, b: ExploreCreator) {
+  return timestamp(b.latestActivityAt || b.createdAt) - timestamp(a.latestActivityAt || a.createdAt)
+    || timestamp(b.createdAt) - timestamp(a.createdAt)
+    || a.name.localeCompare(b.name)
+}
 
 export function rankExploreCreators(category: ExploreCategory, creators: ExploreCreator[] = exploreCreators) {
   return [...creators].sort((a, b) => {
-    if (category === 'Trending') return b.trendingScore - a.trendingScore
-    if (category === 'Most Popular') return b.popularScore - a.popularScore
-    return b.createdAt.localeCompare(a.createdAt)
+    if (category === 'Trending') return b.trendingScore - a.trendingScore || newestFirst(a, b)
+    if (category === 'Most Popular') return b.popularScore - a.popularScore || b.contentCount - a.contentCount || newestFirst(a, b)
+    return timestamp(b.createdAt) - timestamp(a.createdAt) || newestFirst(a, b)
   })
 }
