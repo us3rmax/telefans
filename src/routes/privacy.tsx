@@ -8,14 +8,14 @@ export const Route = createFileRoute('/privacy')({
 
 function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updatedAt="15 August 2026">
+    <LegalPage title="Privacy Policy" updatedAt="27 August 2026">
       <section>
         <h2>1. Information we receive</h2>
-        <p>When you open TeleFans through Telegram, we may receive the Telegram information made available to the Mini App, such as your Telegram identifier, display name, username, profile photo, and authentication data.</p>
+        <p>When you open TeleFans through Telegram, we may receive the Telegram information made available to the Mini App, such as your Telegram identifier, display name, username, profile photo, and authentication data. During the first successful authentication, we may also estimate your city, state or region, and country from the connection IP address. We do not store the raw IP address in your TeleFans profile; this location is approximate and may be affected by VPNs, proxies, mobile networks, or travel.</p>
       </section>
       <section>
         <h2>2. How we use information</h2>
-        <p>We use this information to authenticate your session, display your profile, save creator follows and interactions, provide requested features, protect the service, and respond to support requests.</p>
+        <p>We use this information to authenticate your session, display your profile, save creator follows and interactions, provide requested features, understand the geographic distribution of our audience, protect the service, and respond to support requests.</p>
       </section>
       <section>
         <h2>3. Content and interactions</h2>
@@ -23,7 +23,7 @@ function PrivacyPage() {
       </section>
       <section>
         <h2>4. Storage and service providers</h2>
-        <p>TeleFans uses Supabase for application data, authentication support, and media storage, and Telegram for Mini App access and sharing features. These providers process information only as needed to provide the service.</p>
+        <p>TeleFans uses Supabase for application data, authentication support, and media storage, Telegram for Mini App access and sharing features, and an IP geolocation provider to estimate city, state or region, and country. These providers process information only as needed to provide the service.</p>
       </section>
       <section>
         <h2>5. Retention and deletion</h2>

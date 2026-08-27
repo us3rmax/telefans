@@ -1144,6 +1144,10 @@ export type Database = {
           first_name: string
           gender: string
           last_name: string | null
+          location_city: string | null
+          location_country: string | null
+          location_detected_at: string | null
+          location_state: string | null
           photo_url: string | null
           profile_photo_url: string | null
           referral_count: number
@@ -1161,6 +1165,10 @@ export type Database = {
           first_name: string
           gender?: string
           last_name?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_detected_at?: string | null
+          location_state?: string | null
           photo_url?: string | null
           profile_photo_url?: string | null
           referral_count?: number
@@ -1178,6 +1186,10 @@ export type Database = {
           first_name?: string
           gender?: string
           last_name?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_detected_at?: string | null
+          location_state?: string | null
           photo_url?: string | null
           profile_photo_url?: string | null
           referral_count?: number

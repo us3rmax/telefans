@@ -10,6 +10,50 @@ function hex(buffer: ArrayBuffer) {
   return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+type LocationFields = {
+  location_city?: string | null
+  location_state?: string | null
+  location_country?: string | null
+  location_detected_at?: string | null
+}
+
+function cleanLocationValue(value: unknown, maxLength = 120) {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, maxLength) : null
+}
+
+function getClientIp(request: Request) {
+  const direct = request.headers.get('cf-connecting-ip')?.trim()
+  if (direct) return direct
+  const real = request.headers.get('x-real-ip')?.trim()
+  if (real) return real
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null
+}
+
+async function detectLocation(request: Request): Promise<LocationFields> {
+  const countryHint = cleanLocationValue(request.headers.get('cf-ipcountry'))
+  const ip = getClientIp(request)
+  if (!ip) return countryHint ? { location_country: countryHint, location_detected_at: new Date().toISOString() } : {}
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 2500)
+  try {
+    const response = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?fields=success,city,region,country,country_code`, { signal: controller.signal })
+    if (!response.ok) return countryHint ? { location_country: countryHint, location_detected_at: new Date().toISOString() } : {}
+    const payload = await response.json() as { success?: boolean; city?: unknown; region?: unknown; country?: unknown; country_code?: unknown }
+    if (payload.success === false) return countryHint ? { location_country: countryHint, location_detected_at: new Date().toISOString() } : {}
+    const location = {
+      location_city: cleanLocationValue(payload.city),
+      location_state: cleanLocationValue(payload.region),
+      location_country: cleanLocationValue(payload.country) ?? countryHint,
+    }
+    return Object.values(location).some(Boolean) ? { ...location, location_detected_at: new Date().toISOString() } : {}
+  } catch {
+    return countryHint ? { location_country: countryHint, location_detected_at: new Date().toISOString() } : {}
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function validateInitData(initData: string, botToken: string) {
   const params = new URLSearchParams(initData)
   const receivedHash = params.get('hash')
@@ -47,11 +91,12 @@ Deno.serve(async (request) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const { data: existingUser, error: lookupError } = await supabase
       .from('telegram_users')
-      .select('telegram_id')
+      .select('telegram_id, location_detected_at')
       .eq('telegram_id', user.id)
       .maybeSingle()
     if (lookupError) throw lookupError
 
+    const location = existingUser?.location_detected_at ? {} : await detectLocation(request)
     const { error: upsertError } = await supabase.from('telegram_users').upsert({
       telegram_id: user.id,
       username: user.username ?? null,
@@ -59,6 +104,7 @@ Deno.serve(async (request) => {
       last_name: user.last_name ?? null,
       photo_url: user.photo_url ?? null,
       auth_date: new Date().toISOString(),
+      ...location,
     }, { onConflict: 'telegram_id' })
     if (upsertError) throw upsertError
 
