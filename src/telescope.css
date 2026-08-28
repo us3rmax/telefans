@@ -239,7 +239,7 @@ button { cursor: pointer; }
 .creator-bio.is-expanded { display: block; overflow: visible; }
 .creator-subscription { padding: 28px 24px 30px; border-top: 1px solid #e4e4e4; border-bottom: 1px solid #e4e4e4; background: #fff; }
 .creator-section-label { display: block; color: #8a959b; font-family: 'Roboto', sans-serif; font-size: clamp(17px, 4.4vw, 26px); font-weight: 500; letter-spacing: .015em; }
-.creator-subscription-cta { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 64px; margin-top: 24px; padding: 0 clamp(24px, 5.6vw, 45px); border: 0; border-radius: 999px; background: #10abe3; color: #fff; font: 500 clamp(18px, 4.6vw, 25px)/1.1 'Roboto', sans-serif; letter-spacing: -.02em; cursor: pointer; box-shadow: none; transition: transform .18s, filter .18s, opacity .18s; }
+.creator-subscription-cta { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 64px; margin-top: 24px; padding: 0 clamp(24px, 5.6vw, 45px); border: 0; border-radius: 999px; background: linear-gradient(135deg, #16b9eb, #08a4dd); color: #fff; font: 700 clamp(18px, 4.6vw, 25px)/1.1 'Roboto', sans-serif; letter-spacing: -.02em; cursor: pointer; box-shadow: 0 7px 16px rgba(8,164,221,.16); transition: transform .18s, filter .18s, opacity .18s; }
 .creator-subscription-cta:hover:not(:disabled) { filter: brightness(.97); transform: translateY(-1px); }
 .creator-subscription-cta:active:not(:disabled) { transform: scale(.99); }
 .creator-subscription-cta:disabled { cursor: wait; opacity: .72; }
@@ -1080,7 +1080,13 @@ button { cursor: pointer; }
 .creator-subscription-badge.paid { background: #e4f5fc; color: #08749d; }
 .creator-subscription-badge.promo { background: #fff1d8; color: #a25d00; }
 .creator-subscription-message { margin: 0 0 8px; color: #444; font-size: 14px; line-height: 1.45; }
+.creator-subscription-title { max-width: 650px; margin: 28px 0 20px; color: #181a1d; font: 700 clamp(22px, 5.8vw, 32px)/1.16 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: -.045em; }
+.creator-subscription-message-card { display: flex; align-items: flex-start; gap: 13px; margin: 0 0 15px; padding: 10px 14px 10px 8px; border-radius: 10px; background: #f3f5f6; color: #2c2c2c; }
+.creator-subscription-message-card p { min-width: 0; margin: 0; padding-top: 2px; font-size: 15px; line-height: 1.5; }
+.creator-subscription-avatar { display: grid; flex: 0 0 55px; place-items: center; width: 55px; height: 55px; overflow: hidden; border-radius: 50%; background: linear-gradient(145deg, #d8e6ed, #a7c4d0); color: #fff; font-size: 21px; font-weight: 700; }
+.creator-subscription-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .creator-subscription-cta-message { margin: 4px 0 12px; color: #525b62; font-size: 14px; line-height: 1.45; }
+.creator-subscription-normal-price { margin: 18px 0 0; color: #89939a; font-size: 16px; line-height: 1.35; }
 .creator-promo-countdown { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 9px 12px; border: 1px solid #f0d7a4; border-radius: 9px; background: #fff8e8; color: #9a5b00; font-size: 12px; line-height: 1.3; }
 .creator-promo-countdown strong { color: #7b4700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .creator-subscription-detail { margin: 0 0 13px; color: #777; font-size: 12px; }
@@ -1095,7 +1101,7 @@ button { cursor: pointer; }
 .creator-subscription-error, .creator-subscription-feedback { margin: 10px 0 0; font-size: 12px; line-height: 1.4; }
 .creator-subscription-error { color: #b93636; }
 .creator-subscription-feedback { color: #43728a; }
-@media (max-width: 420px) { .creator-subscription-title-row { align-items: flex-start; } .creator-subscription-title-row h2 { max-width: 70%; } .creator-subscription-actions button { flex: 1 1 120px; } .creator-subscription-cta { min-height: 58px; padding-inline: 25px; font-size: 17px; } .creator-promo-countdown { align-items: flex-start; flex-direction: column; gap: 4px; } }
+@media (max-width: 420px) { .creator-subscription-title-row { align-items: flex-start; } .creator-subscription-title-row h2 { max-width: 70%; } .creator-subscription-actions button { flex: 1 1 120px; } .creator-subscription-title { margin-top: 24px; font-size: 24px; } .creator-subscription-message-card { gap: 10px; padding-right: 10px; } .creator-subscription-avatar { flex-basis: 48px; width: 48px; height: 48px; } .creator-subscription-message-card p { font-size: 14px; } .creator-subscription-normal-price { font-size: 14px; } .creator-subscription-cta { min-height: 58px; padding-inline: 25px; font-size: 17px; } .creator-promo-countdown { align-items: flex-start; flex-direction: column; gap: 4px; } }
 
 .creator-profile-private-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .creator-private-action { flex: 1 1 140px; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; background: #1a1a1c; color: #fff; font: 600 15px 'Roboto', sans-serif; cursor: pointer; transition: transform .18s, background .18s, border-color .18s, opacity .18s; }

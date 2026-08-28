@@ -469,7 +469,10 @@ export function CreatorProfilePage() {
   const promoSecondsLeft = promoDeadline ? Math.max(0, Math.ceil((promoDeadline - promoClock) / 1000)) : null
   const promotionActive = offer.mode === 'promo' && promoSecondsLeft !== null && promoSecondsLeft > 0
   const displayUsd = promotionActive ? offer.priceUsd : offer.normalPriceUsd
-  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : `${formatUsdAmount(displayUsd)} per month`
+  const discountPercent = promotionActive && offer.normalPriceUsd > 0 ? Math.max(0, Math.round((1 - displayUsd / offer.normalPriceUsd) * 100)) : 0
+  const visiblePromotion = promotionActive && discountPercent > 0
+  const promoHeadline = visiblePromotion ? `Limited-time offer: ${discountPercent}% off your first ${offer.days ?? 30} days!` : ''
+  const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : visiblePromotion ? `${formatUsdAmount(displayUsd)} for ${offer.days ?? 30} days` : `${formatUsdAmount(displayUsd)} per month`
   const promoCountdown = promoSecondsLeft === null ? '' : `${String(Math.floor(promoSecondsLeft / 60)).padStart(2, '0')}:${String(promoSecondsLeft % 60).padStart(2, '0')}`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
@@ -537,13 +540,19 @@ export function CreatorProfilePage() {
 
         {!subscriptionStatus.subscribed && <section className="creator-subscription">
           <span className="creator-section-label">SUBSCRIPTION</span>
+          <h2 className="creator-subscription-title">{visiblePromotion ? promoHeadline : (offer.title || 'Unlock my exclusive content')}</h2>
+          <div className="creator-subscription-message-card">
+            <div className="creator-subscription-avatar">{creator.avatarImage ? <img src={creator.avatarImage} alt={`${creator.name} avatar`} /> : <span>{creator.name.slice(0, 1).toUpperCase()}</span>}</div>
+            <p>{offer.message || `Join ${creator.name} for exclusive content and direct messages.`}</p>
+          </div>
           <p className="creator-subscription-cta-message">Unlock all content and direct messages by subscribing.</p>
           {subscriptionOfferState === 'error' ? <p className="creator-subscription-error" role="alert">{subscriptionError || 'Could not load the subscription offer.'}</p> : <>
-            {promotionActive && <p className="creator-promo-countdown" role="timer" aria-live="polite"><span>Limited-time offer</span><strong>Ends in {promoCountdown}</strong></p>}
+            {visiblePromotion && <p className="creator-promo-countdown" role="timer" aria-live="polite"><span>Limited-time offer</span><strong>Ends in {promoCountdown}</strong></p>}
             <button type="button" className="creator-subscription-cta" onClick={() => { void subscribe() }} disabled={subscriptionLoading || subscriptionActionLoading} aria-label={`Subscribe to ${creator.name}`} aria-busy={subscriptionActionLoading}>
               <span>SUBSCRIBE</span>
               <span>{subscriptionActionLoading ? 'OPENING…' : subscriptionDisplayPrice}</span>
             </button>
+            {visiblePromotion && <p className="creator-subscription-normal-price">Regular price {formatUsdAmount(offer.normalPriceUsd)} / month</p>}
             {subscriptionError && <p className="creator-subscription-error" role="alert">{subscriptionError}</p>}
             {subscriptionFeedback && <p className="creator-subscription-feedback" role="status">{subscriptionFeedback}</p>}
           </>}
