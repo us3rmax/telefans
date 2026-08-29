@@ -36,7 +36,7 @@ function telegramWebApp() {
 }
 
 type ProfileSync = { bio?: string; profilePhotoUrl?: string }
-type CoinArtVariant = 'single' | 'double' | 'stack' | 'four' | 'tower' | 'pile' | 'chest' | 'vault' | 'mythic'
+type CoinArtVariant = 'balance' | 'single' | 'double' | 'stack' | 'four' | 'tower' | 'pile' | 'chest' | 'vault' | 'mythic'
 type CoinPackage = {
   code: string
   name: string
@@ -89,6 +89,7 @@ function CoinArtwork({ variant, code, size }: { variant: CoinArtVariant; code: s
       </g>
     </defs>
     {variant !== 'single' && <circle cx="32" cy="34" r="30" fill={`url(#${glow})`} opacity={variant === 'mythic' || variant === 'vault' ? 0.9 : 0.55} />}
+    {variant === 'balance' && coinUse('translate(2,2) scale(0.94)')}
     {variant === 'single' && coinUse('translate(15,15) scale(0.53)')}
     {variant === 'double' && <>{coinUse('translate(3,16) scale(0.46)', 0.95)}{coinUse('translate(27,19) scale(0.5)')}</>}
     {variant === 'stack' && <>{discUse('translate(5,44)')}{discUse('translate(7,37)')}{discUse('translate(5,30)')}{coinUse('translate(28,17) scale(0.44)')}</>}
@@ -106,7 +107,6 @@ export function ProfilePage() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null)
   const [telegramAuthState, setTelegramAuthState] = useState<'idle' | 'connecting' | 'connected' | 'unavailable' | 'error'>('idle')
   const [shared, setShared] = useState(false)
-  const [coinsHelp, setCoinsHelp] = useState(false)
   const [homeAdded, setHomeAdded] = useState(false)
   const [homeInstruction, setHomeInstruction] = useState('Save TeleFans for faster access')
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -330,9 +330,11 @@ export function ProfilePage() {
         </section>
 
         <section className="coins-card">
-          <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><strong aria-label={`Fans Coins balance: ${displayCoins}`}>{displayCoins}</strong><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
-          {coinsHelp && <p className="coins-help">Fans Coins can be used to unlock content and support creators.</p>}
-          <button type="button" className="coins-buy-button" onClick={openBuyCoins}><Coins aria-hidden="true" /><span>Buy Coins</span><ChevronRight aria-hidden="true" /></button>
+          <div className="coins-card-title"><span>FANS COINS BALANCE</span></div>
+          <div className="coins-card-main">
+            <span className="coins-card-balance" aria-label={`Fans Coins balance: ${displayCoins}`}><strong>{displayCoins.toLocaleString('en-US')}</strong><CoinArtwork code="profile-balance" variant="balance" size={22} /></span>
+            <button type="button" className="coins-buy-button" onClick={openBuyCoins}><span>Buy Coins</span><ChevronRight aria-hidden="true" /></button>
+          </div>
         </section>
 
         <button type="button" className="user-action-row" onClick={shareProfile}>
