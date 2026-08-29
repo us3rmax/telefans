@@ -20,7 +20,10 @@ values
   ('superfan', 'Superfan', 2000, 500, 9.99, 'MOST POPULAR', true, 5),
   ('insider', 'Insider', 3000, 750, 14.99, null, false, 40),
   ('vip', 'VIP', 4000, 1000, 19.99, null, false, 50),
-  ('elite', 'Elite', 10000, 2500, 49.99, 'BEST SELLER', false, 60)
+  ('elite', 'Elite', 10000, 2500, 49.99, 'BEST SELLER', false, 60),
+  ('legend', 'Legend', 15000, 3750, 74.99, null, false, 70),
+  ('icon', 'Icon', 20000, 5000, 99.99, null, false, 80),
+  ('mythic', 'Mythic', 40000, 10000, 199.99, null, false, 90)
 on conflict (code) do update set
   name = excluded.name,
   coins = excluded.coins,

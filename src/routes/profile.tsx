@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ChevronRight, Coins, Heart, House, Send, Share2, Sparkles, Star } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Coins, Heart, House, Send, Share2, Sparkles, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { normalizeCreatorHandle } from '@/data/creators'
 import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton } from '@/lib/telegram-auth'
@@ -36,6 +36,7 @@ function telegramWebApp() {
 }
 
 type ProfileSync = { bio?: string; profilePhotoUrl?: string }
+type CoinArtVariant = 'single' | 'double' | 'stack' | 'four' | 'tower' | 'pile' | 'chest' | 'vault' | 'mythic'
 type CoinPackage = {
   code: string
   name: string
@@ -43,17 +44,62 @@ type CoinPackage = {
   priceUsd: number
   badge?: string | null
   featured?: boolean
+  art: CoinArtVariant
 }
-
 const COIN_PACKAGES: CoinPackage[] = [
-  { code: 'starter', name: 'Starter', coins: 200, priceUsd: 0.99 },
-  { code: 'fan', name: 'Fan', coins: 500, priceUsd: 2.49 },
-  { code: 'supporter', name: 'Supporter', coins: 1000, priceUsd: 4.99 },
-  { code: 'insider', name: 'Insider', coins: 3000, priceUsd: 14.99 },
-  { code: 'vip', name: 'VIP', coins: 4000, priceUsd: 19.99 },
-  { code: 'elite', name: 'Elite', coins: 10000, priceUsd: 49.99, badge: 'BEST SELLER' },
+  { code: 'starter', name: 'Starter', coins: 200, priceUsd: 0.99, art: 'single' },
+  { code: 'fan', name: 'Fan', coins: 500, priceUsd: 2.49, art: 'double' },
+  { code: 'supporter', name: 'Supporter', coins: 1000, priceUsd: 4.99, art: 'stack' },
+  { code: 'insider', name: 'Insider', coins: 3000, priceUsd: 14.99, art: 'four' },
+  { code: 'vip', name: 'VIP', coins: 4000, priceUsd: 19.99, art: 'tower' },
+  { code: 'elite', name: 'Elite', coins: 10000, priceUsd: 49.99, badge: 'BEST SELLER', art: 'pile' },
+  { code: 'legend', name: 'Legend', coins: 15000, priceUsd: 74.99, art: 'chest' },
+  { code: 'icon', name: 'Icon', coins: 20000, priceUsd: 99.99, art: 'vault' },
+  { code: 'mythic', name: 'Mythic', coins: 40000, priceUsd: 199.99, art: 'mythic' },
 ]
-const FEATURED_COIN_PACKAGE: CoinPackage = { code: 'superfan', name: 'Superfan', coins: 2000, priceUsd: 9.99, badge: 'MOST POPULAR', featured: true }
+const FEATURED_COIN_PACKAGE: CoinPackage = { code: 'superfan', name: 'Superfan', coins: 2000, priceUsd: 9.99, badge: 'MOST POPULAR', featured: true, art: 'tower' }
+
+function CoinArtwork({ variant, code, size }: { variant: CoinArtVariant; code: string; size?: number }) {
+  const rim = `coin-${code}-rim`
+  const inner = `coin-${code}-inner`
+  const star = `coin-${code}-star`
+  const edge = `coin-${code}-edge`
+  const glow = `coin-${code}-glow`
+  const coin = `coin-${code}-coin`
+  const svgProps = { viewBox: '0 0 64 64', width: size, height: size, className: 'coin-artwork', 'aria-hidden': true }
+  const coinUse = (transform: string, opacity = 1) => <use href={`#${coin}`} transform={transform} opacity={opacity} />
+  const discUse = (transform: string, opacity = 1) => <use href={`#${code}-disc`} transform={transform} opacity={opacity} />
+  return <svg {...svgProps}>
+    <defs>
+      <linearGradient id={rim} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#FFE070" /><stop offset="0.55" stopColor="#F4B41C" /><stop offset="1" stopColor="#B8770A" /></linearGradient>
+      <linearGradient id={inner} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#D69327" /><stop offset="1" stopColor="#9A6312" /></linearGradient>
+      <linearGradient id={star} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#FFE585" /><stop offset="1" stopColor="#F4B41C" /></linearGradient>
+      <linearGradient id={edge} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#F4B41C" /><stop offset="1" stopColor="#8a5a08" /></linearGradient>
+      <radialGradient id={glow} cx="0.5" cy="0.5" r="0.5"><stop stopColor="#FFC83A" stopOpacity="0.5" /><stop offset="1" stopColor="#FFC83A" stopOpacity="0" /></radialGradient>
+      <g id={coin}>
+        <circle cx="32" cy="32" r="30" fill={`url(#${rim})`} />
+        <circle cx="32" cy="32" r="22" fill={`url(#${inner})`} />
+        <path d="M32 18L36.11 26.34L45.32 27.67L38.66 34.16L40.23 43.32L32 39L23.77 43.32L25.34 34.16L18.68 27.67L27.89 26.34Z" fill={`url(#${star})`} stroke="#7A4D08" strokeWidth="1.4" strokeLinejoin="round" />
+        <path d="M14 17C18 11 25 8 33 8" stroke="#FFF6C4" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+      </g>
+      <g id={`${code}-disc`}>
+        <path d="M2 6L2 11A16 6 0 0 0 34 11L34 6A16 6 0 0 1 2 6Z" fill={`url(#${edge})`} />
+        <ellipse cx="18" cy="6" rx="16" ry="6" fill={`url(#${rim})`} />
+        <ellipse cx="18" cy="6" rx="10.5" ry="3.8" fill={`url(#${inner})`} opacity="0.9" />
+      </g>
+    </defs>
+    {variant !== 'single' && <circle cx="32" cy="34" r="30" fill={`url(#${glow})`} opacity={variant === 'mythic' || variant === 'vault' ? 0.9 : 0.55} />}
+    {variant === 'single' && coinUse('translate(15,15) scale(0.53)')}
+    {variant === 'double' && <>{coinUse('translate(3,16) scale(0.46)', 0.95)}{coinUse('translate(27,19) scale(0.5)')}</>}
+    {variant === 'stack' && <>{discUse('translate(5,44)')}{discUse('translate(7,37)')}{discUse('translate(5,30)')}{coinUse('translate(28,17) scale(0.44)')}</>}
+    {variant === 'four' && <>{discUse('translate(2,44)')}{discUse('translate(4,37)')}{discUse('translate(2,30)')}{discUse('translate(27,44)')}{discUse('translate(29,37)')}{coinUse('translate(24,9) scale(0.48)')}</>}
+    {variant === 'tower' && <>{discUse('translate(0,49.5) scale(0.85)')}{discUse('translate(1,43.6) scale(0.85)')}{discUse('translate(0,37.6) scale(0.85)')}{discUse('translate(33,49.5) scale(0.85)')}{discUse('translate(34,43.6) scale(0.85)')}{discUse('translate(33,37.6) scale(0.85)')}{discUse('translate(15,48) scale(0.9)')}{discUse('translate(16,41.7) scale(0.9)')}{discUse('translate(15,35.4) scale(0.9)')}{discUse('translate(16,29.1) scale(0.9)')}{coinUse('translate(21,13) scale(0.4)')}</>}
+    {variant === 'pile' && <>{discUse('translate(7,38) scale(0.95)')}{discUse('translate(23,39) scale(0.95)')}{discUse('translate(-1,47) scale(0.95)')}{discUse('translate(29,47) scale(0.95)')}{discUse('translate(14,48) scale(0.95)')}{coinUse('translate(16,11) scale(0.48)')}</>}
+    {variant === 'chest' && <><ellipse cx="32" cy="12" rx="9" ry="4.5" fill={`url(#${rim})`} /><rect x="22" y="15.5" width="20" height="5.5" rx="2.75" fill="#B8770A" /><path d="M23 19C20 23 14 26 11.5 31C7.5 38.5 7.5 47 12 53C16.5 58.5 24 61 32 61C40 61 47.5 58.5 52 53C56.5 47 56.5 38.5 52.5 31C50 26 44 23 41 19Z" fill={`url(#${rim})`} stroke="#8a5b09" strokeWidth="1" /><g transform="translate(17.5,25.5) scale(0.45)"><path d="M32 18L36.11 26.34L45.32 27.67L38.66 34.16L40.23 43.32L32 39L23.77 43.32L25.34 34.16L18.68 27.67L27.89 26.34Z" fill={`url(#${star})`} stroke="#7A4D08" strokeWidth="1.6" strokeLinejoin="round" /></g>{coinUse('translate(-1,46) scale(0.28)')}{discUse('translate(46,50) scale(0.5)')}</>}
+    {variant === 'vault' && <>{coinUse('translate(8,1) scale(0.24)')}{coinUse('translate(24,0) scale(0.28)')}{coinUse('translate(40,3) scale(0.22)')}<path d="M9 32L9 24C9 15 19 10 32 10C45 10 55 15 55 24L55 32Z" fill={`url(#${rim})`} stroke="#8a5b09" strokeWidth="1" /><rect x="9" y="31" width="46" height="2.5" fill="#5b3c06" /><rect x="9" y="33.5" width="46" height="22.5" rx="4" fill={`url(#${edge})`} /><rect x="17" y="12" width="5" height="44" rx="1.5" fill="#B8770A" opacity="0.85" /><rect x="42" y="12" width="5" height="44" rx="1.5" fill="#B8770A" opacity="0.85" /><circle cx="32" cy="37" r="4.5" fill={`url(#${star})`} stroke="#7A4D08" strokeWidth="1" /></>}
+    {variant === 'mythic' && <><rect x="10" y="11" width="44" height="44" rx="9" fill={`url(#${rim})`} stroke="#8a5b09" strokeWidth="1" /><rect x="14.5" y="15.5" width="35" height="35" rx="6" fill={`url(#${inner})`} /><circle cx="16.5" cy="17.5" r="1.8" fill="#FFE585" opacity="0.9" /><circle cx="47.5" cy="17.5" r="1.8" fill="#FFE585" opacity="0.9" /><circle cx="16.5" cy="48.5" r="1.8" fill="#FFE585" opacity="0.9" /><circle cx="47.5" cy="48.5" r="1.8" fill="#FFE585" opacity="0.9" /><circle cx="32" cy="33" r="13.5" fill={`url(#${rim})`} /><circle cx="32" cy="33" r="9.5" fill={`url(#${inner})`} /><g stroke="#FFE585" strokeWidth="2.4" strokeLinecap="round"><path d="M32 25.5V40.5" /><path d="M24.5 33H39.5" /><path d="M26.7 27.7L37.3 38.3" /><path d="M37.3 27.7L26.7 38.3" /></g><circle cx="32" cy="33" r="3.2" fill={`url(#${star})`} stroke="#7A4D08" strokeWidth="1" />{coinUse('translate(0,49) scale(0.22)')}{coinUse('translate(50,49) scale(0.22)')}</>}
+  </svg>
+}
 
 
 export function ProfilePage() {
@@ -314,31 +360,32 @@ export function ProfilePage() {
         <div className="user-profile-bottom-space" />
       </div>
       {shared && <div className="user-share-toast"><Share2 aria-hidden="true" /> Link copied/shared</div>}
-      {buyCoinsOpen && <div className="coins-purchase-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBuyCoins() }}>
+      {buyCoinsOpen && <div className="coins-purchase-overlay" role="presentation" style={{ height: 'var(--tg-stable-app-height, 100dvh)' }} onMouseDown={(event) => { if (event.target === event.currentTarget) closeBuyCoins() }}>
         <section className="coins-purchase-sheet" role="dialog" aria-modal="true" aria-labelledby="buy-coins-title">
           <div className="coins-sheet-handle" aria-hidden="true" />
           <header className="coins-purchase-header">
-            <div><h2 id="buy-coins-title">Buy Coins</h2><p><Coins aria-hidden="true" /> {displayCoins.toLocaleString('en-US')} coin balance</p></div>
-            <button type="button" className="coins-purchase-close" aria-label="Close Buy Coins" onClick={closeBuyCoins}>×</button>
+            <div><h2 id="buy-coins-title">Buy Coins</h2><p><CoinArtwork code="balance" variant="single" size={13} /> <span>{displayCoins.toLocaleString('en-US')}</span> coin balance</p></div>
+            <button type="button" className="coins-purchase-close" aria-label="Close Buy Coins" onClick={closeBuyCoins}><X aria-hidden="true" /></button>
           </header>
           {coinPurchaseError && <p className="coins-purchase-feedback coins-purchase-feedback-error" role="alert">{coinPurchaseError}</p>}
           {coinPurchaseSuccess && <p className="coins-purchase-feedback coins-purchase-feedback-success" role="status">{coinPurchaseSuccess}</p>}
           <div className="coins-purchase-scroll">
-            <button type="button" className="coin-package coin-package-featured" onClick={() => void buyCoinPackage(FEATURED_COIN_PACKAGE)} disabled={coinPurchaseState !== 'idle'}>
-              <span className="coin-package-badge">{FEATURED_COIN_PACKAGE.badge}</span>
-              <span className="coin-package-visual coin-package-visual-featured"><Coins aria-hidden="true" /></span>
-              <span className="coin-package-copy"><small>{FEATURED_COIN_PACKAGE.name.toUpperCase()}</small><strong>{FEATURED_COIN_PACKAGE.coins.toLocaleString('en-US')} <em>coins</em></strong></span>
-              <span className="coin-package-price">{formatUsdAmount(FEATURED_COIN_PACKAGE.priceUsd)}</span>
-            </button>
+            <div className="coin-package-featured-shell">
+              <button type="button" className="coin-package coin-package-featured" onClick={() => void buyCoinPackage(FEATURED_COIN_PACKAGE)} disabled={coinPurchaseState !== 'idle'}>
+                <CoinArtwork code={FEATURED_COIN_PACKAGE.code} variant={FEATURED_COIN_PACKAGE.art} size={56} />
+                <span className="coin-package-copy"><small>{FEATURED_COIN_PACKAGE.name}</small><strong>{FEATURED_COIN_PACKAGE.coins.toLocaleString('en-US')} <em>COINS</em></strong></span>
+                <span className="coin-package-price">{formatUsdAmount(FEATURED_COIN_PACKAGE.priceUsd)}</span>
+              </button>
+              <span className="coin-package-badge credits-badge-shimmer">{FEATURED_COIN_PACKAGE.badge}</span>
+            </div>
             <div className="coin-package-grid">{COIN_PACKAGES.map((coinPackage) => <button key={coinPackage.code} type="button" className={`coin-package coin-package-small ${coinPackage.badge ? 'coin-package-with-badge' : ''}`} onClick={() => void buyCoinPackage(coinPackage)} disabled={coinPurchaseState !== 'idle'}>
-              {coinPackage.badge && <span className="coin-package-badge">{coinPackage.badge}</span>}
-              <span className="coin-package-name">{coinPackage.name.toUpperCase()}</span>
-              <span className="coin-package-visual"><Coins aria-hidden="true" /></span>
+              {coinPackage.badge && <span className="coin-package-badge credits-badge-shimmer">{coinPackage.badge}</span>}
+              <span className="coin-package-name">{coinPackage.name}</span>
+              <span className="coin-package-visual"><CoinArtwork code={coinPackage.code} variant={coinPackage.art} size={coinPackage.art === 'mythic' ? 52 : 45} /></span>
               <strong>{coinPackage.coins.toLocaleString('en-US')}</strong>
               <span className="coin-package-price">{formatUsdAmount(coinPackage.priceUsd)}</span>
             </button>)}</div>
           </div>
-          <p className="coins-purchase-note">Prices are shown in USD. Telegram will display the final charge in Stars.</p>
         </section>
       </div>}
     </div>
