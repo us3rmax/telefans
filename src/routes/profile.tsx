@@ -6,6 +6,7 @@ import { authenticateTelegramMiniApp, type TelegramUser, useTelegramBackButton }
 import { listFollowedCreators } from '@/lib/admin-repository'
 import { PrimaryBottomNav } from '@/components/PrimaryBottomNav'
 import { supabase } from '@/lib/supabase'
+import { formatUsdAmount } from '@/lib/telegram-stars'
 import '../telescope.css'
 
 const miaImage = 'https://imagedelivery.net/JbcvhHWGK90wHykvJ8zUXw/8e1e169a-09c9-4e66-f7be-b42f59cff800/public'
@@ -27,6 +28,7 @@ function telegramWebApp() {
       removeEventListener?: (event: string, callback: () => void) => void
       openTelegramLink?: (url: string) => void
       shareMessage?: (preparedMessageId: string) => void
+      openInvoice?: (url: string, callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending') => void) => void
       initData?: string
       platform?: string
     } }
@@ -34,6 +36,24 @@ function telegramWebApp() {
 }
 
 type ProfileSync = { bio?: string; profilePhotoUrl?: string }
+type CoinPackage = {
+  code: string
+  name: string
+  coins: number
+  priceUsd: number
+  badge?: string | null
+  featured?: boolean
+}
+
+const COIN_PACKAGES: CoinPackage[] = [
+  { code: 'starter', name: 'Starter', coins: 200, priceUsd: 0.99 },
+  { code: 'fan', name: 'Fan', coins: 500, priceUsd: 2.49 },
+  { code: 'supporter', name: 'Supporter', coins: 1000, priceUsd: 4.99 },
+  { code: 'insider', name: 'Insider', coins: 3000, priceUsd: 14.99 },
+  { code: 'vip', name: 'VIP', coins: 4000, priceUsd: 19.99 },
+  { code: 'elite', name: 'Elite', coins: 10000, priceUsd: 49.99, badge: 'BEST SELLER' },
+]
+const FEATURED_COIN_PACKAGE: CoinPackage = { code: 'superfan', name: 'Superfan', coins: 2000, priceUsd: 9.99, badge: 'MOST POPULAR', featured: true }
 
 
 export function ProfilePage() {
@@ -48,6 +68,10 @@ export function ProfilePage() {
   const [following, setFollowing] = useState<Array<{ creator_id: string; creators: any }>>([])
   const [coinsBalance, setCoinsBalance] = useState(0)
   const [referralCount, setReferralCount] = useState(0)
+  const [buyCoinsOpen, setBuyCoinsOpen] = useState(false)
+  const [coinPurchaseState, setCoinPurchaseState] = useState<'idle' | 'loading' | 'pending'>('idle')
+  const [coinPurchaseError, setCoinPurchaseError] = useState('')
+  const [coinPurchaseSuccess, setCoinPurchaseSuccess] = useState('')
 
   useEffect(() => {
     let active = true
@@ -146,6 +170,65 @@ export function ProfilePage() {
     window.setTimeout(() => setShared(false), 1800)
   }
 
+  const openBuyCoins = () => {
+    setCoinPurchaseError('')
+    setCoinPurchaseSuccess('')
+    setBuyCoinsOpen(true)
+  }
+
+  const closeBuyCoins = () => {
+    if (coinPurchaseState === 'loading') return
+    setBuyCoinsOpen(false)
+    setCoinPurchaseError('')
+    setCoinPurchaseSuccess('')
+  }
+
+  const refreshCoinsBalance = async (webApp: ReturnType<typeof telegramWebApp>) => {
+    if (!webApp?.initData) return
+    const { data } = await supabase.functions.invoke<{ ok?: boolean; coinsBalance?: number }>('telegram-coins', {
+      body: { action: 'balance', initData: webApp.initData },
+    })
+    if (typeof data?.coinsBalance === 'number') setCoinsBalance(data.coinsBalance)
+  }
+
+  const buyCoinPackage = async (coinPackage: CoinPackage) => {
+    const webApp = telegramWebApp()
+    if (!telegramUser || !webApp?.initData || !webApp.openInvoice) {
+      setCoinPurchaseError('Open this profile inside Telegram to buy Coins.')
+      return
+    }
+
+    setCoinPurchaseError('')
+    setCoinPurchaseSuccess('')
+    setCoinPurchaseState('loading')
+    try {
+      const { data, error } = await supabase.functions.invoke<{
+        ok: boolean
+        invoiceUrl?: string
+        error?: string
+      }>('telegram-coins', {
+        body: { action: 'create', initData: webApp.initData, packageCode: coinPackage.code },
+      })
+      if (error || !data?.ok || !data.invoiceUrl) throw new Error(data?.error ?? error?.message ?? 'Could not start the coin purchase.')
+
+      setCoinPurchaseState('pending')
+      webApp.openInvoice(data.invoiceUrl, (status) => {
+        if (status === 'paid') {
+          setCoinPurchaseSuccess('Payment confirmed. Updating your Coins balance...')
+          window.setTimeout(() => void refreshCoinsBalance(webApp), 900)
+        } else if (status === 'cancelled') {
+          setCoinPurchaseError('Payment cancelled.')
+        } else if (status === 'failed') {
+          setCoinPurchaseError('Payment failed. Your balance was not changed.')
+        }
+        setCoinPurchaseState('idle')
+      })
+    } catch (error) {
+      setCoinPurchaseState('idle')
+      setCoinPurchaseError(error instanceof Error ? error.message : 'Could not start the coin purchase.')
+    }
+  }
+
   const addToHomeScreen = async () => {
     const webApp = telegramWebApp()
 
@@ -203,6 +286,7 @@ export function ProfilePage() {
         <section className="coins-card">
           <div className="coins-card-title"><Coins aria-hidden="true" /><span>FANS COINS BALANCE</span><strong aria-label={`Fans Coins balance: ${displayCoins}`}>{displayCoins}</strong><button type="button" aria-label="About Fans Coins" onClick={() => setCoinsHelp(value => !value)}>?</button></div>
           {coinsHelp && <p className="coins-help">Fans Coins can be used to unlock content and support creators.</p>}
+          <button type="button" className="coins-buy-button" onClick={openBuyCoins}><Coins aria-hidden="true" /><span>Buy Coins</span><ChevronRight aria-hidden="true" /></button>
         </section>
 
         <button type="button" className="user-action-row" onClick={shareProfile}>
@@ -230,6 +314,33 @@ export function ProfilePage() {
         <div className="user-profile-bottom-space" />
       </div>
       {shared && <div className="user-share-toast"><Share2 aria-hidden="true" /> Link copied/shared</div>}
+      {buyCoinsOpen && <div className="coins-purchase-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBuyCoins() }}>
+        <section className="coins-purchase-sheet" role="dialog" aria-modal="true" aria-labelledby="buy-coins-title">
+          <div className="coins-sheet-handle" aria-hidden="true" />
+          <header className="coins-purchase-header">
+            <div><h2 id="buy-coins-title">Buy Coins</h2><p><Coins aria-hidden="true" /> {displayCoins.toLocaleString('en-US')} coin balance</p></div>
+            <button type="button" className="coins-purchase-close" aria-label="Close Buy Coins" onClick={closeBuyCoins}>×</button>
+          </header>
+          {coinPurchaseError && <p className="coins-purchase-feedback coins-purchase-feedback-error" role="alert">{coinPurchaseError}</p>}
+          {coinPurchaseSuccess && <p className="coins-purchase-feedback coins-purchase-feedback-success" role="status">{coinPurchaseSuccess}</p>}
+          <div className="coins-purchase-scroll">
+            <button type="button" className="coin-package coin-package-featured" onClick={() => void buyCoinPackage(FEATURED_COIN_PACKAGE)} disabled={coinPurchaseState !== 'idle'}>
+              <span className="coin-package-badge">{FEATURED_COIN_PACKAGE.badge}</span>
+              <span className="coin-package-visual coin-package-visual-featured"><Coins aria-hidden="true" /></span>
+              <span className="coin-package-copy"><small>{FEATURED_COIN_PACKAGE.name.toUpperCase()}</small><strong>{FEATURED_COIN_PACKAGE.coins.toLocaleString('en-US')} <em>coins</em></strong></span>
+              <span className="coin-package-price">{formatUsdAmount(FEATURED_COIN_PACKAGE.priceUsd)}</span>
+            </button>
+            <div className="coin-package-grid">{COIN_PACKAGES.map((coinPackage) => <button key={coinPackage.code} type="button" className={`coin-package coin-package-small ${coinPackage.badge ? 'coin-package-with-badge' : ''}`} onClick={() => void buyCoinPackage(coinPackage)} disabled={coinPurchaseState !== 'idle'}>
+              {coinPackage.badge && <span className="coin-package-badge">{coinPackage.badge}</span>}
+              <span className="coin-package-name">{coinPackage.name.toUpperCase()}</span>
+              <span className="coin-package-visual"><Coins aria-hidden="true" /></span>
+              <strong>{coinPackage.coins.toLocaleString('en-US')}</strong>
+              <span className="coin-package-price">{formatUsdAmount(coinPackage.priceUsd)}</span>
+            </button>)}</div>
+          </div>
+          <p className="coins-purchase-note">Prices are shown in USD. Telegram will display the final charge in Stars.</p>
+        </section>
+      </div>}
     </div>
     <PrimaryBottomNav active="profile" />
   </main>
