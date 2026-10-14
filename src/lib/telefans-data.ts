@@ -160,12 +160,12 @@ function slugToken(value: string) {
 }
 
 export async function getPublishedCreator(slug: string): Promise<CreatorRow | null> {
-  const { data: exact, error: exactError } = await supabase.from('creators').select('*').eq('slug', slug).eq('published', true).maybeSingle()
-  if (exactError) throw exactError
-  if (exact) return exact
-
-  // Preserve compatibility with legacy links such as /creator/pleasantmorenaa
-  // while the CRM stores canonical slugs with or without separators.
+  // Resolve every profile from the same published catalog used by Explore.
+  // A direct `maybeSingle()` lookup is unsafe here: imported/legacy rows can
+  // temporarily share a slug and PostgREST then returns a 406 response, which
+  // leaves the profile route stuck in its loading skeleton. Matching the
+  // already-normalized catalog also keeps legacy links such as
+  // /creator/pleasantmorenaa working.
   const published = await listPublishedCreators()
   const requested = slugToken(slug)
   return published.find((creator) => slugToken(creator.slug) === requested) ?? null

@@ -121,7 +121,10 @@ function readPublicSubscription(value: unknown): CreatorProfile['subscription'] 
 
 function toSubscriptionOffer(subscription: CreatorProfile['subscription']): SubscriptionOffer {
   const mode = subscription.planMode ?? (subscription.isFree ? 'free' : 'paid')
-  const normal = subscription.normalPriceStars ?? 0
+  // Local catalog entries predate the country-aware price fields. Keep their
+  // temporary fallback actionable instead of rendering the invalid "$0"
+  // price while the published Supabase offer is still being hydrated.
+  const normal = subscription.normalPriceStars ?? (mode === 'free' ? 0 : 299)
   const promo = subscription.promoPriceStars ?? 0
   const normalPriceUsd = subscription.normalPriceUsd ?? starsToUsd(normal)
   const priceUsd = subscription.priceUsd ?? (mode === 'promo' && promo > 0 ? (subscription.promoPriceUsd ?? starsToUsd(promo)) : normalPriceUsd)
@@ -241,8 +244,12 @@ export function CreatorProfilePage() {
 
   useEffect(() => {
     let active = true
-    setCreator(createEmptyCreatorProfile(slug))
-    setCreatorFound(false)
+    // Render the local catalog entry immediately while the published Supabase
+    // record is being hydrated. Direct profile navigation must never remain on
+    // an indefinite skeleton when the API is slow or temporarily unavailable.
+    const localFallback = getCreatorProfile(slug)
+    setCreator(localFallback)
+    setCreatorFound(true)
     setRemoteCreatorId(null)
     setSubscriptionStatus({ subscribed: false, offer: null, subscription: null, telegramUsername: null, vipChannelUrl: null })
     setSubscriptionOfferState('pending')
@@ -251,8 +258,8 @@ export function CreatorProfilePage() {
     setSubscriptionFeedback('')
     setPromoDeadline(null)
     setPromoClock(Date.now())
-    setCreatorMediaLoaded(false)
-    setPublicPostsLoaded(false)
+    setCreatorMediaLoaded(true)
+    setPublicPostsLoaded(true)
     setPublicPosts([])
     setExpanded(false)
     setExpandedPost(null)
@@ -266,7 +273,7 @@ export function CreatorProfilePage() {
         const remote = await getPublishedCreator(slug)
         if (!remote || !active) {
           if (active) {
-            setCreatorFound(false)
+            setCreatorFound(Boolean(localFallback.avatarImage || localFallback.bio))
             setCreatorMediaLoaded(true)
             setPublicPostsLoaded(true)
           }
@@ -307,7 +314,7 @@ export function CreatorProfilePage() {
         if (active) setPublicPostsLoaded(true)
       } catch {
         if (active) {
-          setCreatorFound(false)
+          setCreatorFound(Boolean(localFallback.avatarImage || localFallback.bio))
           setCreatorMediaLoaded(true)
           setPublicPostsLoaded(true)
           setPublicPosts([])
@@ -475,7 +482,7 @@ export function CreatorProfilePage() {
   const subscriptionDisplayPrice = offer.mode === 'free' ? 'FREE' : visiblePromotion ? `${formatUsdAmount(displayUsd)} for ${offer.days ?? 30} days` : `${formatUsdAmount(displayUsd)} per month`
   const previewUrl = (post: PublicCreatorPost) => unlockedMedia[post.id] || post.mediaUrl
 
-  if (!creatorMediaLoaded || !publicPostsLoaded || subscriptionOfferState === 'pending') return <CreatorProfileLoading />
+  if (!creatorMediaLoaded || !publicPostsLoaded) return <CreatorProfileLoading />
   if (!creatorFound) return <main className="creator-profile-page"><div className="creator-profile-frame"><div className="creator-profile-unavailable"><button type="button" className="creator-cover-back" aria-label="Back" onClick={goBack}><ArrowLeft /></button><strong>Creator unavailable</strong><span>This profile could not be loaded right now.</span></div></div></main>
 
   const posts = publicPosts.filter(post => post.type === 'image' && !post.isPaid)
