@@ -16,7 +16,7 @@
  * a clean temp dir avoids that entirely; here we only COPY into `dist/` (never delete),
  * so a pre-existing read-only `_redirects` is tolerated.
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const SRC = '.vite-out/client'
@@ -49,8 +49,23 @@ for (const entry of readdirSync(SRC)) {
 rmSync('.vite-out', { recursive: true, force: true })
 
 if (!existsSync(join(DEST, 'index.html'))) {
-  console.error('[finalize] dist/index.html missing after flatten — build is not publishable')
-  process.exit(1)
+  // With prerender disabled, TanStack Start emits the client assets but no
+  // document shell. Build a minimal SPA shell from the generated bootstrap
+  // bundle so Vercel can still serve the client-rendered Mini App.
+  const assetsDir = join(DEST, 'assets')
+  const bootstrap = readdirSync(assetsDir)
+    .filter(name => name.endsWith('.js'))
+    .find(name => readFileSync(join(assetsDir, name), 'utf8').includes('createRoot'))
+  if (!bootstrap) {
+    console.error('[finalize] dist/index.html missing and no client bootstrap was found')
+    process.exit(1)
+  }
+  const styles = readdirSync(assetsDir)
+    .filter(name => name.endsWith('.css'))
+    .map(name => `    <link rel="stylesheet" href="/assets/${name}" />`)
+    .join('\n')
+  writeFileSync(join(DEST, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" /><meta name="theme-color" content="#0b0b0d" />${styles ? `\n${styles}` : ''}<title>TeleFans</title></head><body><div id="app"></div><script type="module" src="/assets/${bootstrap}"></script></body></html>\n`)
+  console.log(`[finalize] generated static SPA shell with ${bootstrap}`)
 }
 
 console.log('[finalize] ✓ static build flattened to dist/ (dist/index.html ready)')

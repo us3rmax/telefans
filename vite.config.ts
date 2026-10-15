@@ -213,7 +213,7 @@ export default defineConfig({
     // NOTE: the Start plugin MUST come before the React plugin.
     tanstackStart({
       prerender: {
-        enabled: true,
+        enabled: false,
         // Follow in-app links from the prerendered entry to statically render
         // every reachable route.
         crawlLinks: true,
