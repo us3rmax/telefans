@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
@@ -207,23 +206,6 @@ export default defineConfig({
     // Build-time tagger OFF by default — its transform can stamp data-blnk-id into
     // HTML inside string literals. Enable with BLINK_BUILD_TIME_TAGGER=on.
     ...(process.env.BLINK_BUILD_TIME_TAGGER === 'on' ? [blinkTaggerPlugin()] : []),
-    // TanStack Start — SSR + static prerendering so search engines AND AI crawlers
-    // (GPTBot/ClaudeBot/PerplexityBot, which do NOT execute JS) get fully-rendered
-    // HTML on the first request. `prerender` emits crawlable static HTML at build time.
-    // NOTE: the Start plugin MUST come before the React plugin.
-    tanstackStart({
-      prerender: {
-        enabled: false,
-        // Follow in-app links from the prerendered entry to statically render
-        // every reachable route.
-        crawlLinks: true,
-        // CRITICAL: do NOT fail the build when a crawled link 404s. Broken /
-        // example / dynamic / auth-gated links are common, and `crawlLinks`
-        // follows ALL of them — without this, ONE dead link aborts the whole
-        // build → no dist/ → "404 NoSuchKey index.html" white screen. Skip + warn.
-        failOnError: false,
-      },
-    }),
     viteReact(),
   ],
   resolve: {
@@ -281,7 +263,7 @@ export default defineConfig({
     // (BUILD_PATHS['vite-react'] = 'dist'). Building here instead of dist/ dodges the
     // EACCES from Start's client build emptying the platform-prepared dist/, which
     // pre-injects a read-only _redirects the sandbox user can't unlink.
-    outDir: '.vite-out',
+    outDir: '.vite-out/client',
     emptyOutDir: true,
   },
 });
